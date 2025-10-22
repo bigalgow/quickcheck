@@ -1,0 +1,19 @@
+/* Container */
+.container { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+/* Two-column grids that stack on mobile */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* Form rows collapse vertically on narrow screens */
+.form-row { display: grid; grid-template-columns: 200px 1fr; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+@media (max-width: 700px) { .form-row { grid-template-columns: 1fr; } }
+
+/* Cards */
+.card { border: 1px solid #e7e7e7; border-radius: 10px; overflow: hidden; }
+.card-title { background: #f7f7fb; padding: 8px 12px; font-weight: 600; }
+.card-body { padding: 12px; }
+
+/* SaveBar */
+.savebar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+.savebar .secondary { opacity: .85; }

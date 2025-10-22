@@ -1,0 +1,7 @@
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .print-page { page-break-after: always; }
+  .card { border: 1px solid #bbb !important; }
+  .card-title { background: #eee !important; }
+}

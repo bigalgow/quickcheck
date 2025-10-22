@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@logto/js": "^6.1.0",
+    "@logto/react": "^4.0.9",
+    "jose": "^6.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

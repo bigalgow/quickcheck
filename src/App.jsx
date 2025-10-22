@@ -1,5 +1,7 @@
 import React from "react";
 import "./App.css";
+import "./print.css";       // ✅ add
+import "./responsive.css";  // ✅ add
 import AtRetirement from "./components/AtRetirement.jsx";
 
 export default function App() {
