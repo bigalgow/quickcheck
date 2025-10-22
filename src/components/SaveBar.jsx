@@ -2,7 +2,7 @@ import { useLogto } from '@logto/react';
 
 export default function SaveBar({ inputs, outputs }) {
   const { isAuthenticated, isLoading, signIn, getAccessToken } = useLogto();
-
+  const login = () => signIn({ redirectUri: window.location.href });  // ADDED
   const save = async () => {
     if (!isAuthenticated) { await signIn(); return; }
     const token = await getAccessToken(import.meta.env.VITE_API_AUDIENCE);
