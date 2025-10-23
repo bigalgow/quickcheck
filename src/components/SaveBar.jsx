@@ -9,7 +9,8 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   // ---- explicit redirect; avoids "redirectUri undefined" in some SDK builds
   const login = async () => {
     try {
-      const redirectUri = window.location.href; // come back to the current page
+      // const redirectUri = window.location.href; // come back to the current page
+      const redirectUri = `${window.location.origin}/`; // note the trailing slash
       await signIn({ redirectUri });
     } catch (e) {
       console.error("Login error:", e);
