@@ -38,23 +38,21 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   // ---- explicit redirect; force a top-level redirect login
   const login = async () => {
-    try {
-      const redirectUri = window.location.origin; // come back to the root
-      console.log("Logto signIn ->", { redirectUri });
-      await signIn({
-        redirectUri,
-        interactionMode: "redirect",
-        prompt: "login",
-      });
-    } catch (e) {
-      console.error("Login error:", e);
-      setMsg("Login failed. Please try again.");
-    }
-  };
+  const redirectUri = window.location.origin; // using root
+  await signIn({ redirectUri, interactionMode: 'redirect', prompt: 'login' });
+};
 
-  const doSignOut = () => {
-    return signOut({ redirectUri: window.location.origin });
-  };
+const doSignOut = () => signOut({ redirectUri: window.location.origin });
+
+// and show the name when logged in:
+const { isAuthenticated, userInfo, fetchUserInfo } = useLogto();
+useEffect(() => { if (isAuthenticated && !userInfo) fetchUserInfo?.(); }, [isAuthenticated, userInfo, fetchUserInfo]);
+
+{isAuthenticated && (
+  <span style={{ marginRight: 6 }}>
+    Welcome{userInfo?.name ? `, ${userInfo.name}` : userInfo?.username ? `, ${userInfo.username}` : ''}!
+  </span>
+)}
 
   const saveProfile = async () => {
     try {
