@@ -8,7 +8,9 @@ export default function AuthProvider({ children }) {
     endpoint,
     appId,
     // Remove resources/audience for now
-    scopes: ['openid', 'profile', 'email'], // keep it simple for debugging
+    // scopes: ['openid', 'profile', 'email'], // keep it simple for debugging
+    scopes: ['openid', 'profile', 'email', 'offline_access'],
+
   };
 
   if (typeof window !== 'undefined') window.__LOGTO_CFG__ = cfg;

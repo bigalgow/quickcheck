@@ -9,11 +9,13 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   // src/components/SaveBar.jsx
 const login = async () => {
   try {
-    const redirectUri = window.location.origin; // root (no trailing slash)
+    const redirectUri = window.location.origin;     // go back to root
     console.log('Logto signIn ->', { redirectUri });
+
     await signIn({
       redirectUri,
-      interactionMode: 'redirect', // be explicit
+      interactionMode: 'redirect',  // force top-level redirect
+      prompt: 'login',              // bypass silent/hidden flow
     });
   } catch (e) {
     console.error('Login error:', e);
@@ -21,7 +23,10 @@ const login = async () => {
   }
 };
 
-  const doSignOut = () => signOut({ redirectUri: window.location.origin });
+const doSignOut = () => {
+  return signOut({ redirectUri: window.location.origin });
+};
+
 
   const testToken = async () => {
     try {
