@@ -10,7 +10,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
     signOut,
     getAccessToken,
     fetchUserInfo,
-    userInfo, // <-- comes from the SDK once available
+    userInfo,
   } = useLogto();
 
   const [msg, setMsg] = useState(null);
@@ -20,7 +20,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
     const load = async () => {
       try {
         if (isAuthenticated && !userInfo) {
-          await fetchUserInfo?.(); // some SDK versions require calling this
+          await fetchUserInfo?.();
         }
       } catch (e) {
         console.warn("fetchUserInfo failed:", e);
@@ -35,6 +35,9 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       console.log("User info:", userInfo);
     }
   }, [isAuthenticated, userInfo]);
+
+  // ... rest of your code unchanged
+
 
   // ---- explicit redirect; force a top-level redirect login
   const login = async () => {
