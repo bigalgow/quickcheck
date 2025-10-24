@@ -1,5 +1,16 @@
 // src/auth/AuthProvider.jsx
-import { LogtoProvider } from '@logto/react';
+import { LogtoProvider, useHandleSignInCallback } from '@logto/react';
+
+function CallbackFinalizer() {
+  // Runs once when arriving with ?code=&state=
+  useHandleSignInCallback(() => {
+    if (typeof window !== 'undefined') {
+      // Clean up URL (remove code/state)
+      window.history.replaceState({}, document.title, window.location.origin);
+    }
+  });
+  return null;
+}
 
 export default function AuthProvider({ children }) {
   const endpoint =
@@ -11,13 +22,17 @@ export default function AuthProvider({ children }) {
   const cfg = {
     endpoint,
     appId,
-    // enable if you later use a Resource (API audience)
-    // resources: audience ? [audience] : undefined,
+    // resources: audience ? [audience] : undefined, // enable if you use an API Resource
     scopes: ['openid', 'profile', 'email', 'offline_access'],
   };
 
   if (typeof window !== 'undefined') window.__LOGTO_CFG__ = cfg;
   console.log('Logto cfg:', cfg);
 
-  return <LogtoProvider config={cfg}>{children}</LogtoProvider>;
+  return (
+    <LogtoProvider config={cfg}>
+      <CallbackFinalizer />
+      {children}
+    </LogtoProvider>
+  );
 }
