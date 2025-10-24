@@ -8,7 +8,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   const login = async () => {
   try {
-    const redirectUri = `${window.location.origin}/callback`; // <- use the callback route
+    const redirectUri = window.location.origin; // << use root, no path
     await signIn({ redirectUri });
   } catch (e) {
     console.error("Login error:", e);
@@ -17,9 +17,9 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 };
 
 const doSignOut = () => {
-  // send users back to the home page after logout
-  return signOut({ redirectUri: `${window.location.origin}/` });
+  return signOut({ redirectUri: window.location.origin });
 };
+
 
   const saveProfile = async () => {
     try {
