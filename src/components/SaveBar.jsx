@@ -6,17 +6,20 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   const { isAuthenticated, isLoading, signIn, signOut, getAccessToken } = useLogto();
   const [msg, setMsg] = useState(null);
 
-  // ---- explicit redirect; avoids "redirectUri undefined" in some SDK builds
   const login = async () => {
-    try {
-      // const redirectUri = window.location.href; // come back to the current page
-      const redirectUri = `${window.location.origin}/`; // note the trailing slash
-      await signIn({ redirectUri });
-    } catch (e) {
-      console.error("Login error:", e);
-      setMsg("Login failed. Please try again.");
-    }
-  };
+  try {
+    const redirectUri = `${window.location.origin}/callback`; // <- use the callback route
+    await signIn({ redirectUri });
+  } catch (e) {
+    console.error("Login error:", e);
+    setMsg("Login failed. Please try again.");
+  }
+};
+
+const doSignOut = () => {
+  // send users back to the home page after logout
+  return signOut({ redirectUri: `${window.location.origin}/` });
+};
 
   const saveProfile = async () => {
     try {
@@ -103,6 +106,8 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
           </button>
         </>
       )}
+      
+      <button onClick={doSignOut} disabled={isLoading}>Sign out</button>
 
       <button onClick={exportJson}>Export JSON</button>
 
