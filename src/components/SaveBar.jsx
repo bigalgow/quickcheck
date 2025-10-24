@@ -15,9 +15,9 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   const [msg, setMsg] = useState(null);
 
-  // Try to load user info after we become authenticated
+  // Load user profile once after auth (needed on some SDK versions)
   useEffect(() => {
-    const load = async () => {
+    (async () => {
       try {
         if (isAuthenticated && !userInfo) {
           await fetchUserInfo?.();
@@ -25,48 +25,39 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       } catch (e) {
         console.warn("fetchUserInfo failed:", e);
       }
-    };
-    load();
+    })();
   }, [isAuthenticated, userInfo, fetchUserInfo]);
 
-  // Log once for debugging
+  // Debug: see profile after login
   useEffect(() => {
     if (isAuthenticated) {
       console.log("User info:", userInfo);
     }
   }, [isAuthenticated, userInfo]);
 
-  // ... rest of your code unchanged
-
-
-  // ---- explicit redirect; force a top-level redirect login
+  // ---- Login with explicit redirect to root
   const login = async () => {
-  const redirectUri = window.location.origin; // using root
-  await signIn({ redirectUri, interactionMode: 'redirect', prompt: 'login' });
-};
+    try {
+      const redirectUri = window.location.origin; // matches Logto SPA Redirect URIs
+      console.log("Logto signIn ->", { redirectUri });
+      await signIn({ redirectUri, interactionMode: "redirect", prompt: "login" });
+    } catch (e) {
+      console.error("Login error:", e);
+      setMsg("Login failed. Please try again.");
+    }
+  };
 
-const doSignOut = () => signOut({ redirectUri: window.location.origin });
-
-// and show the name when logged in:
-const { isAuthenticated, userInfo, fetchUserInfo } = useLogto();
-useEffect(() => { if (isAuthenticated && !userInfo) fetchUserInfo?.(); }, [isAuthenticated, userInfo, fetchUserInfo]);
-
-{isAuthenticated && (
-  <span style={{ marginRight: 6 }}>
-    Welcome{userInfo?.name ? `, ${userInfo.name}` : userInfo?.username ? `, ${userInfo.username}` : ''}!
-  </span>
-)}
+  const doSignOut = () => signOut({ redirectUri: window.location.origin });
 
   const saveProfile = async () => {
     try {
       setMsg(null);
-      // Get token (with or without audience depending on your env)
       const audience = import.meta.env.VITE_API_AUDIENCE;
       const token = audience ? await getAccessToken(audience) : await getAccessToken();
 
       const body = {
-        inputs,  // numeric inputs used by atRetirement()
-        outputs, // full outputs object
+        inputs,
+        outputs,
         savedAt: new Date().toISOString(),
       };
 
@@ -136,10 +127,15 @@ useEffect(() => { if (isAuthenticated && !userInfo) fetchUserInfo?.(); }, [isAut
         <>
           {/* Greeting */}
           <span style={{ marginRight: 6 }}>
-            Welcome{userInfo?.name ? `, ${userInfo.name}` : userInfo?.username ? `, ${userInfo.username}` : ""}!
+            Welcome
+            {userInfo?.name
+              ? `, ${userInfo.name}`
+              : userInfo?.username
+              ? `, ${userInfo.username}`
+              : "!"}
           </span>
 
-          {/* Actions for signed-in users */}
+          {/* Authenticated actions */}
           <button onClick={saveProfile} disabled={isLoading}>
             Save profile
           </button>
