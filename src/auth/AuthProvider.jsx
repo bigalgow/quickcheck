@@ -1,90 +1,39 @@
 // src/auth/AuthProvider.jsx
-import React, { useEffect, useMemo, useState } from 'react';
-import { LogtoProvider } from '@logto/react';
-import LogtoClient from '@logto/browser'; // ✅ default import
+import { LogtoProvider, useHandleSignInCallback } from '@logto/react';
 
+// This small component runs automatically after login redirect
+function CallbackFinalizer() {
+  // useHandleSignInCallback processes ?code & ?state in the URL
+  useHandleSignInCallback(() => {
+    if (typeof window !== 'undefined') {
+      // Clean the URL after the exchange
+      window.history.replaceState({}, document.title, window.location.origin);
+    }
+  });
+  return null;
+}
+
+// The main AuthProvider wraps your entire app (in main.jsx)
 export default function AuthProvider({ children }) {
-  const endpoint =
-    import.meta.env.VITE_LOGTO_ENDPOINT || 'https://auth.retireplan.co.uk';
-  const appId =
-    import.meta.env.VITE_LOGTO_APP_ID || 'pu4bsk6f3m9mox3vtxh8z';
-  const audience = import.meta.env.VITE_API_AUDIENCE || undefined;
+  const cfg = {
+    // ---- YOUR LOGTO INSTANCE SETTINGS ----
+    endpoint: import.meta.env.VITE_LOGTO_ENDPOINT || 'https://auth.retireplan.co.uk',
+    appId: import.meta.env.VITE_LOGTO_APP_ID || 'pu4bsk6f3m9mox3vtxh8z',
 
-  const cfg = useMemo(
-    () => ({
-      endpoint,
-      appId,
-      scopes: ['openid', 'profile', 'email', 'offline_access'],
-      resources: audience ? [audience] : undefined,
-    }),
-    [endpoint, appId, audience]
-  );
+    // ---- SCOPES for Option A ----
+    // We include custom_data here so the SPA can call the Account API directly.
+    scopes: ['openid', 'profile', 'email', 'offline_access', 'custom_data'],
 
-  // Manual callback fallback: if ?code&state exist, run the exchange explicitly
-  const [cbState, setCbState] = useState({ working: false, error: null });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const usp = new URLSearchParams(window.location.search);
-    const hasCode = usp.has('code');
-    const hasState = usp.has('state');
-    if (!hasCode || !hasState) return;
-
-    if (cbState.working) return;
-    setCbState({ working: true, error: null });
-
-    (async () => {
-      try {
-        console.log('[Logto] Manual callback: starting code→token exchange');
-        const client = new LogtoClient(cfg);
-        await client.handleSignInCallback(window.location.href);
-        console.log('[Logto] Manual callback: exchange complete');
-
-        const authed = await client.isAuthenticated?.();
-        console.log('[Logto] Manual callback: isAuthenticated =', authed);
-
-        // Clean URL and reload so @logto/react reads stored session
-        window.history.replaceState({}, document.title, window.location.origin);
-        window.location.replace(window.location.origin);
-      } catch (e) {
-        console.error('[Logto] Manual callback FAILED:', e);
-        setCbState({ working: false, error: e });
-      }
-    })();
-  }, [cfg, cbState.working]);
-
-  const showOverlay =
-    typeof window !== 'undefined' &&
-    window.location.search.includes('code=') &&
-    window.location.search.includes('state=');
+    // ---- IMPORTANT ----
+    // For Option A, DO NOT include any "resources" or API audience.
+    // That is only used when obtaining an access token for a custom API (Option B).
+  };
 
   return (
     <LogtoProvider config={cfg}>
-      {showOverlay && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(255,255,255,0.92)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-        >
-          <div style={{ textAlign: 'center', maxWidth: 520 }}>
-            <h2>Finishing sign-in…</h2>
-            {!cbState.error ? (
-              <p>Contacting identity server…</p>
-            ) : (
-              <div style={{ color: 'crimson', textAlign: 'left' }}>
-                <p><strong>Sign-in error</strong></p>
-                <pre style={{ whiteSpace: 'pre-wrap' }}>{String(cbState.error)}</pre>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* This handles the login callback automatically */}
+      <CallbackFinalizer />
+      {/* Your entire app runs inside the provider */}
       {children}
     </LogtoProvider>
   );

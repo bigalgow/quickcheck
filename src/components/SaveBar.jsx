@@ -45,20 +45,19 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   const doSignOut = () => signOut({ redirectUri: window.location.origin });
 
 
-  const saveProfile = async () => {
+  // in src/components/SaveBar.jsx
+const saveProfile = async () => {
   try {
     setMsg(null);
 
-    // IMPORTANT: for Account API, do NOT pass an audience.
-    // This gets the user's default access token with the scopes you enabled, incl. `custom_data`.
+    // Account API token: NO audience param
     const token = await getAccessToken();
+
     if (!token || token.split('.').length !== 3) {
       throw new Error('Could not obtain a valid user access token');
     }
 
-    // Data you want to persist
     const payload = {
-      // Account API uses "custom_data" as the field name
       custom_data: {
         retireplan: {
           inputs,
@@ -68,7 +67,6 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       },
     };
 
-    // Call Logto Account API directly (CORS must allow your origin)
     const res = await fetch('https://auth.retireplan.co.uk/api/my-account/profile', {
       method: 'PATCH',
       headers: {
@@ -90,6 +88,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
     setMsg(e.message || 'Save failed.');
   }
 };
+
 
 
   const exportJson = () => {
