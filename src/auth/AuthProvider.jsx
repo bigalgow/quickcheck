@@ -1,7 +1,7 @@
 // src/auth/AuthProvider.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { LogtoProvider } from '@logto/react';
-import { LogtoClient } from '@logto/browser'; // manual fallback
+import LogtoClient from '@logto/browser'; // ✅ default import
 
 export default function AuthProvider({ children }) {
   const endpoint =
@@ -20,7 +20,7 @@ export default function AuthProvider({ children }) {
     [endpoint, appId, audience]
   );
 
-  // --- Manual callback fallback: if ?code&state exist, run the exchange explicitly
+  // Manual callback fallback: if ?code&state exist, run the exchange explicitly
   const [cbState, setCbState] = useState({ working: false, error: null });
 
   useEffect(() => {
@@ -30,7 +30,6 @@ export default function AuthProvider({ children }) {
     const hasState = usp.has('state');
     if (!hasCode || !hasState) return;
 
-    // Only run once per load
     if (cbState.working) return;
     setCbState({ working: true, error: null });
 
@@ -38,15 +37,13 @@ export default function AuthProvider({ children }) {
       try {
         console.log('[Logto] Manual callback: starting code→token exchange');
         const client = new LogtoClient(cfg);
-        // This parses window.location.href and exchanges code for tokens (PKCE)
         await client.handleSignInCallback(window.location.href);
         console.log('[Logto] Manual callback: exchange complete');
 
-        // Optional: sanity check we’re authenticated
-        const authed = await client.isAuthenticated();
+        const authed = await client.isAuthenticated?.();
         console.log('[Logto] Manual callback: isAuthenticated =', authed);
 
-        // Clean URL and reload root so @logto/react picks up the stored session
+        // Clean URL and reload so @logto/react reads stored session
         window.history.replaceState({}, document.title, window.location.origin);
         window.location.replace(window.location.origin);
       } catch (e) {
@@ -56,11 +53,10 @@ export default function AuthProvider({ children }) {
     })();
   }, [cfg, cbState.working]);
 
-  // Show a simple overlay while manually finishing sign-in
   const showOverlay =
     typeof window !== 'undefined' &&
-    (window.location.search.includes('code=') &&
-      window.location.search.includes('state='));
+    window.location.search.includes('code=') &&
+    window.location.search.includes('state=');
 
   return (
     <LogtoProvider config={cfg}>
