@@ -37,11 +37,12 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   // ---- Login with explicit redirect to root
   const login = async () => {
-  const redirectUri = `${window.location.origin}/callback`;
+  const redirectUri = window.location.origin; // root
+  console.log('signIn redirectUri =', redirectUri);
   await signIn({ redirectUri, interactionMode: 'redirect', prompt: 'login' });
   };
 
-  const doSignOut = () => signOut({ redirectUri: `${window.location.origin}/` });
+  const doSignOut = () => signOut({ redirectUri: window.location.origin });
 
 
   const saveProfile = async () => {
