@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@logto/browser": "^3.0.9",
     "@logto/js": "^6.1.0",
     "@logto/react": "^4.0.9",
     "jose": "^6.1.0",
