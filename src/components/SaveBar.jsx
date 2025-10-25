@@ -43,6 +43,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   const doSignOut = () => signOut({ redirectUri: `${window.location.origin}/` });
 
+
   const saveProfile = async () => {
     try {
       setMsg(null);
