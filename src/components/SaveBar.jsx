@@ -46,37 +46,51 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
 
   const saveProfile = async () => {
-    try {
-      setMsg(null);
-      const audience = import.meta.env.VITE_API_AUDIENCE;
-      const token = audience ? await getAccessToken(audience) : await getAccessToken();
+  try {
+    setMsg(null);
 
-      const body = {
-        inputs,
-        outputs,
-        savedAt: new Date().toISOString(),
-      };
-
-      const base = import.meta.env.VITE_API_BASE || ""; // '' => same-origin
-      const res = await fetch(`${base}/api/me/retireplan`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Save failed (${res.status}): ${text}`);
-      }
-      setMsg("Saved to your account.");
-    } catch (e) {
-      console.error(e);
-      setMsg(e.message || "Save failed.");
+    // IMPORTANT: for Account API, do NOT pass an audience.
+    // This gets the user's default access token with the scopes you enabled, incl. `custom_data`.
+    const token = await getAccessToken();
+    if (!token || token.split('.').length !== 3) {
+      throw new Error('Could not obtain a valid user access token');
     }
-  };
+
+    // Data you want to persist
+    const payload = {
+      // Account API uses "custom_data" as the field name
+      custom_data: {
+        retireplan: {
+          inputs,
+          outputs,
+          savedAt: new Date().toISOString(),
+        },
+      },
+    };
+
+    // Call Logto Account API directly (CORS must allow your origin)
+    const res = await fetch('https://auth.retireplan.co.uk/api/my-account/profile', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`Save failed (${res.status}): ${text}`);
+    }
+
+    setMsg('Saved to your Logto account.');
+    console.log('Account API response:', text);
+  } catch (e) {
+    console.error(e);
+    setMsg(e.message || 'Save failed.');
+  }
+};
+
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ inputs, outputs }, null, 2)], {
