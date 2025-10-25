@@ -3,7 +3,7 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/api/:match*", "destination": "/api/:match*" },
-    { "source": "/callback", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
+

@@ -37,17 +37,11 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   // ---- Login with explicit redirect to root
   const login = async () => {
-    try {
-      const redirectUri = window.location.origin; // matches Logto SPA Redirect URIs
-      console.log("Logto signIn ->", { redirectUri });
-      await signIn({ redirectUri, interactionMode: "redirect", prompt: "login" });
-    } catch (e) {
-      console.error("Login error:", e);
-      setMsg("Login failed. Please try again.");
-    }
+  const redirectUri = `${window.location.origin}/callback`;
+  await signIn({ redirectUri, interactionMode: 'redirect', prompt: 'login' });
   };
 
-  const doSignOut = () => signOut({ redirectUri: window.location.origin });
+  const doSignOut = () => signOut({ redirectUri: `${window.location.origin}/` });
 
   const saveProfile = async () => {
     try {

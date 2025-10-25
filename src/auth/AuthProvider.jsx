@@ -2,15 +2,18 @@
 import { LogtoProvider, useHandleSignInCallback } from '@logto/react';
 
 function CallbackFinalizer() {
-  // Runs once when arriving with ?code=&state=
+  console.log('[Logto] CallbackFinalizer mounted, checking URL…');
+
   useHandleSignInCallback(() => {
+    console.log('[Logto] useHandleSignInCallback fired — code exchange complete.');
     if (typeof window !== 'undefined') {
-      // Clean up URL (remove code/state)
       window.history.replaceState({}, document.title, window.location.origin);
     }
   });
+
   return null;
 }
+
 
 export default function AuthProvider({ children }) {
   const endpoint =
