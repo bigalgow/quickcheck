@@ -25,6 +25,7 @@ async function getManagementToken() {
       grant_type: 'client_credentials',
       client_id: MGMT_CLIENT_ID,
       client_secret: MGMT_CLIENT_SECRET,
+      resource: MGMT_RESOURCE,
       scope: 'all',
     }),
     cache: 'no-store',
