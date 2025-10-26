@@ -26,7 +26,8 @@ export default function AuthProvider({ children }) {
         appId,
         // Option A + general use. custom_data is fine to keep even though we save via backend now.
         scopes: ['openid', 'profile', 'email', 'offline_access', 'custom_data'],
-        // no resources here; we’ll request an audience on demand when needed
+        // Register API resource to enable audience token requests
+        resources: [import.meta.env.VITE_API_AUDIENCE || 'https://api.retireplan'],
       }),
     [endpoint, appId]
   );

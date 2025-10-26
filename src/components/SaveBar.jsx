@@ -2,25 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 
-// (Optional) helper you can keep for future payload cleaning if needed
-function clean(value) {
-  if (value === undefined || value === null) return undefined;
-  if (typeof value === "number" && Number.isNaN(value)) return undefined;
-  if (Array.isArray(value)) {
-    const arr = value.map(clean).filter((v) => v !== undefined);
-    return arr.length ? arr : undefined;
-  }
-  if (typeof value === "object") {
-    const out = {};
-    for (const [k, v] of Object.entries(value)) {
-      const c = clean(v);
-      if (c !== undefined) out[k] = c;
-    }
-    return Object.keys(out).length ? out : undefined;
-  }
-  return value;
-}
-
 export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
@@ -74,18 +55,10 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       // or: const token = await getAccessToken({ resource: audience });
 
       const res = await fetch("/api/me/retireplan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ inputs, outputs, savedAt: new Date().toISOString() }),
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ inputs, outputs, savedAt: new Date().toISOString() }),
       });
-
-      // Optionally clean the payload
-      const body = {
-        inputs: clean(inputs) ?? inputs,
-        outputs: clean(outputs) ?? outputs,
-        savedAt: new Date().toISOString(),
-      };
-
 
       const text = await res.text();
       if (!res.ok) {

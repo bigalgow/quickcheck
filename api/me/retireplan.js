@@ -5,7 +5,7 @@ const ISSUER = process.env.LOGTO_ISSUER;                 // e.g. https://auth.yo
 const MGMT_CLIENT_ID = process.env.MGMT_CLIENT_ID;
 const MGMT_CLIENT_SECRET = process.env.MGMT_CLIENT_SECRET;
 const API_AUDIENCE = process.env.API_AUDIENCE;           // optional
-const MGMT_RESOURCE = process.env.MGMT_RESOURCE || `${MGMT_BASE}/api`;
+const MGMT_RESOURCE = process.env.MGMT_RESOURCE || `${ISSUER}/api`;
 
 const jwks = createRemoteJWKSet(new URL(`${ISSUER}/oidc/jwks`));
 
