@@ -1,97 +1,48 @@
 // src/components/SaveBar.jsx
-import React, { useEffect, useState } from "react";
-import { useLogto } from "@logto/react";
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthProvider';
 
 export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal }) {
-  const {
-    isAuthenticated,
-    isLoading,
-    signIn,
-    signOut,
-    getAccessToken,
-    fetchUserInfo,
-    userInfo,
-  } = useLogto();
-
+  const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
 
-  // Load user profile once after auth (needed on some SDK versions)
-  useEffect(() => {
-    (async () => {
-      try {
-        if (isAuthenticated && !userInfo) {
-          await fetchUserInfo?.();
-        }
-      } catch (e) {
-        console.warn("fetchUserInfo failed:", e);
-      }
-    })();
-  }, [isAuthenticated, userInfo, fetchUserInfo]);
-
-  // Debug: see profile after login
   useEffect(() => {
     if (isAuthenticated) {
-      console.log("User info:", userInfo);
+      console.log('Welcome:', userInfo?.name || userInfo?.username || userInfo?.sub);
     }
   }, [isAuthenticated, userInfo]);
 
-  // ---- Login with explicit redirect to root
-  const login = async () => {
-  const redirectUri = window.location.origin; // root
-  console.log('signIn redirectUri =', redirectUri);
-  await signIn({ redirectUri, interactionMode: 'redirect', prompt: 'login' });
-  };
+  const login = () => signIn();
+  const doSignOut = () => signOut();
 
-  const doSignOut = () => signOut({ redirectUri: window.location.origin });
+  const saveProfile = async () => {
+    try {
+      setMsg(null);
+      const token = await getAccessToken(); // <-- no audience (Account API)
+      if (!token) throw new Error('Could not obtain a user access token');
 
-
-  // in src/components/SaveBar.jsx
-const saveProfile = async () => {
-  try {
-    setMsg(null);
-
-    // Account API token: NO audience param.
-    //    // Account API often returns an OPAQUE token (not a JWT), which is valid.
-   const token = await getAccessToken();
-    if (!token) {
-     throw new Error('Could not obtain a user access token');
-   }
-   
-   // Optional: quick debug (won’t leak full token)
-   console.log('Account token (opaque or JWT):', token.slice(0, 12) + '…');
-
-    const payload = {
-      custom_data: {
-        retireplan: {
-          inputs,
-          outputs,
-          savedAt: new Date().toISOString(),
+      const payload = {
+        custom_data: {
+          retireplan: { inputs, outputs, savedAt: new Date().toISOString() },
         },
-      },
-    };
+      };
 
-    const res = await fetch('https://auth.retireplan.co.uk/api/my-account/profile', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch('https://auth.retireplan.co.uk/api/my-account/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
 
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(`Save failed (${res.status}): ${text}`);
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Save failed (${res.status}): ${text}`);
+
+      setMsg('Saved to your Logto account.');
+      console.log('Account API response:', text);
+    } catch (e) {
+      console.error(e);
+      setMsg(e.message || 'Save failed.');
     }
-
-    setMsg('Saved to your Logto account.');
-    console.log('Account API response:', text);
-  } catch (e) {
-    console.error(e);
-    setMsg(e.message || 'Save failed.');
-  }
-};
-
+  };
 
 
   const exportJson = () => {
