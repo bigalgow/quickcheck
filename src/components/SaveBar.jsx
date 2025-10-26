@@ -50,12 +50,15 @@ const saveProfile = async () => {
   try {
     setMsg(null);
 
-    // Account API token: NO audience param
-    const token = await getAccessToken();
-
-    if (!token || token.split('.').length !== 3) {
-      throw new Error('Could not obtain a valid user access token');
-    }
+    // Account API token: NO audience param.
+    //    // Account API often returns an OPAQUE token (not a JWT), which is valid.
+   const token = await getAccessToken();
+    if (!token) {
+     throw new Error('Could not obtain a user access token');
+   }
+   
+   // Optional: quick debug (won’t leak full token)
+   console.log('Account token (opaque or JWT):', token.slice(0, 12) + '…');
 
     const payload = {
       custom_data: {
