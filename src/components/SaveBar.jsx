@@ -109,21 +109,6 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userInfo]);
 
-  // ---- optional: inspect current account via Account API (uses no audience)
-  const debugFetchAccount = async () => {
-    try {
-      const accToken = await getAccessToken(); // opaque or JWT; OK for Account API
-      const r = await fetch("https://auth.retireplan.co.uk/api/my-account", {
-        headers: { Authorization: `Bearer ${accToken}`, Accept: "application/json" },
-      });
-      const j = await r.json().catch(() => ({}));
-      console.log("my-account GET:", j);
-      setMsg("Fetched account. Check console.");
-    } catch (e) {
-      console.error(e);
-      setMsg("Failed to fetch account.");
-    }
-  };
 
   return (
     <div
@@ -153,18 +138,16 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
         </>
       )}
 
+      <button onClick={window.print}>Print summary</button>
+
+      <button onClick={onClearLocal}>Clear local</button>
+
       <button onClick={exportJson}>Export JSON</button>
 
       <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <input type="file" accept="application/json" onChange={importJson} />
         Import JSON
       </label>
-
-      <button onClick={debugFetchAccount}>Debug: GET account</button>
-
-      <button onClick={window.print}>Print summary</button>
-
-      <button onClick={onClearLocal}>Clear local</button>
 
       {msg && <span style={{ marginLeft: 8, color: "#0a7" }}>{msg}</span>}
     </div>

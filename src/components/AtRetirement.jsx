@@ -505,12 +505,43 @@ const TwoCol = ({ left, right }) => (
                 </FieldRow>
 
                 <FieldRow label="Date of birth">
-                  <input
-                    type="date"
-                    value={form.dateOfBirth}
-                    onChange={(e) => set({ dateOfBirth: e.target.value })}
-                    style={{ width: 170 }}
-                  />
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <Txt
+                      value={form.dateOfBirth.split('-')[2] || '01'}
+                      onCommit={(v) => {
+                        const [y, m] = form.dateOfBirth.split('-');
+                        const day = String(Math.max(1, Math.min(31, Number(v) || 1))).padStart(2, '0');
+                        set({ dateOfBirth: `${y}-${m}-${day}` });
+                      }}
+                      style={{ width: 40, textAlign: 'center' }}
+                      placeholder="DD"
+                      inputMode="numeric"
+                    />
+                    <span>/</span>
+                    <Txt
+                      value={form.dateOfBirth.split('-')[1] || '01'}
+                      onCommit={(v) => {
+                        const [y, , d] = form.dateOfBirth.split('-');
+                        const month = String(Math.max(1, Math.min(12, Number(v) || 1))).padStart(2, '0');
+                        set({ dateOfBirth: `${y}-${month}-${d}` });
+                      }}
+                      style={{ width: 40, textAlign: 'center' }}
+                      placeholder="MM"
+                      inputMode="numeric"
+                    />
+                    <span>/</span>
+                    <Txt
+                      value={form.dateOfBirth.split('-')[0] || '1965'}
+                      onCommit={(v) => {
+                        const [, m, d] = form.dateOfBirth.split('-');
+                        const year = Math.max(1900, Math.min(2100, Number(v) || 1965));
+                        set({ dateOfBirth: `${year}-${m}-${d}` });
+                      }}
+                      style={{ width: 60, textAlign: 'center' }}
+                      placeholder="YYYY"
+                      inputMode="numeric"
+                    />
+                  </div>
                 </FieldRow>
 
                 <FieldRow
