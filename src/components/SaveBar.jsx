@@ -54,9 +54,13 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       }
 
       const data = await res.json();
+      console.log("Received data from API:", data);
       if (data && data.inputs) {
         onImportJson?.(data);
         console.log("Loaded saved data from account");
+        setMsg("Loaded saved data");
+      } else {
+        console.log("No saved data found or data format invalid");
       }
     } catch (e) {
       console.error("Load failed:", e);

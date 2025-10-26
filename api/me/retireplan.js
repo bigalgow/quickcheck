@@ -70,7 +70,8 @@ export default async function handler(req, res) {
     const currentRP = current.retirePlan ?? null;
 
     if (req.method === 'GET') {
-      return res.status(200).json(currentRP);
+      // Return the latest snapshot if it exists
+      return res.status(200).json(currentRP?.latest ?? null);
     }
 
     if (req.method === 'POST') {
