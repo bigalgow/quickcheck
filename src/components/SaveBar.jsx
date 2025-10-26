@@ -1,6 +1,6 @@
 // src/components/SaveBar.jsx
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../auth/AuthProvider';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
 
 export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
@@ -8,7 +8,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Welcome:', userInfo?.name || userInfo?.username || userInfo?.sub);
+      console.log('Signed in as:', userInfo?.name || userInfo?.username || userInfo?.sub);
     }
   }, [isAuthenticated, userInfo]);
 
@@ -18,7 +18,8 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   const saveProfile = async () => {
     try {
       setMsg(null);
-      const token = await getAccessToken(); // <-- no audience (Account API)
+      // Account API token: opaque or JWT — both valid; don’t require JWT shape
+      const token = await getAccessToken();
       if (!token) throw new Error('Could not obtain a user access token');
 
       const payload = {
@@ -43,7 +44,6 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       setMsg(e.message || 'Save failed.');
     }
   };
-
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ inputs, outputs }, null, 2)], {
@@ -72,21 +72,18 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 8,
-        alignItems: "center",
-        flexWrap: "wrap",
-        marginBottom: 8,
-      }}
-      className="no-print"
-    >
+    <div className="no-print" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
       {!isAuthenticated ? (
-        <button disabled={isLoading} onClick={login}>
-          {isLoading ? "Loading…" : "Login to save"}
-        </button>
+        <button disabled={loading} onClick={login}>{loading ? "Loading…" : "Login to save"}</button>
       ) : (
+        <>
+          <span style={{ marginRight: 6 }}>
+            Welcome{userInfo?.name ? `, ${userInfo.name}` : userInfo?.username ? `, ${userInfo.username}` : "!"}
+          </span>
+          <button onClick={saveProfile} disabled={loading}>Save profile</button>
+          <button onClick={doSignOut} disabled={loading}>Sign out</button>
+        </>
+      )} (
         <>
           {/* Greeting */}
           <span style={{ marginRight: 6 }}>

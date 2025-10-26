@@ -1,3 +1,4 @@
+// src/auth/AuthProvider.jsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { getLogto } from './logtoClient';
 
@@ -8,56 +9,37 @@ export default function AuthProvider({ children }) {
   const logto = useMemo(() => getLogto(), []);
   const [state, setState] = useState({ isAuthenticated: false, userInfo: null, loading: true });
 
-  // 1) finish callback if ?code&state present
   useEffect(() => {
     (async () => {
       try {
+        // If we arrived with ?code&state, finish the code→token exchange.
         const qs = new URLSearchParams(window.location.search);
         if (qs.has('code') && qs.has('state')) {
           await logto.handleSignInCallback(window.location.href);
-          // clean URL
+          // Clean URL so we don’t retry
           window.history.replaceState({}, document.title, window.location.origin);
         }
       } catch (e) {
         console.error('[logto] handleSignInCallback failed:', e);
       } finally {
-        // after attempting callback, sync auth state
+        // Sync current auth state + profile
         try {
-          const isAuthed = await logto.isAuthenticated();
-          let user = null;
-          if (isAuthed) {
-            // fetch claims/profile
-            user = await logto.fetchUserInfo();
-          }
-          setState({ isAuthenticated: isAuthed, userInfo: user, loading: false });
+          const authed = await logto.isAuthenticated();
+          const profile = authed ? await logto.fetchUserInfo() : null;
+          setState({ isAuthenticated: authed, userInfo: profile, loading: false });
         } catch (e) {
           console.error('[logto] status sync failed:', e);
-          setState((s) => ({ ...s, loading: false }));
+          setState(s => ({ ...s, loading: false }));
         }
       }
     })();
   }, [logto]);
 
-  const signIn = async () => {
-    await logto.signIn(window.location.origin); // redirect to root (registered in console)
-  };
+  const signIn = () => logto.signIn(window.location.origin);   // must match Redirect URIs in Logto
+  const signOut = () => logto.signOut(window.location.origin); // must match Post sign-out Redirect URIs
 
-  const signOut = async () => {
-    await logto.signOut(window.location.origin); // must be in Post sign-out URIs
-    // after redirect back, the effect above will re-sync and show logged-out UI
-  };
+  const getAccessToken = () => logto.getAccessToken(); // Option A (Account API): no audience
 
-  const getAccessToken = async () => {
-    // Option A: Account API token (opaque is fine)
-    return logto.getAccessToken();
-  };
-
-  const value = {
-    ...state,
-    signIn,
-    signOut,
-    getAccessToken,
-  };
-
+  const value = { ...state, signIn, signOut, getAccessToken };
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
