@@ -6,12 +6,6 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log("Signed in as:", userInfo?.name || userInfo?.username || userInfo?.sub);
-    }
-  }, [isAuthenticated, userInfo]);
-
   const login = () => signIn();
   const doSignOut = () => signOut();
 
@@ -39,6 +33,35 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       setMsg("Invalid JSON file.");
     }
     evt.target.value = "";
+  };
+
+  // ---- load saved data from backend
+  const loadProfile = async () => {
+    try {
+      const audience = import.meta.env.VITE_API_AUDIENCE;
+      if (!audience) throw new Error("Missing VITE_API_AUDIENCE");
+
+      const token = await getAccessToken(audience);
+
+      const res = await fetch("/api/me/retireplan", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        console.error("Load API error:", res.status, await res.text());
+        return; // Don't show error to user on auto-load
+      }
+
+      const data = await res.json();
+      if (data && data.inputs) {
+        onImportJson?.(data);
+        console.log("Loaded saved data from account");
+      }
+    } catch (e) {
+      console.error("Load failed:", e);
+      // Don't show error to user on auto-load
+    }
   };
 
   // ---- main: save via your Vercel backend (Management API)
@@ -72,6 +95,15 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       setMsg(e.message || "Save failed.");
     }
   };
+
+  // Auto-load saved data when user logs in
+  useEffect(() => {
+    if (isAuthenticated && userInfo) {
+      console.log("Signed in as:", userInfo?.name || userInfo?.username || userInfo?.sub);
+      loadProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, userInfo]);
 
   // ---- optional: inspect current account via Account API (uses no audience)
   const debugFetchAccount = async () => {
