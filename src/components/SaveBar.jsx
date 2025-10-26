@@ -8,42 +8,12 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
 
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Signed in as:', userInfo?.name || userInfo?.username || userInfo?.sub);
+      console.log("Signed in as:", userInfo?.name || userInfo?.username || userInfo?.sub);
     }
   }, [isAuthenticated, userInfo]);
 
   const login = () => signIn();
   const doSignOut = () => signOut();
-
-  const saveProfile = async () => {
-    try {
-      setMsg(null);
-      // Account API token: opaque or JWT — both valid; don’t require JWT shape
-      const token = await getAccessToken();
-      if (!token) throw new Error('Could not obtain a user access token');
-
-      const payload = {
-        custom_data: {
-          retireplan: { inputs, outputs, savedAt: new Date().toISOString() },
-        },
-      };
-
-      const res = await fetch('https://auth.retireplan.co.uk/api/my-account/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await res.text();
-      if (!res.ok) throw new Error(`Save failed (${res.status}): ${text}`);
-
-      setMsg('Saved to your Logto account.');
-      console.log('Account API response:', text);
-    } catch (e) {
-      console.error(e);
-      setMsg(e.message || 'Save failed.');
-    }
-  };
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify({ inputs, outputs }, null, 2)], {
@@ -71,21 +41,52 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
     evt.target.value = "";
   };
 
+  const saveProfile = async () => {
+    try {
+      setMsg(null);
+
+      // Option A (Account API): get opaque OR JWT access token (no audience)
+      const token = await getAccessToken();
+      if (!token) throw new Error("Could not obtain a user access token");
+
+      const payload = {
+        custom_data: {
+          retireplan: {
+            inputs,
+            outputs,
+            savedAt: new Date().toISOString(),
+          },
+        },
+      };
+
+      const res = await fetch("https://auth.retireplan.co.uk/api/my-account/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Save failed (${res.status}): ${text}`);
+
+      setMsg("Saved to your Logto account.");
+      console.log("Account API response:", text);
+    } catch (e) {
+      console.error(e);
+      setMsg(e.message || "Save failed.");
+    }
+  };
+
   return (
-    <div className="no-print" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+    <div
+      className="no-print"
+      style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}
+    >
       {!isAuthenticated ? (
-        <button disabled={loading} onClick={login}>{loading ? "Loading…" : "Login to save"}</button>
+        <button disabled={loading} onClick={login}>
+          {loading ? "Loading…" : "Login to save"}
+        </button>
       ) : (
         <>
-          <span style={{ marginRight: 6 }}>
-            Welcome{userInfo?.name ? `, ${userInfo.name}` : userInfo?.username ? `, ${userInfo.username}` : "!"}
-          </span>
-          <button onClick={saveProfile} disabled={loading}>Save profile</button>
-          <button onClick={doSignOut} disabled={loading}>Sign out</button>
-        </>
-      )} (
-        <>
-          {/* Greeting */}
           <span style={{ marginRight: 6 }}>
             Welcome
             {userInfo?.name
@@ -94,12 +95,10 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
               ? `, ${userInfo.username}`
               : "!"}
           </span>
-
-          {/* Authenticated actions */}
-          <button onClick={saveProfile} disabled={isLoading}>
+          <button onClick={saveProfile} disabled={loading}>
             Save profile
           </button>
-          <button onClick={doSignOut} disabled={isLoading}>
+          <button onClick={doSignOut} disabled={loading}>
             Sign out
           </button>
         </>
