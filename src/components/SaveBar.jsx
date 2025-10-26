@@ -59,11 +59,15 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
         },
       };
 
-      const res = await fetch("https://auth.retireplan.co.uk/api/my-account/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch("https://auth.retireplan.co.uk/api/my-account", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      custom_data: {
+        retireplan: { inputs, outputs, savedAt: new Date().toISOString() }
+      }
+    }),
+  });
 
       const text = await res.text();
       if (!res.ok) throw new Error(`Save failed (${res.status}): ${text}`);
