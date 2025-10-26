@@ -2,6 +2,25 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 
+// (Optional) helper you can keep for future payload cleaning if needed
+function clean(value) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "number" && Number.isNaN(value)) return undefined;
+  if (Array.isArray(value)) {
+    const arr = value.map(clean).filter((v) => v !== undefined);
+    return arr.length ? arr : undefined;
+  }
+  if (typeof value === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      const c = clean(v);
+      if (c !== undefined) out[k] = c;
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
+  return value;
+}
+
 export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
@@ -41,42 +60,59 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
     evt.target.value = "";
   };
 
+  // ---- main: save via your Vercel backend (Management API)
   const saveProfile = async () => {
     try {
       setMsg(null);
 
-      // Option A (Account API): get opaque OR JWT access token (no audience)
-      const token = await getAccessToken();
-      if (!token) throw new Error("Could not obtain a user access token");
+      // Get an API audience token the backend will verify
+     const audience = import.meta.env.VITE_API_AUDIENCE; // should be https://api.retireplan
+      if (!audience) throw new Error("Missing VITE_API_AUDIENCE");
 
-      const payload = {
-        custom_data: {
-          retireplan: {
-            inputs,
-            outputs,
-            savedAt: new Date().toISOString(),
-          },
-        },
+      // either signature depending on @logto/browser version:
+      const token = await getAccessToken(audience); 
+      // or: const token = await getAccessToken({ resource: audience });
+
+      const res = await fetch("/api/me/retireplan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ inputs, outputs, savedAt: new Date().toISOString() }),
+      });
+
+      // Optionally clean the payload
+      const body = {
+        inputs: clean(inputs) ?? inputs,
+        outputs: clean(outputs) ?? outputs,
+        savedAt: new Date().toISOString(),
       };
 
-      const res = await fetch("https://auth.retireplan.co.uk/api/my-account", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      custom_data: {
-        retireplan: { inputs, outputs, savedAt: new Date().toISOString() }
-      }
-    }),
-  });
 
       const text = await res.text();
-      if (!res.ok) throw new Error(`Save failed (${res.status}): ${text}`);
+      if (!res.ok) {
+        console.error("Save API error:", res.status, text);
+        throw new Error(`Save failed (${res.status}): ${text}`);
+      }
 
-      setMsg("Saved to your Logto account.");
-      console.log("Account API response:", text);
+      setMsg("Saved to your account.");
     } catch (e) {
       console.error(e);
       setMsg(e.message || "Save failed.");
+    }
+  };
+
+  // ---- optional: inspect current account via Account API (uses no audience)
+  const debugFetchAccount = async () => {
+    try {
+      const accToken = await getAccessToken(); // opaque or JWT; OK for Account API
+      const r = await fetch("https://auth.retireplan.co.uk/api/my-account", {
+        headers: { Authorization: `Bearer ${accToken}`, Accept: "application/json" },
+      });
+      const j = await r.json().catch(() => ({}));
+      console.log("my-account GET:", j);
+      setMsg("Fetched account. Check console.");
+    } catch (e) {
+      console.error(e);
+      setMsg("Failed to fetch account.");
     }
   };
 
@@ -100,7 +136,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
               : "!"}
           </span>
           <button onClick={saveProfile} disabled={loading}>
-            Save profile
+            Save data
           </button>
           <button onClick={doSignOut} disabled={loading}>
             Sign out
@@ -114,6 +150,8 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
         <input type="file" accept="application/json" onChange={importJson} />
         Import JSON
       </label>
+
+      <button onClick={debugFetchAccount}>Debug: GET account</button>
 
       <button onClick={window.print}>Print summary</button>
 
