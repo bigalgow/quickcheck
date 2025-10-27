@@ -1,0 +1,95 @@
+/* AtRetirement.css - Mobile Responsive Styles */
+
+/* Desktop defaults - these match the inline styles in the component */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.core-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+/* Mobile responsive: tablets and below */
+@media (max-width: 768px) {
+  /* Stack two-column layouts vertically */
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* CORE ASSUMPTIONS: stack Your Details above Default Assumptions */
+  .core-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Reduce padding on CORE boxes for mobile */
+  .core-grid > div {
+    padding: 12px !important;
+  }
+
+  /* Field rows: labels above inputs */
+  .field-row {
+    grid-template-columns: 1fr !important;
+    gap: 4px;
+  }
+
+  /* Add some spacing between label and input when stacked */
+  .field-row label,
+  .field-row > div:first-child {
+    margin-bottom: 4px;
+  }
+
+  /* Ensure input containers align left, not center */
+  .field-row > div:last-child {
+    display: block !important;
+    width: 100%;
+  }
+
+  /* Fix flex containers inside field rows to align left on mobile */
+  .field-row > div:last-child > div {
+    justify-content: flex-start !important;
+  }
+
+  /* Ensure all sections follow mobile layout */
+  .card-body .field-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .card-body .field-row > div:last-child {
+    display: block !important;
+    width: 100%;
+  }
+}
+
+/* Mobile portrait: narrow screens */
+@media (max-width: 480px) {
+  /* Tighter spacing on very small screens */
+  .core-grid {
+    gap: 12px;
+  }
+
+  .two-col {
+    gap: 8px;
+  }
+
+  /* Ensure form inputs don't overflow */
+  .field-row input[type="text"],
+  .field-row input[type="number"],
+  .field-row select {
+    max-width: 100%;
+  }
+}

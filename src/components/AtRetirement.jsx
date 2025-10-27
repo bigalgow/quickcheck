@@ -7,6 +7,7 @@ import {
   TAX_2025_SCOTLAND,
 } from "../utils/tax.js";
 import { calculateStatePensionAge, formatStatePensionAge } from "../utils/statePensionAge.js";
+import "./AtRetirement.css";
 
 import SaveBar from "./SaveBar.jsx";
 import { loadAutosave, saveAutosave, clearAutosave } from "../utils/persist.js";
@@ -467,13 +468,19 @@ export default function AtRetirement() {
     );
   };
   // Force the layout even if CSS helper classes aren't present
-const styles = {
-  twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' },
-  formRow: { display: 'grid', gridTemplateColumns: '220px 1fr', gap: 8, alignItems: 'baseline', marginBottom: 6 },
+// Helper functions for percentage <-> decimal conversion
+const toPercent = (decimal) => {
+  const num = parseFloat(decimal);
+  return isNaN(num) ? '' : String(num * 100);
+};
+
+const fromPercent = (percent) => {
+  const num = parseFloat(percent);
+  return isNaN(num) ? '0' : String(num / 100);
 };
 
 const FieldRow = ({ label, children, help }) => (
-  <div style={styles.formRow}>
+  <div className="field-row">
     <div style={{ opacity: 0.9, textAlign: 'left' }}>
       {label}
       {help && <HelpToggle text={help} />}
@@ -483,9 +490,20 @@ const FieldRow = ({ label, children, help }) => (
 );
 
 const TwoCol = ({ left, right }) => (
-  <div style={styles.twoCol}>
+  <div className="two-col">
     {left}
     {right}
+  </div>
+);
+
+const SectionBox = ({ title, titleColor = "#0066cc", children }) => (
+  <div style={{ background: '#f8f9fa', padding: 16, borderRadius: 8, border: '1px solid #dee2e6', marginBottom: 12 }}>
+    {title && (
+      <div style={{ marginBottom: 16, fontWeight: "bold", fontSize: 15, color: titleColor }}>
+        {title}
+      </div>
+    )}
+    {children}
   </div>
 );
 
@@ -696,229 +714,231 @@ const HelpToggle = ({ text }) => {
           openFlag={open.core}
           onToggle={() => toggle("core")}
         >
-          <TwoCol
-            left={
-              <>
-                <div style={{ marginBottom: 12, fontWeight: "bold", fontSize: 15, color: "#0066cc" }}>
-                  Your Details (Required)
-                </div>
+          <div className="core-grid">
+            {/* Left Column: User Details */}
+            <div style={{ background: '#f8f9fa', padding: 16, borderRadius: 8, border: '1px solid #dee2e6' }}>
+              <div style={{ marginBottom: 16, fontWeight: "bold", fontSize: 15, color: "#0066cc" }}>
+                Your Details (Required)
+              </div>
 
-                <FieldRow
-                  label="Date of birth"
-                  help="Your date of birth is used to calculate your State Pension Age and years to retirement."
-                >
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <Txt
-                      value={form.dateOfBirth.split('-')[2] || '01'}
-                      onCommit={(v) => {
-                        const [y, m] = form.dateOfBirth.split('-');
-                        const day = String(Math.max(1, Math.min(31, Number(v) || 1))).padStart(2, '0');
-                        set({ dateOfBirth: `${y}-${m}-${day}` });
-                      }}
-                      style={{ width: 40, textAlign: 'center' }}
-                      placeholder="DD"
-                      inputMode="numeric"
-                    />
-                    <span>/</span>
-                    <Txt
-                      value={form.dateOfBirth.split('-')[1] || '01'}
-                      onCommit={(v) => {
-                        const [y, , d] = form.dateOfBirth.split('-');
-                        const month = String(Math.max(1, Math.min(12, Number(v) || 1))).padStart(2, '0');
-                        set({ dateOfBirth: `${y}-${month}-${d}` });
-                      }}
-                      style={{ width: 40, textAlign: 'center' }}
-                      placeholder="MM"
-                      inputMode="numeric"
-                    />
-                    <span>/</span>
-                    <Txt
-                      value={form.dateOfBirth.split('-')[0] || '1965'}
-                      onCommit={(v) => {
-                        const [, m, d] = form.dateOfBirth.split('-');
-                        const year = Math.max(1900, Math.min(2100, Number(v) || 1965));
-                        set({ dateOfBirth: `${year}-${m}-${d}` });
-                      }}
-                      style={{ width: 60, textAlign: 'center' }}
-                      placeholder="YYYY"
-                      inputMode="numeric"
-                    />
-                  </div>
-                </FieldRow>
-
-                <FieldRow
-                  label={`Retirement age (years) ${
-                    form.alreadyRetired ? "(locked)" : ""
-                  }`}
-                  help="The age at which you plan to retire. This can be earlier or later than your State Pension Age."
-                >
+              <FieldRow
+                label="Date of birth"
+                help="Your date of birth is used to calculate your State Pension Age and years to retirement."
+              >
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <Txt
-                    value={form.retirementAge}
-                    onCommit={(v) => set({ retirementAge: v })}
-                    disabled={form.alreadyRetired}
-                    style={{ width: 100 }}
+                    value={form.dateOfBirth.split('-')[2] || '01'}
+                    onCommit={(v) => {
+                      const [y, m] = form.dateOfBirth.split('-');
+                      const day = String(Math.max(1, Math.min(31, Number(v) || 1))).padStart(2, '0');
+                      set({ dateOfBirth: `${y}-${m}-${day}` });
+                    }}
+                    style={{ width: 40, textAlign: 'center' }}
+                    placeholder="DD"
                     inputMode="numeric"
                   />
-                </FieldRow>
-
-                <FieldRow label="Already retired?">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={form.alreadyRetired}
-                      onChange={(e) =>
-                        set({ alreadyRetired: e.target.checked })
-                      }
-                    />{" "}
-                    Yes
-                  </label>
-                </FieldRow>
-
-                <FieldRow label="I have a DB pension">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={form.hasDbPension}
-                      onChange={(e) => set({ hasDbPension: e.target.checked })}
-                    />{" "}
-                    Yes
-                  </label>
-                </FieldRow>
-
-                <FieldRow
-                  label="Spend target (annual) (£)"
-                  help="Your desired annual spending in retirement, in today's money. This will be adjusted for inflation."
-                >
+                  <span>/</span>
                   <Txt
-                    value={form.desiredSpendAnnual}
-                    onCommit={(v) => set({ desiredSpendAnnual: v })}
-                    style={{ width: 140 }}
+                    value={form.dateOfBirth.split('-')[1] || '01'}
+                    onCommit={(v) => {
+                      const [y, , d] = form.dateOfBirth.split('-');
+                      const month = String(Math.max(1, Math.min(12, Number(v) || 1))).padStart(2, '0');
+                      set({ dateOfBirth: `${y}-${month}-${d}` });
+                    }}
+                    style={{ width: 40, textAlign: 'center' }}
+                    placeholder="MM"
                     inputMode="numeric"
                   />
-                </FieldRow>
-              </>
-            }
-            right={
-              <>
-                <div style={{ marginBottom: 12, fontWeight: "bold", fontSize: 15, color: "#666" }}>
-                  Default Assumptions (Optional)
+                  <span>/</span>
+                  <Txt
+                    value={form.dateOfBirth.split('-')[0] || '1965'}
+                    onCommit={(v) => {
+                      const [, m, d] = form.dateOfBirth.split('-');
+                      const year = Math.max(1900, Math.min(2100, Number(v) || 1965));
+                      set({ dateOfBirth: `${year}-${m}-${d}` });
+                    }}
+                    style={{ width: 60, textAlign: 'center' }}
+                    placeholder="YYYY"
+                    inputMode="numeric"
+                  />
                 </div>
+              </FieldRow>
 
-                <FieldRow label="Region">
-                  <select
-                    value={form.region}
-                    onChange={(e) => set({ region: e.target.value })}
-                  >
-                    <option value="EWNI">England/Wales/Northern Ireland</option>
-                    <option value="Scotland">Scotland</option>
-                  </select>
-                </FieldRow>
-
-                <FieldRow
-                  label="State Pension Age"
-                  help="Automatically calculated based on your date of birth using current UK State Pension Age rules."
-                >
-                  <div style={{ fontWeight: "bold", color: "#666" }}>
-                    {formatStatePensionAge(calculateStatePensionAge(form.dateOfBirth))}
-                  </div>
-                </FieldRow>
-
-                <FieldRow
-                  label="Inflation assumption"
-                  help="Expected annual inflation rate. Used to project future values in today's money. Default is 2.5%."
-                >
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <Txt
-                      value={form.inflationAssumption}
-                      onCommit={(v) => set({ inflationAssumption: v })}
-                      style={{ width: 100 }}
-                      inputMode="decimal"
-                    />
-                    <span>%</span>
-                  </div>
-                </FieldRow>
-
-                <div style={{ marginTop: 16, marginBottom: 8, fontWeight: "bold", fontSize: 14 }}>
-                  Growth Rates
-                </div>
-
-                <FieldRow
-                  label="DC pension growth"
-                  help="Expected annual growth rate for your DC pension pot before retirement. Default is 4%."
-                >
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <Txt
-                      value={form.growthAssumption}
-                      onCommit={(v) => set({ growthAssumption: v })}
-                      style={{ width: 100 }}
-                      inputMode="decimal"
-                    />
-                    <span>%</span>
-                  </div>
-                </FieldRow>
-
-                <FieldRow
-                  label="ISA growth"
-                  help="Expected annual growth rate for your ISA investments. Default is 3%."
-                >
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <Txt
-                      value={form.isaRate}
-                      onCommit={(v) => set({ isaRate: v })}
-                      style={{ width: 100 }}
-                      inputMode="decimal"
-                    />
-                    <span>%</span>
-                  </div>
-                </FieldRow>
-
-                <FieldRow
-                  label="Taxable savings growth"
-                  help="Expected annual growth rate for your taxable savings accounts. Default is 3%."
-                >
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <Txt
-                      value={form.taxableSavingsRate}
-                      onCommit={(v) => set({ taxableSavingsRate: v })}
-                      style={{ width: 100 }}
-                      inputMode="decimal"
-                    />
-                    <span>%</span>
-                  </div>
-                </FieldRow>
-              </>
-            }
-          />
-        </Section>
-
-        {/* DC PENSIONS */}
-        <Section title="DC PENSIONS" sectionKey="dc" openFlag={open.dc} onToggle={() => toggle("dc")}>
-          <TwoCol
-            left={
-              <FieldRow label="DC pot now (£)">
+              <FieldRow
+                label={`Retirement age (years) ${
+                  form.alreadyRetired ? "(locked)" : ""
+                }`}
+                help="The age at which you plan to retire. This can be earlier or later than your State Pension Age."
+              >
                 <Txt
-                  value={form.dcPotNow}
-                  onCommit={(v) => set({ dcPotNow: v })}
-                  style={{ width: 160 }}
+                  value={form.retirementAge}
+                  onCommit={(v) => set({ retirementAge: v })}
+                  disabled={form.alreadyRetired}
+                  style={{ width: 100 }}
                   inputMode="numeric"
                 />
               </FieldRow>
-            }
-            right={
-              <FieldRow label="Take 25% tax-free from DC?">
+
+              <FieldRow label="Already retired?">
                 <label>
                   <input
                     type="checkbox"
-                    checked={form.takeDCTaxFree25}
-                    onChange={(e) => set({ takeDCTaxFree25: e.target.checked })}
+                    checked={form.alreadyRetired}
+                    onChange={(e) =>
+                      set({ alreadyRetired: e.target.checked })
+                    }
                   />{" "}
                   Yes
                 </label>
               </FieldRow>
-            }
-          />
 
-          <FieldRow label="Still contributing to a DC pension?">
+              <FieldRow label="I have a DB pension">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={form.hasDbPension}
+                    onChange={(e) => set({ hasDbPension: e.target.checked })}
+                  />{" "}
+                  Yes
+                </label>
+              </FieldRow>
+
+              <FieldRow
+                label="Spend target (annual) (£)"
+                help="Your desired annual spending in retirement, in today's money. This will be adjusted for inflation."
+              >
+                <Txt
+                  value={form.desiredSpendAnnual}
+                  onCommit={(v) => set({ desiredSpendAnnual: v })}
+                  style={{ width: 140 }}
+                  inputMode="numeric"
+                />
+              </FieldRow>
+            </div>
+
+            {/* Right Column: Default Assumptions */}
+            <div style={{ background: '#f8f9fa', padding: 16, borderRadius: 8, border: '1px solid #dee2e6' }}>
+              <div style={{ marginBottom: 16, fontWeight: "bold", fontSize: 15, color: "#666" }}>
+                Default Assumptions (Optional)
+              </div>
+
+              <FieldRow label="Region">
+                <select
+                  value={form.region}
+                  onChange={(e) => set({ region: e.target.value })}
+                >
+                  <option value="EWNI">England/Wales/Northern Ireland</option>
+                  <option value="Scotland">Scotland</option>
+                </select>
+              </FieldRow>
+
+              <FieldRow
+                label="State Pension Age"
+                help="Automatically calculated based on your date of birth using current UK State Pension Age rules."
+              >
+                <div style={{ fontWeight: "bold", color: "#666" }}>
+                  {formatStatePensionAge(calculateStatePensionAge(form.dateOfBirth))}
+                </div>
+              </FieldRow>
+
+              <FieldRow
+                label="Inflation assumption"
+                help="Expected annual inflation rate. Used to project future values in today's money. Default is 2.5%."
+              >
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <Txt
+                    value={toPercent(form.inflationAssumption)}
+                    onCommit={(v) => set({ inflationAssumption: fromPercent(v) })}
+                    style={{ width: 100 }}
+                    inputMode="decimal"
+                  />
+                  <span>%</span>
+                </div>
+              </FieldRow>
+
+              <div style={{ marginTop: 16, marginBottom: 8, fontWeight: "bold", fontSize: 14 }}>
+                Growth Rates
+              </div>
+
+              <FieldRow
+                label="DC pension growth"
+                help="Expected annual growth rate for your DC pension pot before retirement. Default is 4%."
+              >
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <Txt
+                    value={toPercent(form.growthAssumption)}
+                    onCommit={(v) => set({ growthAssumption: fromPercent(v) })}
+                    style={{ width: 100 }}
+                    inputMode="decimal"
+                  />
+                  <span>%</span>
+                </div>
+              </FieldRow>
+
+              <FieldRow
+                label="ISA growth"
+                help="Expected annual growth rate for your ISA investments. Default is 3%."
+              >
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <Txt
+                    value={toPercent(form.isaRate)}
+                    onCommit={(v) => set({ isaRate: fromPercent(v) })}
+                    style={{ width: 100 }}
+                    inputMode="decimal"
+                  />
+                  <span>%</span>
+                </div>
+              </FieldRow>
+
+              <FieldRow
+                label="Taxable savings growth"
+                help="Expected annual growth rate for your taxable savings accounts. Default is 3%."
+              >
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <Txt
+                    value={toPercent(form.taxableSavingsRate)}
+                    onCommit={(v) => set({ taxableSavingsRate: fromPercent(v) })}
+                    style={{ width: 100 }}
+                    inputMode="decimal"
+                  />
+                  <span>%</span>
+                </div>
+              </FieldRow>
+            </div>
+          </div>
+        </Section>
+
+        {/* DC PENSIONS */}
+        <Section title="DC PENSIONS" sectionKey="dc" openFlag={open.dc} onToggle={() => toggle("dc")}>
+          <SectionBox title="Current DC Pension">
+            <TwoCol
+              left={
+                <FieldRow label="DC pot now (£)">
+                  <Txt
+                    value={form.dcPotNow}
+                    onCommit={(v) => set({ dcPotNow: v })}
+                    style={{ width: 160 }}
+                    inputMode="numeric"
+                  />
+                </FieldRow>
+              }
+              right={
+                <FieldRow label="Take 25% tax-free from DC?">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={form.takeDCTaxFree25}
+                      onChange={(e) => set({ takeDCTaxFree25: e.target.checked })}
+                    />{" "}
+                    Yes
+                  </label>
+                </FieldRow>
+              }
+            />
+          </SectionBox>
+
+          <SectionBox title="Future Contributions">
+            <FieldRow label="Still contributing to a DC pension?">
             <label>
               <input
                 type="checkbox"
@@ -973,8 +993,8 @@ const HelpToggle = ({ text }) => {
                     left={
                       <FieldRow label="Your contribution (%)">
                         <Txt
-                          value={form.eePct}
-                          onCommit={(v) => set({ eePct: v })}
+                          value={toPercent(form.eePct)}
+                          onCommit={(v) => set({ eePct: fromPercent(v) })}
                           style={{ width: 100 }}
                           inputMode="decimal"
                         />
@@ -983,8 +1003,8 @@ const HelpToggle = ({ text }) => {
                     right={
                       <FieldRow label="Employer contribution (%)">
                         <Txt
-                          value={form.erPct}
-                          onCommit={(v) => set({ erPct: v })}
+                          value={toPercent(form.erPct)}
+                          onCommit={(v) => set({ erPct: fromPercent(v) })}
                           style={{ width: 100 }}
                           inputMode="decimal"
                         />
@@ -1018,30 +1038,33 @@ const HelpToggle = ({ text }) => {
               )}
             </>
           )}
+          </SectionBox>
 
-          <FieldRow label={form.useAnnuity ? "Annuity rate" : "Drawdown rate"}>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <Txt
-                value={form.useAnnuity ? form.annuityRate : form.drawdownRate}
-                onCommit={(v) =>
-                  set(form.useAnnuity ? { annuityRate: v } : { drawdownRate: v })
-                }
-                style={{ width: 90 }}
-                inputMode="decimal"
-              />
-              <span>%</span>
-            </div>
-          </FieldRow>
-          <FieldRow label="">
-            <label>
-              <input
-                type="checkbox"
-                checked={form.useAnnuity}
-                onChange={(e) => set({ useAnnuity: e.target.checked })}
-              />{" "}
-              Use annuity (instead of drawdown)
-            </label>
-          </FieldRow>
+          <SectionBox title="Withdrawal Method">
+            <FieldRow label={form.useAnnuity ? "Annuity rate" : "Drawdown rate"}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <Txt
+                  value={toPercent(form.useAnnuity ? form.annuityRate : form.drawdownRate)}
+                  onCommit={(v) =>
+                    set(form.useAnnuity ? { annuityRate: fromPercent(v) } : { drawdownRate: fromPercent(v) })
+                  }
+                  style={{ width: 90 }}
+                  inputMode="decimal"
+                />
+                <span>%</span>
+              </div>
+            </FieldRow>
+            <FieldRow label="">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.useAnnuity}
+                  onChange={(e) => set({ useAnnuity: e.target.checked })}
+                />{" "}
+                Use annuity (instead of drawdown)
+              </label>
+            </FieldRow>
+          </SectionBox>
 
           <MiniHelp>
             DC pot is projected with contributions; 25% PCLS applies but total
@@ -1231,69 +1254,71 @@ const HelpToggle = ({ text }) => {
           openFlag={open.savings}
           onToggle={() => toggle("savings")}
         >
-          <FieldRow label="ISA">
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                alignItems: "baseline",
-              }}
-            >
-              <span>Balance £</span>
-              <Txt
-                value={form.isaBalance}
-                onCommit={(v) => set({ isaBalance: v })}
-                style={{ width: 110 }}
-                inputMode="numeric"
-              />
-              <span>Add/yr £</span>
-              <Txt
-                value={form.isaAddPerYear}
-                onCommit={(v) => set({ isaAddPerYear: v })}
-                style={{ width: 110 }}
-                inputMode="numeric"
-              />
-            </div>
-          </FieldRow>
+          <SectionBox>
+            <FieldRow label="ISA">
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  alignItems: "baseline",
+                }}
+              >
+                <span>Balance £</span>
+                <Txt
+                  value={form.isaBalance}
+                  onCommit={(v) => set({ isaBalance: v })}
+                  style={{ width: 110 }}
+                  inputMode="numeric"
+                />
+                <span>Add/yr £</span>
+                <Txt
+                  value={form.isaAddPerYear}
+                  onCommit={(v) => set({ isaAddPerYear: v })}
+                  style={{ width: 110 }}
+                  inputMode="numeric"
+                />
+              </div>
+            </FieldRow>
 
-          <FieldRow label="Taxable savings">
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                alignItems: "baseline",
-              }}
-            >
-              <span>Balance £</span>
-              <Txt
-                value={form.taxableSavingsBalance}
-                onCommit={(v) => set({ taxableSavingsBalance: v })}
-                style={{ width: 110 }}
-                inputMode="numeric"
-              />
-              <span>Add/yr £</span>
-              <Txt
-                value={form.taxableSavingsAddPerYear}
-                onCommit={(v) => set({ taxableSavingsAddPerYear: v })}
-                style={{ width: 110 }}
-                inputMode="numeric"
-              />
-            </div>
-          </FieldRow>
+            <FieldRow label="Taxable savings">
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  alignItems: "baseline",
+                }}
+              >
+                <span>Balance £</span>
+                <Txt
+                  value={form.taxableSavingsBalance}
+                  onCommit={(v) => set({ taxableSavingsBalance: v })}
+                  style={{ width: 110 }}
+                  inputMode="numeric"
+                />
+                <span>Add/yr £</span>
+                <Txt
+                  value={form.taxableSavingsAddPerYear}
+                  onCommit={(v) => set({ taxableSavingsAddPerYear: v })}
+                  style={{ width: 110 }}
+                  inputMode="numeric"
+                />
+              </div>
+            </FieldRow>
 
-          <FieldRow label="Other income (now)">
-            <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-              <span>Annual £</span>
-              <Txt
-                value={form.otherIncomeNow}
-                onCommit={(v) => set({ otherIncomeNow: v })}
-                style={{ width: 140 }}
-                inputMode="numeric"
-              />
-            </div>
-          </FieldRow>
+            <FieldRow label="Other income (now)">
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                <span>Annual £</span>
+                <Txt
+                  value={form.otherIncomeNow}
+                  onCommit={(v) => set({ otherIncomeNow: v })}
+                  style={{ width: 140 }}
+                  inputMode="numeric"
+                />
+              </div>
+            </FieldRow>
+          </SectionBox>
         </Section>
       </div>
 
