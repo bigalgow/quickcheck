@@ -126,7 +126,7 @@ export default function AtRetirement() {
   const [currentStep, setCurrentStep] = useState(-1); // -1 = start screen, 0-4 = steps
 
   const steps = [
-    { key: 'core', title: 'CORE' },
+    { key: 'core', title: 'CORE ASSUMPTIONS' },
     { key: 'dc', title: 'DC PENSIONS' },
     { key: 'db', title: 'DB PENSIONS' },
     { key: 'savings', title: 'SAVINGS & OTHER' },
@@ -598,6 +598,29 @@ const TwoCol = ({ left, right }) => (
         </div>
       )}
 
+      {/* Classic Mode - Switch to Wizard Button */}
+      {!wizardMode && (
+        <div
+          className="no-print"
+          style={{
+            background: "#e8f4f8",
+            padding: 12,
+            marginBottom: 16,
+            borderRadius: 4,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <strong>Classic View:</strong> All sections visible
+          </div>
+          <button onClick={startWizard} style={{ fontSize: 12 }}>
+            Switch to wizard mode
+          </button>
+        </div>
+      )}
+
       {/* Save / Print / Export */}
       <SaveBar
         inputs={inputsNum}
@@ -619,9 +642,9 @@ const TwoCol = ({ left, right }) => (
 
       {/* ================== PAGE 1: INPUTS ================== */}
       <div className="print-page">
-        {/* CORE */}
+        {/* CORE ASSUMPTIONS */}
         <Section
-          title="CORE"
+          title="CORE ASSUMPTIONS"
           sectionKey="core"
           openFlag={open.core}
           onToggle={() => toggle("core")}
@@ -701,6 +724,46 @@ const TwoCol = ({ left, right }) => (
                     <Txt
                       value={form.inflationAssumption}
                       onCommit={(v) => set({ inflationAssumption: v })}
+                      style={{ width: 100 }}
+                      inputMode="decimal"
+                    />
+                    <span>%</span>
+                  </div>
+                </FieldRow>
+
+                <div style={{ marginTop: 16, marginBottom: 8, fontWeight: "bold", fontSize: 14 }}>
+                  Growth Rates
+                </div>
+
+                <FieldRow label="DC pension growth">
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <Txt
+                      value={form.growthAssumption}
+                      onCommit={(v) => set({ growthAssumption: v })}
+                      style={{ width: 100 }}
+                      inputMode="decimal"
+                    />
+                    <span>%</span>
+                  </div>
+                </FieldRow>
+
+                <FieldRow label="ISA growth">
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <Txt
+                      value={form.isaRate}
+                      onCommit={(v) => set({ isaRate: v })}
+                      style={{ width: 100 }}
+                      inputMode="decimal"
+                    />
+                    <span>%</span>
+                  </div>
+                </FieldRow>
+
+                <FieldRow label="Taxable savings growth">
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <Txt
+                      value={form.taxableSavingsRate}
+                      onCommit={(v) => set({ taxableSavingsRate: v })}
                       style={{ width: 100 }}
                       inputMode="decimal"
                     />
@@ -878,36 +941,19 @@ const TwoCol = ({ left, right }) => (
             </>
           )}
 
-          <TwoCol
-            left={
-              <FieldRow label="Growth assumption">
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <Txt
-                    value={form.growthAssumption}
-                    onCommit={(v) => set({ growthAssumption: v })}
-                    style={{ width: 90 }}
-                    inputMode="decimal"
-                  />
-                  <span>%</span>
-                </div>
-              </FieldRow>
-            }
-            right={
-              <FieldRow label={form.useAnnuity ? "Annuity rate" : "Drawdown rate"}>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <Txt
-                    value={form.useAnnuity ? form.annuityRate : form.drawdownRate}
-                    onCommit={(v) =>
-                      set(form.useAnnuity ? { annuityRate: v } : { drawdownRate: v })
-                    }
-                    style={{ width: 90 }}
-                    inputMode="decimal"
-                  />
-                  <span>%</span>
-                </div>
-              </FieldRow>
-            }
-          />
+          <FieldRow label={form.useAnnuity ? "Annuity rate" : "Drawdown rate"}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <Txt
+                value={form.useAnnuity ? form.annuityRate : form.drawdownRate}
+                onCommit={(v) =>
+                  set(form.useAnnuity ? { annuityRate: v } : { drawdownRate: v })
+                }
+                style={{ width: 90 }}
+                inputMode="decimal"
+              />
+              <span>%</span>
+            </div>
+          </FieldRow>
           <FieldRow label="">
             <label>
               <input
@@ -1130,13 +1176,6 @@ const TwoCol = ({ left, right }) => (
                 style={{ width: 110 }}
                 inputMode="numeric"
               />
-              <span>Rate %</span>
-              <Txt
-                value={form.isaRate}
-                onCommit={(v) => set({ isaRate: v })}
-                style={{ width: 80 }}
-                inputMode="decimal"
-              />
             </div>
           </FieldRow>
 
@@ -1162,13 +1201,6 @@ const TwoCol = ({ left, right }) => (
                 onCommit={(v) => set({ taxableSavingsAddPerYear: v })}
                 style={{ width: 110 }}
                 inputMode="numeric"
-              />
-              <span>Rate %</span>
-              <Txt
-                value={form.taxableSavingsRate}
-                onCommit={(v) => set({ taxableSavingsRate: v })}
-                style={{ width: 80 }}
-                inputMode="decimal"
               />
             </div>
           </FieldRow>
