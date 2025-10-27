@@ -6,6 +6,7 @@ import {
   TAX_2025_EWNI,
   TAX_2025_SCOTLAND,
 } from "../utils/tax.js";
+import { calculateStatePensionAge, formatStatePensionAge } from "../utils/statePensionAge.js";
 
 import SaveBar from "./SaveBar.jsx";
 import { loadAutosave, saveAutosave, clearAutosave } from "../utils/persist.js";
@@ -652,15 +653,9 @@ const TwoCol = ({ left, right }) => (
           <TwoCol
             left={
               <>
-                <FieldRow label="Region">
-                  <select
-                    value={form.region}
-                    onChange={(e) => set({ region: e.target.value })}
-                  >
-                    <option value="EWNI">England/Wales/Northern Ireland</option>
-                    <option value="Scotland">Scotland</option>
-                  </select>
-                </FieldRow>
+                <div style={{ marginBottom: 12, fontWeight: "bold", fontSize: 15, color: "#0066cc" }}>
+                  Your Details (Required)
+                </div>
 
                 <FieldRow label="Date of birth">
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -702,6 +697,12 @@ const TwoCol = ({ left, right }) => (
                   </div>
                 </FieldRow>
 
+                <FieldRow label="State Pension Age">
+                  <div style={{ fontWeight: "bold", color: "#666" }}>
+                    {formatStatePensionAge(calculateStatePensionAge(form.dateOfBirth))}
+                  </div>
+                </FieldRow>
+
                 <FieldRow
                   label={`Retirement age (years) ${
                     form.alreadyRetired ? "(locked)" : ""
@@ -715,10 +716,57 @@ const TwoCol = ({ left, right }) => (
                     inputMode="numeric"
                   />
                 </FieldRow>
+
+                <FieldRow label="Already retired?">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={form.alreadyRetired}
+                      onChange={(e) =>
+                        set({ alreadyRetired: e.target.checked })
+                      }
+                    />{" "}
+                    Yes
+                  </label>
+                </FieldRow>
+
+                <FieldRow label="I have a DB pension">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={form.hasDbPension}
+                      onChange={(e) => set({ hasDbPension: e.target.checked })}
+                    />{" "}
+                    Yes
+                  </label>
+                </FieldRow>
+
+                <FieldRow label="Spend target (annual) (£)">
+                  <Txt
+                    value={form.desiredSpendAnnual}
+                    onCommit={(v) => set({ desiredSpendAnnual: v })}
+                    style={{ width: 140 }}
+                    inputMode="numeric"
+                  />
+                </FieldRow>
               </>
             }
             right={
               <>
+                <div style={{ marginBottom: 12, fontWeight: "bold", fontSize: 15, color: "#666" }}>
+                  Default Assumptions (Optional)
+                </div>
+
+                <FieldRow label="Region">
+                  <select
+                    value={form.region}
+                    onChange={(e) => set({ region: e.target.value })}
+                  >
+                    <option value="EWNI">England/Wales/Northern Ireland</option>
+                    <option value="Scotland">Scotland</option>
+                  </select>
+                </FieldRow>
+
                 <FieldRow label="Inflation assumption">
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Txt
@@ -770,44 +818,6 @@ const TwoCol = ({ left, right }) => (
                     <span>%</span>
                   </div>
                 </FieldRow>
-
-                <FieldRow label="Spend target (annual) (£)">
-                  <Txt
-                    value={form.desiredSpendAnnual}
-                    onCommit={(v) => set({ desiredSpendAnnual: v })}
-                    style={{ width: 140 }}
-                    inputMode="numeric"
-                  />
-                </FieldRow>
-
-                <TwoCol
-                  left={
-                    <FieldRow label="Already retired?">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={form.alreadyRetired}
-                          onChange={(e) =>
-                            set({ alreadyRetired: e.target.checked })
-                          }
-                        />{" "}
-                        Yes
-                      </label>
-                    </FieldRow>
-                  }
-                  right={
-                    <FieldRow label="I have a DB pension">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={form.hasDbPension}
-                          onChange={(e) => set({ hasDbPension: e.target.checked })}
-                        />{" "}
-                        Yes
-                      </label>
-                    </FieldRow>
-                  }
-                />
               </>
             }
           />
