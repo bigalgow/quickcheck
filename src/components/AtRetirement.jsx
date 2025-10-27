@@ -697,12 +697,6 @@ const TwoCol = ({ left, right }) => (
                   </div>
                 </FieldRow>
 
-                <FieldRow label="State Pension Age">
-                  <div style={{ fontWeight: "bold", color: "#666" }}>
-                    {formatStatePensionAge(calculateStatePensionAge(form.dateOfBirth))}
-                  </div>
-                </FieldRow>
-
                 <FieldRow
                   label={`Retirement age (years) ${
                     form.alreadyRetired ? "(locked)" : ""
@@ -765,6 +759,12 @@ const TwoCol = ({ left, right }) => (
                     <option value="EWNI">England/Wales/Northern Ireland</option>
                     <option value="Scotland">Scotland</option>
                   </select>
+                </FieldRow>
+
+                <FieldRow label="State Pension Age">
+                  <div style={{ fontWeight: "bold", color: "#666" }}>
+                    {formatStatePensionAge(calculateStatePensionAge(form.dateOfBirth))}
+                  </div>
                 </FieldRow>
 
                 <FieldRow label="Inflation assumption">
