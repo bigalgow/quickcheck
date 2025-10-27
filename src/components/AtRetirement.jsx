@@ -472,9 +472,12 @@ const styles = {
   formRow: { display: 'grid', gridTemplateColumns: '220px 1fr', gap: 8, alignItems: 'baseline', marginBottom: 6 },
 };
 
-const FieldRow = ({ label, children }) => (
+const FieldRow = ({ label, children, help }) => (
   <div style={styles.formRow}>
-    <div style={{ opacity: 0.9 }}>{label}</div>
+    <div style={{ opacity: 0.9, textAlign: 'left' }}>
+      {label}
+      {help && <HelpToggle text={help} />}
+    </div>
     <div>{children}</div>
   </div>
 );
@@ -485,6 +488,49 @@ const TwoCol = ({ left, right }) => (
     {right}
   </div>
 );
+
+// Help tooltip component
+const HelpToggle = ({ text }) => {
+  const [show, setShow] = React.useState(false);
+  return (
+    <span style={{ marginLeft: 6 }}>
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        style={{
+          background: 'none',
+          border: '1px solid #999',
+          borderRadius: '50%',
+          width: 18,
+          height: 18,
+          fontSize: 11,
+          cursor: 'pointer',
+          color: '#666',
+          padding: 0,
+          lineHeight: '16px',
+        }}
+        title="Click for help"
+      >
+        ?
+      </button>
+      {show && (
+        <div
+          style={{
+            fontSize: 12,
+            color: '#666',
+            backgroundColor: '#f9f9f9',
+            padding: 8,
+            marginTop: 4,
+            borderRadius: 4,
+            border: '1px solid #ddd',
+          }}
+        >
+          {text}
+        </div>
+      )}
+    </span>
+  );
+};
 
   const MiniHelp = ({ children }) => (
     <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>{children}</div>
@@ -657,7 +703,10 @@ const TwoCol = ({ left, right }) => (
                   Your Details (Required)
                 </div>
 
-                <FieldRow label="Date of birth">
+                <FieldRow
+                  label="Date of birth"
+                  help="Your date of birth is used to calculate your State Pension Age and years to retirement."
+                >
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Txt
                       value={form.dateOfBirth.split('-')[2] || '01'}
@@ -701,6 +750,7 @@ const TwoCol = ({ left, right }) => (
                   label={`Retirement age (years) ${
                     form.alreadyRetired ? "(locked)" : ""
                   }`}
+                  help="The age at which you plan to retire. This can be earlier or later than your State Pension Age."
                 >
                   <Txt
                     value={form.retirementAge}
@@ -735,7 +785,10 @@ const TwoCol = ({ left, right }) => (
                   </label>
                 </FieldRow>
 
-                <FieldRow label="Spend target (annual) (£)">
+                <FieldRow
+                  label="Spend target (annual) (£)"
+                  help="Your desired annual spending in retirement, in today's money. This will be adjusted for inflation."
+                >
                   <Txt
                     value={form.desiredSpendAnnual}
                     onCommit={(v) => set({ desiredSpendAnnual: v })}
@@ -761,13 +814,19 @@ const TwoCol = ({ left, right }) => (
                   </select>
                 </FieldRow>
 
-                <FieldRow label="State Pension Age">
+                <FieldRow
+                  label="State Pension Age"
+                  help="Automatically calculated based on your date of birth using current UK State Pension Age rules."
+                >
                   <div style={{ fontWeight: "bold", color: "#666" }}>
                     {formatStatePensionAge(calculateStatePensionAge(form.dateOfBirth))}
                   </div>
                 </FieldRow>
 
-                <FieldRow label="Inflation assumption">
+                <FieldRow
+                  label="Inflation assumption"
+                  help="Expected annual inflation rate. Used to project future values in today's money. Default is 2.5%."
+                >
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Txt
                       value={form.inflationAssumption}
@@ -783,7 +842,10 @@ const TwoCol = ({ left, right }) => (
                   Growth Rates
                 </div>
 
-                <FieldRow label="DC pension growth">
+                <FieldRow
+                  label="DC pension growth"
+                  help="Expected annual growth rate for your DC pension pot before retirement. Default is 4%."
+                >
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Txt
                       value={form.growthAssumption}
@@ -795,7 +857,10 @@ const TwoCol = ({ left, right }) => (
                   </div>
                 </FieldRow>
 
-                <FieldRow label="ISA growth">
+                <FieldRow
+                  label="ISA growth"
+                  help="Expected annual growth rate for your ISA investments. Default is 3%."
+                >
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Txt
                       value={form.isaRate}
@@ -807,7 +872,10 @@ const TwoCol = ({ left, right }) => (
                   </div>
                 </FieldRow>
 
-                <FieldRow label="Taxable savings growth">
+                <FieldRow
+                  label="Taxable savings growth"
+                  help="Expected annual growth rate for your taxable savings accounts. Default is 3%."
+                >
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Txt
                       value={form.taxableSavingsRate}
