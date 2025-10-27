@@ -121,6 +121,42 @@ export default function AtRetirement() {
   const updateScheme = (id, patch) =>
     setDbSchemes((arr) => arr.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
+  // ===== Wizard Mode =====
+  const [wizardMode, setWizardMode] = useState(true); // Default to wizard mode
+  const [currentStep, setCurrentStep] = useState(-1); // -1 = start screen, 0-4 = steps
+
+  const steps = [
+    { key: 'core', title: 'CORE' },
+    { key: 'dc', title: 'DC PENSIONS' },
+    { key: 'db', title: 'DB PENSIONS' },
+    { key: 'savings', title: 'SAVINGS & OTHER' },
+    { key: 'results', title: 'RESULTS & MODELLING' },
+  ];
+
+  const startWizard = () => {
+    setWizardMode(true);
+    setCurrentStep(0);
+  };
+
+  const exitWizard = () => {
+    setWizardMode(false);
+    setCurrentStep(-1);
+    // Open all sections in classic mode
+    setOpen({ core: true, dc: true, db: true, savings: true, modelling: true });
+  };
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const [open, setOpen] = useState({
     core: true,
     dc: true,
@@ -368,24 +404,67 @@ export default function AtRetirement() {
 
   // Helpers / layout atoms (kept from your file)
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
-  const Section = ({ title, openFlag, onToggle, children }) => (
-    <section className="card" style={{ marginBottom: 12 }}>
-      <div
-        className="card-title"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div>{title}</div>
-        <button type="button" onClick={onToggle} className="no-print">
-          {openFlag ? "Hide" : "Show"}
-        </button>
-      </div>
-      {openFlag && <div className="card-body">{children}</div>}
-    </section>
-  );
+
+  const Section = ({ title, sectionKey, openFlag, onToggle, children }) => {
+    // In wizard mode, only show if this is the current step
+    const stepIndex = steps.findIndex(s => s.key === sectionKey);
+    const isCurrentStep = wizardMode && currentStep === stepIndex;
+    const shouldShow = wizardMode ? isCurrentStep : openFlag;
+
+    if (wizardMode && !isCurrentStep) {
+      return null; // Don't render at all in wizard mode if not current step
+    }
+
+    return (
+      <section className="card" style={{ marginBottom: 12 }}>
+        <div
+          className="card-title"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>{title}</div>
+          {!wizardMode && (
+            <button type="button" onClick={onToggle} className="no-print">
+              {openFlag ? "Hide" : "Show"}
+            </button>
+          )}
+        </div>
+        {shouldShow && (
+          <>
+            <div className="card-body">{children}</div>
+            {wizardMode && (
+              <div
+                className="no-print"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "16px",
+                  borderTop: "1px solid #ddd",
+                }}
+              >
+                <button
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  style={{ visibility: currentStep === 0 ? "hidden" : "visible" }}
+                >
+                  ← Previous
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={currentStep === steps.length - 1}
+                >
+                  {currentStep === steps.length - 1 ? "Finish" : "Next →"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    );
+  };
   // Force the layout even if CSS helper classes aren't present
 const styles = {
   twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' },
@@ -464,6 +543,61 @@ const TwoCol = ({ left, right }) => (
         </div>
       )}
 
+      {/* Wizard Start Screen */}
+      {wizardMode && currentStep === -1 && (
+        <div
+          className="card"
+          style={{
+            padding: 24,
+            textAlign: "center",
+            marginBottom: 16,
+          }}
+        >
+          <h2>Welcome to RetirePlan Quickcheck</h2>
+          <p style={{ marginBottom: 24, maxWidth: 600, marginLeft: "auto", marginRight: "auto" }}>
+            This calculator will guide you through 5 sections to build your retirement plan:
+          </p>
+          <div style={{ textAlign: "left", maxWidth: 500, marginLeft: "auto", marginRight: "auto", marginBottom: 24 }}>
+            {steps.map((step, i) => (
+              <div key={step.key} style={{ padding: "8px 0", borderBottom: "1px solid #eee" }}>
+                <strong>Step {i + 1}:</strong> {step.title}
+              </div>
+            ))}
+          </div>
+          <button onClick={startWizard} style={{ fontSize: 18, padding: "12px 32px" }}>
+            START PLANNING
+          </button>
+          <div style={{ marginTop: 16 }}>
+            <button onClick={exitWizard} style={{ fontSize: 14 }}>
+              Use classic view instead
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Wizard Progress Indicator */}
+      {wizardMode && currentStep >= 0 && (
+        <div
+          className="no-print"
+          style={{
+            background: "#f5f5f5",
+            padding: 12,
+            marginBottom: 16,
+            borderRadius: 4,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <strong>Step {currentStep + 1} of {steps.length}:</strong> {steps[currentStep].title}
+          </div>
+          <button onClick={exitWizard} style={{ fontSize: 12 }}>
+            Exit wizard
+          </button>
+        </div>
+      )}
+
       {/* Save / Print / Export */}
       <SaveBar
         inputs={inputsNum}
@@ -488,6 +622,7 @@ const TwoCol = ({ left, right }) => (
         {/* CORE */}
         <Section
           title="CORE"
+          sectionKey="core"
           openFlag={open.core}
           onToggle={() => toggle("core")}
         >
@@ -616,7 +751,7 @@ const TwoCol = ({ left, right }) => (
         </Section>
 
         {/* DC PENSIONS */}
-        <Section title="DC PENSIONS" openFlag={open.dc} onToggle={() => toggle("dc")}>
+        <Section title="DC PENSIONS" sectionKey="dc" openFlag={open.dc} onToggle={() => toggle("dc")}>
           <TwoCol
             left={
               <FieldRow label="DC pot now (£)">
@@ -794,7 +929,7 @@ const TwoCol = ({ left, right }) => (
 
         {/* DB PENSIONS */}
         {form.hasDbPension && (
-          <Section title="DB PENSIONS" openFlag={open.db} onToggle={() => toggle("db")}>
+          <Section title="DB PENSIONS" sectionKey="db" openFlag={open.db} onToggle={() => toggle("db")}>
             {dbSchemes
               .filter((s) => s.kind === "active")
               .map((s) => (
@@ -968,6 +1103,7 @@ const TwoCol = ({ left, right }) => (
         {/* SAVINGS & OTHER — tidy rows */}
         <Section
           title="SAVINGS & OTHER"
+          sectionKey="savings"
           openFlag={open.savings}
           onToggle={() => toggle("savings")}
         >
@@ -1175,6 +1311,7 @@ const TwoCol = ({ left, right }) => (
         {/* QUICK MODELLING (live sliders) */}
         <Section
           title="Quick Modelling"
+          sectionKey="results"
           openFlag={open.modelling}
           onToggle={() => toggle("modelling")}
         >
