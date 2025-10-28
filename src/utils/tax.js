@@ -83,22 +83,27 @@ export function estimateIncomeTax({ pensionableIncome, savingsInterest, cfg }) {
 
   // Tax non-savings using cfg bands
   let tax = 0;
+  let totalIncomeProcessed = 0; // Track cumulative income position
   let remaining = nonSavingsAfterPA;
   let lowerEdge = 0;
+
   for (const band of cfg.bands) {
     const cap = band.upTo ?? Infinity;
     const width = Math.max(0, Math.min(remaining, cap - lowerEdge));
     if (width > 0) {
       tax += width * band.rate;
       remaining -= width;
+      totalIncomeProcessed += width;
     }
     lowerEdge = cap;
     if (remaining <= 0) break;
   }
 
-  // Tax savings at the same marginal structure (approximation)
+  // Tax savings stacked ON TOP of pensionable income (at marginal rates)
+  // Savings starts from where pensionable income ended
   remaining = savingsAfterPSA;
-  lowerEdge = 0;
+  lowerEdge = totalIncomeProcessed; // Start from cumulative income position
+
   for (const band of cfg.bands) {
     const cap = band.upTo ?? Infinity;
     const width = Math.max(0, Math.min(remaining, cap - lowerEdge));

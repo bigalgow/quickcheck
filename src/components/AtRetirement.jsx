@@ -1,5 +1,6 @@
 // src/components/AtRetirement.jsx
 import React, { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { atRetirement } from "../logic/atRetirement.js";
 import {
   estimateIncomeTax,
@@ -44,6 +45,8 @@ function Txt({ value, onCommit, style, placeholder, disabled, inputMode }) {
 }
 
 export default function AtRetirement() {
+  const navigate = useNavigate();
+
   // ===== Core form (strings) =====
   const [form, setForm] = useState({
     region: "EWNI",
@@ -52,10 +55,10 @@ export default function AtRetirement() {
     inflationAssumption: "0.025",
     retirementAge: "65", // years only now
     hasDbPension: true,
-    desiredSpendAnnual: "45000",
+    desiredSpendAnnual: "0",
 
     // DC
-    dcPotNow: "250000",
+    dcPotNow: "0",
     takeDCTaxFree25: false,
     growthAssumption: "0.04",
     drawdownRate: "0.04",
@@ -65,11 +68,11 @@ export default function AtRetirement() {
     // DC contributions module (start-of-year contributions + inflate personal)
     dcIsContributing: false,
     dcContributionType: "employer", // "employer" | "personal"
-    salaryNow: "60000",
+    salaryNow: "0",
     eePct: "0.05",
     erPct: "0.05",
     // salary growth inputs removed (we use inflation in logic)
-    personalAnnualContrib: "6000",
+    personalAnnualContrib: "0",
     // personal escalation input removed (we use inflation in logic)
 
     // DB
@@ -81,11 +84,11 @@ export default function AtRetirement() {
     otherIncomeNow: "0",
 
     // Savings
-    isaBalance: "50000",
+    isaBalance: "0",
     isaAddPerYear: "0",
     isaRate: "0.03",
 
-    taxableSavingsBalance: "40000",
+    taxableSavingsBalance: "0",
     taxableSavingsAddPerYear: "0",
     taxableSavingsRate: "0.03",
 
@@ -99,9 +102,9 @@ export default function AtRetirement() {
       id: "active-1",
       kind: "active",
       accrualDenominator: "60",
-      serviceYearsToDate: "15",
+      serviceYearsToDate: "0",
       maxServiceYears: "40",
-      pensionableSalaryNow: "60000",
+      pensionableSalaryNow: "0",
       // salary growth inputs removed; we use inflation
     },
   ]);
@@ -111,7 +114,7 @@ export default function AtRetirement() {
       {
         id: `deferred-${Date.now()}`,
         kind: "deferred",
-        preservedPensionNow: "5000",
+        preservedPensionNow: "0",
         revaluationAssumption: "0.025",
         accrualDenominator: "",
         serviceYearsToDate: "",
@@ -363,20 +366,29 @@ export default function AtRetirement() {
   const [restorePrompt, setRestorePrompt] = useState(null);
   useEffect(() => {
     const snap = loadAutosave();
-    if (!snap) return;
+    console.log('🏠 At Retirement: Loaded autosave data:', snap);
+    if (!snap) {
+      console.log('🏠 At Retirement: No saved data found');
+      return;
+    }
     const { form: savedForm } = snap || {};
     if (savedForm && typeof savedForm === "object") {
+      console.log('🏠 At Retirement: Setting restore prompt');
       setRestorePrompt({ savedAt: snap.savedAt, snapshot: snap });
     }
   }, []);
   const acceptRestore = () => {
+    console.log('✅ At Retirement: User accepted restore');
     const { form: f, dbSchemes: dbs, model: m } = restorePrompt.snapshot;
     if (f) setForm(f);
     if (Array.isArray(dbs)) setDbSchemes(dbs);
     if (m) setModel(m);
     setRestorePrompt(null);
   };
-  const rejectRestore = () => setRestorePrompt(null);
+  const rejectRestore = () => {
+    console.log('❌ At Retirement: User rejected restore (dismissed)');
+    setRestorePrompt(null);
+  };
 
   // ---- Autosave (debounced) ----
   useEffect(() => {
@@ -1442,6 +1454,62 @@ const HelpToggle = ({ text }) => {
             </div>
           </div>
         </section>
+
+        {/* PROJECTION BUTTON */}
+        <div style={{ textAlign: 'center', margin: '24px 0' }} className="no-print">
+          <button
+            onClick={() => {
+              // Save immediately before navigating (don't wait for debounce)
+              saveAutosave({
+                form,
+                dbSchemes,
+                model,
+                atRetirement: {
+                  yearsToRetirement,
+                  netIncome,
+                  incomeGrossTotal,
+                  assetsTotal,
+                },
+              });
+
+              navigate('/projection', {
+                state: {
+                  openingValues: {
+                    retirementAge: inputsNum.retirementAge,
+                    dcPotAfterPCLS: inputsNum.useAnnuity ? 0 : assets.dcAtRetAfterPCLS,
+                    isaSavings: assets.isaAtRet,
+                    taxableSavings: assets.taxableAtRet + assets.dcPclsCash + assets.dbPclsCash,
+                    dbPension: income.dbIncomeAfter,
+                    annuityIncome: inputsNum.useAnnuity ? income.dcIncome : 0,
+                    statePension: income.statePensionAtRetNominal,
+                    statePensionAge: inputsNum.statePensionAge,
+                    otherIncome: income.otherIncomeAtRet,
+                    annualSpend: inputsNum.desiredSpendAnnual,
+                    inflation: inputsNum.inflationAssumption * 100,
+                    dcGrowth: inputsNum.growthAssumption * 100,
+                    isaGrowth: inputsNum.isaRate * 100,
+                    savingsGrowth: inputsNum.taxableSavingsRate * 100,
+                    taxRegion: inputsNum.region === 'Scotland' ? 'scotland' : 'england',
+                    dcDrawdownPercent: inputsNum.drawdownRate * 100,
+                    yearsToRetirement: yearsToRetirement,
+                  }
+                }
+              });
+            }}
+            style={{
+              padding: '12px 32px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              backgroundColor: '#0284c7',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            View 25-Year Projection →
+          </button>
+        </div>
 
         {/* QUICK MODELLING (live sliders) */}
         <Section
