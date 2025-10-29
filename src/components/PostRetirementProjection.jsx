@@ -72,9 +72,9 @@ export default function PostRetirementProjection() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
           25-Year Retirement Projection
         </h1>
         <button
@@ -86,50 +86,50 @@ export default function PostRetirementProjection() {
       </div>
 
       {/* Opening Values Summary */}
-      <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 sm:p-6 mb-6">
         <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200">
           Opening Values (At Retirement)
         </h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between py-1">
+        <div className="space-y-2 text-sm sm:text-base">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">Retirement Age:</span>
             <span className="font-semibold text-slate-800">{openingValues.retirementAge}</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">DC Pot (after PCLS):</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.dcPotAfterPCLS)}</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">ISA Savings:</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.isaSavings)}</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">Taxable Savings:</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.taxableSavings)}</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">DB Pension:</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.dbPension)}/year</span>
           </div>
           {openingValues.annuityIncome > 0 && (
-            <div className="flex justify-between py-1">
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
               <span className="text-slate-600">Annuity Income:</span>
               <span className="font-semibold text-slate-800">{formatCurrency(openingValues.annuityIncome)}/year</span>
             </div>
           )}
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">State Pension:</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.statePension)}/year (from age {openingValues.statePensionAge})</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">Other Income:</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.otherIncome)}/year</span>
           </div>
-          <div className="flex justify-between py-1 border-t border-slate-200 mt-2 pt-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 border-t border-slate-200 mt-2 pt-2 gap-1">
             <span className="text-slate-600">Target Annual Spend:</span>
             <span className="font-semibold text-slate-800">{formatCurrency(openingValues.annualSpend)}</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">Inflation Assumption:</span>
             <span className="font-semibold text-slate-800">{openingValues.inflation}%</span>
           </div>
@@ -178,18 +178,18 @@ export default function PostRetirementProjection() {
       {/* Results Section */}
       {projectionResults && (
         <>
-          <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-6 mb-6">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-slate-800">25-Year Projection Results</h2>
+          <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 sm:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 pb-2 border-b border-slate-200 gap-3">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800">25-Year Projection Results</h2>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 text-sm flex items-center gap-2"
+                className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 text-sm flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <span>🖨️</span>
-                Print / Save PDF
+                <span>Print / Save PDF</span>
               </button>
             </div>
-            <p className="text-slate-600 text-sm mb-6">
+            <p className="text-slate-600 text-sm sm:text-base mb-6">
               Visual analysis of your retirement assets and cash flow over 25 years
             </p>
             <ProjectionCharts data={projectionResults} />

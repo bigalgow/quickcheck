@@ -362,8 +362,11 @@ export default function AtRetirement() {
       surplusDeficit: 0,
     };
 
-  // ---- Autosave restore prompt ----
-  const [restorePrompt, setRestorePrompt] = useState(null);
+  // ---- Track unsaved changes ----
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastCloudSave, setLastCloudSave] = useState(null);
+
+  // ---- Autosave restore (automatic) ----
   useEffect(() => {
     const snap = loadAutosave();
     console.log('🏠 At Retirement: Loaded autosave data:', snap);
@@ -371,24 +374,23 @@ export default function AtRetirement() {
       console.log('🏠 At Retirement: No saved data found');
       return;
     }
-    const { form: savedForm } = snap || {};
+
+    const { form: savedForm, dbSchemes: savedSchemes, model: savedModel } = snap;
+
+    // Automatically restore saved data
     if (savedForm && typeof savedForm === "object") {
-      console.log('🏠 At Retirement: Setting restore prompt');
-      setRestorePrompt({ savedAt: snap.savedAt, snapshot: snap });
+      console.log('✅ At Retirement: Auto-restoring form data');
+      setForm(savedForm);
     }
-  }, []);
-  const acceptRestore = () => {
-    console.log('✅ At Retirement: User accepted restore');
-    const { form: f, dbSchemes: dbs, model: m } = restorePrompt.snapshot;
-    if (f) setForm(f);
-    if (Array.isArray(dbs)) setDbSchemes(dbs);
-    if (m) setModel(m);
-    setRestorePrompt(null);
-  };
-  const rejectRestore = () => {
-    console.log('❌ At Retirement: User rejected restore (dismissed)');
-    setRestorePrompt(null);
-  };
+    if (Array.isArray(savedSchemes)) {
+      console.log('✅ At Retirement: Auto-restoring DB schemes');
+      setDbSchemes(savedSchemes);
+    }
+    if (savedModel) {
+      console.log('✅ At Retirement: Auto-restoring model');
+      setModel(savedModel);
+    }
+  }, []); // Only run once on mount
 
   // ---- Autosave (debounced) ----
   useEffect(() => {
@@ -404,6 +406,8 @@ export default function AtRetirement() {
           assetsTotal,
         },
       });
+      // Mark as having unsaved changes (changes exist in sessionStorage but not in cloud)
+      setHasUnsavedChanges(true);
     }, 800);
     return () => clearTimeout(h);
   }, [
@@ -457,18 +461,40 @@ export default function AtRetirement() {
                   justifyContent: "space-between",
                   padding: "16px",
                   borderTop: "1px solid #ddd",
+                  gap: "12px",
                 }}
               >
                 <button
                   onClick={prevStep}
                   disabled={currentStep === 0}
-                  style={{ visibility: currentStep === 0 ? "hidden" : "visible" }}
+                  style={{
+                    visibility: currentStep === 0 ? "hidden" : "visible",
+                    padding: "10px 24px",
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    backgroundColor: "#f1f5f9",
+                    color: "#475569",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
                 >
                   ← Previous
                 </button>
                 <button
                   onClick={nextStep}
                   disabled={currentStep === steps.length - 1}
+                  style={{
+                    padding: "10px 32px",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    backgroundColor: "#0284c7",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: currentStep === steps.length - 1 ? "default" : "pointer",
+                    opacity: currentStep === steps.length - 1 ? 0.5 : 1,
+                  }}
                 >
                   {currentStep === steps.length - 1 ? "Finish" : "Next →"}
                 </button>
@@ -587,38 +613,6 @@ const HelpToggle = ({ text }) => {
 
   return (
     <div className="grid" style={{ gap: 8 }}>
-      {/* Restore banner */}
-      {restorePrompt && (
-        <div
-          style={{
-            background: "#fff7e5",
-            border: "1px solid #f1c96b",
-            padding: 10,
-            borderRadius: 8,
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
-          <div>
-            <strong>Restore session?</strong> Found autosaved work from{" "}
-            {new Date(restorePrompt.savedAt).toLocaleString()}.
-          </div>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-            <button onClick={acceptRestore}>Restore</button>
-            <button onClick={rejectRestore}>Dismiss</button>
-            <button
-              onClick={() => {
-                clearAutosave();
-                setRestorePrompt(null);
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Wizard Start Screen */}
       {wizardMode && currentStep === -1 && (
@@ -641,11 +635,38 @@ const HelpToggle = ({ text }) => {
               </div>
             ))}
           </div>
-          <button onClick={startWizard} style={{ fontSize: 18, padding: "12px 32px" }}>
+          <button
+            onClick={startWizard}
+            style={{
+              fontSize: 20,
+              padding: "16px 48px",
+              fontWeight: "bold",
+              backgroundColor: "#0284c7",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+              transition: "all 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#0369a1"}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#0284c7"}
+          >
             START PLANNING
           </button>
           <div style={{ marginTop: 16 }}>
-            <button onClick={exitWizard} style={{ fontSize: 14 }}>
+            <button
+              onClick={exitWizard}
+              style={{
+                fontSize: 14,
+                padding: "8px 16px",
+                color: "#64748b",
+                backgroundColor: "transparent",
+                border: "1px solid #cbd5e1",
+                borderRadius: "6px",
+                cursor: "pointer"
+              }}
+            >
               Use classic view instead
             </button>
           </div>
@@ -657,19 +678,31 @@ const HelpToggle = ({ text }) => {
         <div
           className="no-print"
           style={{
-            background: "#f5f5f5",
-            padding: 12,
+            background: "#f0f9ff",
+            padding: 16,
             marginBottom: 16,
-            borderRadius: 4,
+            borderRadius: 8,
+            border: "1px solid #bae6fd",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <div>
+          <div style={{ fontSize: 16, fontWeight: "500" }}>
             <strong>Step {currentStep + 1} of {steps.length}:</strong> {steps[currentStep].title}
           </div>
-          <button onClick={exitWizard} style={{ fontSize: 12 }}>
+          <button
+            onClick={exitWizard}
+            style={{
+              fontSize: 14,
+              padding: "6px 16px",
+              color: "#475569",
+              backgroundColor: "white",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
             Exit wizard
           </button>
         </div>
@@ -680,19 +713,32 @@ const HelpToggle = ({ text }) => {
         <div
           className="no-print"
           style={{
-            background: "#e8f4f8",
-            padding: 12,
+            background: "#f0f9ff",
+            padding: 16,
             marginBottom: 16,
-            borderRadius: 4,
+            borderRadius: 8,
+            border: "1px solid #bae6fd",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <div>
+          <div style={{ fontSize: 16, fontWeight: "500" }}>
             <strong>Classic View:</strong> All sections visible
           </div>
-          <button onClick={startWizard} style={{ fontSize: 12 }}>
+          <button
+            onClick={startWizard}
+            style={{
+              fontSize: 14,
+              padding: "8px 20px",
+              fontWeight: "600",
+              backgroundColor: "#0284c7",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
             Switch to wizard mode
           </button>
         </div>
@@ -702,13 +748,55 @@ const HelpToggle = ({ text }) => {
       <SaveBar
         inputs={inputsNum}
         outputs={out}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onSaveSuccess={() => {
+          setHasUnsavedChanges(false);
+          setLastCloudSave(new Date().toISOString());
+        }}
         onImportJson={(data) => {
-          if (data?.inputs) setForm((f) => ({ ...f, ...data.inputs }));
-          else if (data?.form) setForm(data.form);
-          if (Array.isArray(data?.dbSchemes)) setDbSchemes(data.dbSchemes);
+          console.log('📥 Importing JSON data:', data);
+
+          // Handle numeric inputs from exported JSON - convert to strings for form
+          if (data?.inputs) {
+            const formData = {};
+            Object.entries(data.inputs).forEach(([key, value]) => {
+              // Skip dbSchemes - handled separately
+              if (key === 'dbSchemes') return;
+              // Convert numbers to strings for form fields
+              if (typeof value === 'number') {
+                formData[key] = String(value);
+              } else if (typeof value === 'boolean') {
+                formData[key] = value;
+              } else if (typeof value === 'string') {
+                formData[key] = value;
+              }
+            });
+            setForm((f) => ({ ...f, ...formData }));
+
+            // Handle dbSchemes separately - convert numeric values to strings
+            if (Array.isArray(data.inputs.dbSchemes)) {
+              const convertedSchemes = data.inputs.dbSchemes.map(scheme => ({
+                ...scheme,
+                accrualDenominator: String(scheme.accrualDenominator ?? ''),
+                serviceYearsToDate: String(scheme.serviceYearsToDate ?? ''),
+                maxServiceYears: String(scheme.maxServiceYears ?? ''),
+                pensionableSalaryNow: String(scheme.pensionableSalaryNow ?? ''),
+                preservedPensionNow: String(scheme.preservedPensionNow ?? ''),
+                revaluationAssumption: String(scheme.revaluationAssumption ?? ''),
+                salaryAtLeaving: String(scheme.salaryAtLeaving ?? ''),
+              }));
+              console.log('📥 Setting dbSchemes:', convertedSchemes);
+              setDbSchemes(convertedSchemes);
+            }
+          } else if (data?.form) {
+            setForm(data.form);
+            if (Array.isArray(data?.dbSchemes)) setDbSchemes(data.dbSchemes);
+          }
+
+          // Save to sessionStorage
           saveAutosave({
-            form: data.inputs ?? data.form ?? form,
-            dbSchemes: data.dbSchemes ?? dbSchemes,
+            form: data.inputs ? formData : data.form ?? form,
+            dbSchemes: data.inputs?.dbSchemes ?? data.dbSchemes ?? dbSchemes,
           });
         }}
         onClearLocal={() => {

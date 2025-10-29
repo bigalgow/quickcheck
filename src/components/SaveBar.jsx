@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 
-export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal }) {
+export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, hasUnsavedChanges, onSaveSuccess }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
 
@@ -39,7 +39,10 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   const loadProfile = async () => {
     try {
       const audience = import.meta.env.VITE_API_AUDIENCE;
-      if (!audience) throw new Error("Missing VITE_API_AUDIENCE");
+      if (!audience) {
+        console.info("ℹ️ VITE_API_AUDIENCE not configured - cloud save/load disabled (OK for local dev)");
+        return;
+      }
 
       const token = await getAccessToken(audience);
 
@@ -49,21 +52,29 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       });
 
       if (!res.ok) {
-        console.error("Load API error:", res.status, await res.text());
+        if (res.status === 404) {
+          console.info("ℹ️ API endpoint not available (OK in local dev - deploy to Vercel for cloud save)");
+        } else {
+          console.warn("Load API error:", res.status, await res.text());
+        }
         return; // Don't show error to user on auto-load
       }
 
       const data = await res.json();
-      console.log("Received data from API:", data);
+      console.log("✅ Received data from cloud:", data);
       if (data && data.inputs) {
         onImportJson?.(data);
-        console.log("Loaded saved data from account");
+        console.log("✅ Loaded saved data from account");
         setMsg("Loaded saved data");
       } else {
-        console.log("No saved data found or data format invalid");
+        console.log("ℹ️ No saved data found in cloud");
       }
     } catch (e) {
-      console.error("Load failed:", e);
+      if (e.name === 'SyntaxError' || e.message?.includes('JSON')) {
+        console.info("ℹ️ API endpoint not available (OK in local dev)");
+      } else {
+        console.warn("Load failed:", e.message);
+      }
       // Don't show error to user on auto-load
     }
   };
@@ -74,11 +85,15 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
       setMsg(null);
 
       // Get an API audience token the backend will verify
-     const audience = import.meta.env.VITE_API_AUDIENCE; // should be https://api.retireplan
-      if (!audience) throw new Error("Missing VITE_API_AUDIENCE");
+      const audience = import.meta.env.VITE_API_AUDIENCE; // should be https://api.retireplan
+      if (!audience) {
+        setMsg("⚠️ Cloud save not configured");
+        console.info("ℹ️ VITE_API_AUDIENCE not configured - use Export JSON for local save");
+        return;
+      }
 
       // either signature depending on @logto/browser version:
-      const token = await getAccessToken(audience); 
+      const token = await getAccessToken(audience);
       // or: const token = await getAccessToken({ resource: audience });
 
       const res = await fetch("/api/me/retireplan", {
@@ -87,16 +102,33 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
         body: JSON.stringify({ inputs, outputs, savedAt: new Date().toISOString() }),
       });
 
-      const text = await res.text();
       if (!res.ok) {
-        console.error("Save API error:", res.status, text);
-        throw new Error(`Save failed (${res.status}): ${text}`);
+        const text = await res.text();
+
+        if (res.status === 404) {
+          console.info("ℹ️ API endpoint not available (OK in local dev - deploy to Vercel for cloud save)");
+          setMsg("💾 Local auto-save active. Deploy to Vercel for cloud save.");
+          // Still mark as "saved" since sessionStorage is working
+          onSaveSuccess?.();
+        } else {
+          console.error("Save API error:", res.status, text);
+          setMsg(`Save failed (${res.status})`);
+        }
+        return;
       }
 
-      setMsg("Saved to your account.");
+      const text = await res.text();
+      setMsg("✅ Saved to your account.");
+      onSaveSuccess?.(); // Notify parent that save was successful
     } catch (e) {
-      console.error(e);
-      setMsg(e.message || "Save failed.");
+      if (e.name === 'SyntaxError' || e.message?.includes('JSON')) {
+        console.info("ℹ️ API endpoint not available (OK in local dev)");
+        setMsg("💾 Local auto-save active. Deploy to Vercel for cloud save.");
+        onSaveSuccess?.(); // sessionStorage is still working
+      } else {
+        console.error("Save error:", e);
+        setMsg(e.message || "Save failed.");
+      }
     }
   };
 
@@ -113,15 +145,44 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
   return (
     <div
       className="no-print"
-      style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}
+      style={{
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        flexWrap: "wrap",
+        marginBottom: 16,
+        padding: "12px 16px",
+        backgroundColor: hasUnsavedChanges ? "#fef3c7" : "#f8fafc",
+        border: `2px solid ${hasUnsavedChanges ? "#f59e0b" : "#e2e8f0"}`,
+        borderRadius: "8px",
+      }}
     >
+      {hasUnsavedChanges && (
+        <span style={{ color: "#92400e", fontWeight: "600", fontSize: "14px" }}>
+          ● Unsaved changes
+        </span>
+      )}
+
       {!isAuthenticated ? (
-        <button disabled={loading} onClick={login}>
+        <button
+          disabled={loading}
+          onClick={login}
+          style={{
+            padding: "8px 16px",
+            fontSize: "14px",
+            fontWeight: "600",
+            backgroundColor: "#0284c7",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
           {loading ? "Loading…" : "Login to save"}
         </button>
       ) : (
         <>
-          <span style={{ marginRight: 6 }}>
+          <span style={{ marginRight: 6, fontSize: "14px" }}>
             Welcome
             {userInfo?.name
               ? `, ${userInfo.name}`
@@ -129,27 +190,116 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal })
               ? `, ${userInfo.username}`
               : "!"}
           </span>
-          <button onClick={saveProfile} disabled={loading}>
-            Save data
+          <button
+            onClick={saveProfile}
+            disabled={loading}
+            style={{
+              padding: "10px 20px",
+              fontSize: "15px",
+              fontWeight: "700",
+              backgroundColor: hasUnsavedChanges ? "#f59e0b" : "#10b981",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              boxShadow: hasUnsavedChanges ? "0 2px 4px rgba(245, 158, 11, 0.3)" : "0 2px 4px rgba(16, 185, 129, 0.3)",
+            }}
+          >
+            {hasUnsavedChanges ? "💾 Save All Data" : "✓ Data Saved"}
           </button>
-          <button onClick={doSignOut} disabled={loading}>
+          <button
+            onClick={doSignOut}
+            disabled={loading}
+            style={{
+              padding: "8px 16px",
+              fontSize: "14px",
+              color: "#64748b",
+              backgroundColor: "white",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
             Sign out
           </button>
         </>
       )}
 
-      <button onClick={window.print}>Print summary</button>
+      <button
+        onClick={window.print}
+        style={{
+          padding: "8px 16px",
+          fontSize: "14px",
+          color: "#475569",
+          backgroundColor: "white",
+          border: "1px solid #cbd5e1",
+          borderRadius: "6px",
+          cursor: "pointer",
+        }}
+      >
+        Print summary
+      </button>
 
-      <button onClick={onClearLocal}>Clear local</button>
+      <button
+        onClick={onClearLocal}
+        style={{
+          padding: "8px 16px",
+          fontSize: "14px",
+          color: "#64748b",
+          backgroundColor: "white",
+          border: "1px solid #cbd5e1",
+          borderRadius: "6px",
+          cursor: "pointer",
+        }}
+      >
+        Clear local
+      </button>
 
-      <button onClick={exportJson}>Export JSON</button>
+      <button
+        onClick={exportJson}
+        style={{
+          padding: "8px 16px",
+          fontSize: "14px",
+          color: "#475569",
+          backgroundColor: "white",
+          border: "1px solid #cbd5e1",
+          borderRadius: "6px",
+          cursor: "pointer",
+        }}
+      >
+        Export JSON
+      </button>
 
-      <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <input type="file" accept="application/json" onChange={importJson} />
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "8px 16px",
+          fontSize: "14px",
+          color: "#475569",
+          backgroundColor: "white",
+          border: "1px solid #cbd5e1",
+          borderRadius: "6px",
+          cursor: "pointer",
+        }}
+      >
+        <input type="file" accept="application/json" onChange={importJson} style={{ display: "none" }} />
         Import JSON
       </label>
 
-      {msg && <span style={{ marginLeft: 8, color: "#0a7" }}>{msg}</span>}
+      {msg && (
+        <span
+          style={{
+            marginLeft: 8,
+            color: msg.includes("fail") || msg.includes("error") ? "#dc2626" : "#059669",
+            fontWeight: "500",
+            fontSize: "14px",
+          }}
+        >
+          {msg}
+        </span>
+      )}
     </div>
   );
 }
