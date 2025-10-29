@@ -158,12 +158,13 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
         gap: 8,
         alignItems: "center",
         flexWrap: "wrap",
-        marginBottom: 16,
-        padding: "12px 16px",
+        marginBottom: 24,
+        padding: "16px",
         backgroundColor: hasUnsavedChanges ? "#fef3c7" : "#ffffff",
         border: `2px solid ${hasUnsavedChanges ? "#f59e0b" : "#e2e8f0"}`,
         borderRadius: "8px",
         boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+        maxWidth: "100%",
       }}
     >
       {hasUnsavedChanges && (
