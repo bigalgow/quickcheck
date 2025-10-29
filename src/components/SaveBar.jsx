@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, hasUnsavedChanges, onSaveSuccess }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const login = () => signIn();
   const doSignOut = () => signOut();
@@ -253,21 +254,6 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
       </button>
 
       <button
-        onClick={onClearLocal}
-        style={{
-          padding: "8px 16px",
-          fontSize: "14px",
-          color: "#64748b",
-          backgroundColor: "white",
-          border: "1px solid #cbd5e1",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
-      >
-        Clear local
-      </button>
-
-      <button
         onClick={exportJson}
         style={{
           padding: "8px 16px",
@@ -282,23 +268,57 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
         Export JSON
       </button>
 
-      <label
+      <button
+        onClick={() => setShowAdvanced(!showAdvanced)}
         style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
           padding: "8px 16px",
           fontSize: "14px",
-          color: "#475569",
+          color: "#64748b",
           backgroundColor: "white",
           border: "1px solid #cbd5e1",
           borderRadius: "6px",
           cursor: "pointer",
         }}
       >
-        <input type="file" accept="application/json" onChange={importJson} style={{ display: "none" }} />
-        Import JSON
-      </label>
+        {showAdvanced ? "⊖ Hide advanced" : "⊕ Advanced"}
+      </button>
+
+      {showAdvanced && (
+        <>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              fontSize: "14px",
+              color: "#475569",
+              backgroundColor: "white",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            <input type="file" accept="application/json" onChange={importJson} style={{ display: "none" }} />
+            Import JSON
+          </label>
+
+          <button
+            onClick={onClearLocal}
+            style={{
+              padding: "8px 16px",
+              fontSize: "14px",
+              color: "#64748b",
+              backgroundColor: "white",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Clear local
+          </button>
+        </>
+      )}
 
       {msg && (
         <span
