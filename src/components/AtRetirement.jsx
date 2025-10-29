@@ -29,6 +29,23 @@ function Txt({ value, onCommit, style, placeholder, disabled, inputMode }) {
       e.currentTarget.blur();
     }
   };
+
+  // Default styling to make inputs visually distinct
+  const defaultStyle = {
+    padding: "6px 10px",
+    fontSize: "16px",
+    border: "2px solid #cbd5e1",
+    borderRadius: "6px",
+    backgroundColor: "#ffffff",
+    color: "#1e293b",
+    outline: "none",
+    transition: "border-color 0.2s",
+  };
+
+  const focusStyle = {
+    borderColor: "#0284c7",
+  };
+
   return (
     <input
       type="text"
@@ -37,9 +54,13 @@ function Txt({ value, onCommit, style, placeholder, disabled, inputMode }) {
       disabled={disabled}
       placeholder={placeholder}
       onChange={(e) => setV(e.target.value)}
-      onBlur={() => onCommit?.(v)}
+      onBlur={(e) => {
+        onCommit?.(v);
+        e.currentTarget.style.borderColor = defaultStyle.border.split(' ')[2];
+      }}
       onKeyDown={onKeyDown}
-      style={style}
+      style={{ ...defaultStyle, ...style }}
+      onFocus={(e) => Object.assign(e.currentTarget.style, focusStyle)}
     />
   );
 }
@@ -1425,8 +1446,8 @@ const HelpToggle = ({ text }) => {
       {/* ================== PAGE 2: OUTPUTS ================== */}
       <div className="print-page">
         <section>
-          <h2 style={{ marginBottom: 10 }}>At-Retirement Summary</h2>
-          <div style={{ marginBottom: 8 }}>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#1e293b", marginBottom: 16 }}>At-Retirement Summary</h2>
+          <div style={{ marginBottom: 8, fontSize: "16px" }}>
             Years to retirement: <strong>{yearsToRetirement.toFixed(2)}</strong>
           </div>
 

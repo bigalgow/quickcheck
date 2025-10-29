@@ -1,5 +1,22 @@
 /* AtRetirement.css - Mobile Responsive Styles */
 
+/* Input and Select styling - make them visually distinct */
+select {
+  padding: 6px 10px;
+  font-size: 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+select:focus {
+  border-color: #0284c7;
+}
+
 /* Desktop defaults - these match the inline styles in the component */
 .two-col {
   display: grid;
