@@ -115,30 +115,30 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
       />
       */}
 
-      <div className="bg-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800">
+      <div className="bg-slate-100 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-800">
           Lifestyle Events
         </h2>
         {toggleHelp && (
           <button
             onClick={() => toggleHelp('lifeEventsHelp')}
-            className="text-sm font-normal text-sky-600 hover:text-sky-700"
+            className="text-xs sm:text-sm font-normal text-sky-600 hover:text-sky-700"
           >
             {helpVisibility.lifeEventsHelp ? '✕ Hide Help' : '? Show Help'}
           </button>
         )}
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
           <HelpText isVisible={helpVisibility.lifeEventsHelp}>
             {helpText.lifeEventsHelp}
           </HelpText>
-          <p className="text-slate-600 text-sm mb-6">
+          <p className="text-slate-600 text-sm sm:text-base mb-4 sm:mb-6">
             Add specific lifestyle events that may impact your financial plan during retirement.
           </p>
 
         {/* Form for adding/editing a new event */}
-        <div key="life-events-form" className="bg-slate-50 border border-slate-200 rounded-lg p-6 shadow-sm mb-6 space-y-6">
+        <div key="life-events-form" className="bg-slate-50 border border-slate-200 rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6 space-y-4 sm:space-y-6">
           {/* Mobile-friendly responsive layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <FormInput

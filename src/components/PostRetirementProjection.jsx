@@ -6,8 +6,9 @@ import ProjectionInputs from './ProjectionInputs';
 import LifeEvents from './LifeEvents';
 import ProjectionTable from './ProjectionTable';
 import ProjectionCharts from './ProjectionCharts';
+import SaveBar from './SaveBar';
 import { formatCurrency } from '../utils/money';
-import { loadProjectionInputs, saveProjectionInputs } from '../utils/persist';
+import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData } from '../utils/persist';
 
 export default function PostRetirementProjection() {
   const location = useLocation();
@@ -38,6 +39,9 @@ export default function PostRetirementProjection() {
   const [lifeEvents, setLifeEvents] = useState(savedInputs?.lifeEvents ?? []);
   const [helpVisibility, setHelpVisibility] = useState({});
 
+  // Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   // Auto-save projection inputs to localStorage whenever they change
   useEffect(() => {
     const dataToSave = {
@@ -48,6 +52,7 @@ export default function PostRetirementProjection() {
     };
     console.log('💾 Projection: Saving to localStorage:', dataToSave);
     saveProjectionInputs(dataToSave);
+    setHasUnsavedChanges(true);
   }, [isaRecurringAmount, isaRecurringYears, dcDrawdownPercent, lifeEvents]);
 
   // Calculate projection when inputs change
@@ -71,6 +76,23 @@ export default function PostRetirementProjection() {
     return <div>Loading...</div>;
   }
 
+  // Get unified data for SaveBar
+  const unifiedData = loadUnifiedData();
+  const atRetirementInputs = unifiedData?.atRetirement?.form || {};
+  const atRetirementOutputs = unifiedData?.atRetirement?.atRetirement || {};
+
+  // Prepare data for export (includes both sections)
+  const exportData = {
+    inputs: atRetirementInputs,
+    outputs: atRetirementOutputs,
+    projection: {
+      isaRecurringAmount,
+      isaRecurringYears,
+      dcDrawdownPercent,
+      lifeEvents,
+    },
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-6">
@@ -84,6 +106,30 @@ export default function PostRetirementProjection() {
           ← Back to At-Retirement Calculator
         </button>
       </div>
+
+      {/* Save / Print / Export */}
+      <SaveBar
+        inputs={exportData.inputs}
+        outputs={exportData.outputs}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onSaveSuccess={() => setHasUnsavedChanges(false)}
+        onImportJson={(data) => {
+          // Handle imported data - update projection inputs if present
+          if (data?.projection) {
+            setIsaRecurringAmount(data.projection.isaRecurringAmount ?? 0);
+            setIsaRecurringYears(data.projection.isaRecurringYears ?? 0);
+            setDcDrawdownPercent(data.projection.dcDrawdownPercent ?? 4.0);
+            setLifeEvents(data.projection.lifeEvents ?? []);
+          }
+          // Note: At Retirement data is handled by sessionStorage auto-load
+        }}
+        onClearLocal={() => {
+          if (confirm("Clear all local data? This will reset both At Retirement and Projection data.")) {
+            sessionStorage.clear();
+            navigate('/');
+          }
+        }}
+      />
 
       {/* Opening Values Summary */}
       <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 sm:p-6 mb-6">

@@ -12,16 +12,16 @@ export default function ProjectionInputs({
 }) {
   return (
     <div className="bg-white rounded-lg shadow-lg border border-slate-200 mb-6 overflow-hidden">
-      <div className="bg-slate-100 px-6 py-4 border-b border-slate-200">
-        <h2 className="text-xl font-bold text-slate-800 text-left">
+      <div className="bg-slate-100 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-800 text-left">
           Projection Inputs
         </h2>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* ISA Recurring Investment */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="text-base font-semibold text-slate-800 mb-3">ISA Recurring Investment</h3>
+        <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-3">ISA Recurring Investment</h3>
           <div className="space-y-4">
             <FormInput
               label="Annual Amount (£)"
@@ -43,17 +43,17 @@ export default function ProjectionInputs({
               placeholder="e.g., 10"
             />
           </div>
-          <p className="text-xs text-slate-600 mt-3 italic">
+          <p className="text-xs sm:text-sm text-slate-600 mt-3 italic">
             Transfer from taxable savings to ISA annually for tax efficiency (only if taxable savings sufficient)
           </p>
         </div>
 
         {/* DC Drawdown Slider */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="text-base font-semibold text-slate-800 mb-3">DC Drawdown Strategy</h3>
+        <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-3">DC Drawdown Strategy</h3>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">
-              Initial Drawdown Percentage: <span className="text-lg font-bold text-sky-600">{dcDrawdownPercent.toFixed(1)}%</span>
+            <label className="block text-sm sm:text-base font-medium text-slate-700 mb-3">
+              Initial Drawdown Percentage: <span className="text-lg sm:text-xl font-bold text-sky-600">{dcDrawdownPercent.toFixed(1)}%</span>
             </label>
             <input
               type="range"
@@ -72,7 +72,7 @@ export default function ProjectionInputs({
               <span>10%</span>
             </div>
           </div>
-          <p className="text-xs text-slate-600 mt-3 italic">
+          <p className="text-xs sm:text-sm text-slate-600 mt-3 italic">
             Year 1 drawdown as % of DC pot. Subsequent years: inflate cash amount (4% rule)
           </p>
         </div>

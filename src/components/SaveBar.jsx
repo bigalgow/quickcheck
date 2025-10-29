@@ -135,7 +135,14 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
   // Auto-load saved data when user logs in
   useEffect(() => {
     if (isAuthenticated && userInfo) {
-      console.log("Signed in as:", userInfo?.name || userInfo?.username || userInfo?.sub);
+      console.log("✅ Signed in. User info:", userInfo);
+      console.log("👤 Name fields:", {
+        name: userInfo?.name,
+        given_name: userInfo?.given_name,
+        family_name: userInfo?.family_name,
+        username: userInfo?.username,
+        email: userInfo?.email
+      });
       loadProfile();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,8 +193,12 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
             Welcome
             {userInfo?.name
               ? `, ${userInfo.name}`
+              : userInfo?.given_name
+              ? `, ${userInfo.given_name}`
               : userInfo?.username
               ? `, ${userInfo.username}`
+              : userInfo?.email
+              ? `, ${userInfo.email.split('@')[0]}`
               : "!"}
           </span>
           <button
