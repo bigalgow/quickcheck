@@ -133,7 +133,7 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
           <HelpText isVisible={helpVisibility.lifeEventsHelp}>
             {helpText.lifeEventsHelp}
           </HelpText>
-          <p className="text-slate-600 text-sm sm:text-base mb-4 sm:mb-6">
+          <p className="text-slate-600 text-base mb-4 sm:mb-6">
             Add specific lifestyle events that may impact your financial plan during retirement.
           </p>
 
@@ -167,13 +167,13 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
               placeholder="e.g., 20000"
             />
             <div>
-              <label htmlFor="eventType" className="text-sm font-medium text-slate-700 block mb-2">Type</label>
+              <label htmlFor="eventType" className="text-base font-medium text-slate-700 block mb-2">Type</label>
               <select
                 id="eventType"
                 name="type"
                 value={newEvent.type}
                 onChange={handleInputChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm h-10"
+                className="w-full rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               >
                 <option value="expense">{EVENT_TYPES.expense}</option>
                 <option value="income">{EVENT_TYPES.income}</option>
@@ -183,13 +183,13 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
 
           {/* Recurring event section with better spacing */}
           <div className="flex flex-wrap items-start gap-6 pt-6 mt-4 pb-8 border-t border-slate-200">
-            <label className="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+            <label className="inline-flex items-center gap-3 text-base font-medium text-slate-700">
               <input
                 type="checkbox"
                 name="isRecurring"
                 checked={newEvent.isRecurring}
                 onChange={handleInputChange}
-                className="form-checkbox focus:ring-0 focus:outline-none"
+                className="form-checkbox focus:ring-0 focus:outline-none w-5 h-5"
               />
               <span>Recurring Event?</span>
             </label>
@@ -220,14 +220,14 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-slate-800">Your Events</h3>
           {sortedEvents.length === 0 ? (
-            <p className="text-center text-slate-500">No events added yet.</p>
+            <p className="text-center text-base text-slate-500">No events added yet.</p>
           ) : (
             <ul className="space-y-3">
               {sortedEvents.map((event) => (
                 <li key={event.id} className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-between gap-4 transition-all hover:shadow-md">
                   <div>
-                    <span className="font-semibold text-slate-800">{event.name}</span>
-                    <span className="block text-sm text-slate-500">
+                    <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                    <span className="block text-base text-slate-500">
                       at age {event.age}
                       {event.isRecurring && ` for ${event.recurringYears} years`}
                       :
@@ -240,13 +240,13 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEditClick(event)}
-                      className="px-3 py-1 text-sm rounded-md border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                      className="px-3 py-2 text-base rounded-md border border-blue-500 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeleteEvent(event.id)}
-                      className="px-3 py-1 text-sm rounded-md border border-red-500 bg-red-500 text-white hover:bg-red-600 transition-colors"
+                      className="px-3 py-2 text-base rounded-md border border-red-500 bg-red-500 text-white hover:bg-red-600 transition-colors"
                     >
                       Delete
                     </button>

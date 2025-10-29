@@ -133,10 +133,10 @@ export default function PostRetirementProjection() {
 
       {/* Opening Values Summary */}
       <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 sm:p-6 mb-6">
-        <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200">
+        <h2 className="text-base sm:text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200">
           Opening Values (At Retirement)
         </h2>
-        <div className="space-y-2 text-sm sm:text-base">
+        <div className="space-y-2 text-base sm:text-base">
           <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
             <span className="text-slate-600">Retirement Age:</span>
             <span className="font-semibold text-slate-800">{openingValues.retirementAge}</span>

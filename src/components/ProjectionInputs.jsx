@@ -43,7 +43,7 @@ export default function ProjectionInputs({
               placeholder="e.g., 10"
             />
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 mt-3 italic">
+          <p className="text-sm text-slate-600 mt-3 italic">
             Transfer from taxable savings to ISA annually for tax efficiency (only if taxable savings sufficient)
           </p>
         </div>
@@ -52,8 +52,8 @@ export default function ProjectionInputs({
         <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
           <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-3">DC Drawdown Strategy</h3>
           <div>
-            <label className="block text-sm sm:text-base font-medium text-slate-700 mb-3">
-              Initial Drawdown Percentage: <span className="text-lg sm:text-xl font-bold text-sky-600">{dcDrawdownPercent.toFixed(1)}%</span>
+            <label className="block text-base font-medium text-slate-700 mb-3">
+              Initial Drawdown Percentage: <span className="text-xl font-bold text-sky-600">{dcDrawdownPercent.toFixed(1)}%</span>
             </label>
             <input
               type="range"
@@ -64,7 +64,7 @@ export default function ProjectionInputs({
               onChange={(e) => setDcDrawdownPercent(parseFloat(e.target.value))}
               className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
             />
-            <div className="flex justify-between text-xs text-slate-500 mt-2">
+            <div className="flex justify-between text-sm text-slate-500 mt-2">
               <span>0%</span>
               <span>2.5%</span>
               <span>5%</span>
@@ -72,7 +72,7 @@ export default function ProjectionInputs({
               <span>10%</span>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 mt-3 italic">
+          <p className="text-sm text-slate-600 mt-3 italic">
             Year 1 drawdown as % of DC pot. Subsequent years: inflate cash amount (4% rule)
           </p>
         </div>
