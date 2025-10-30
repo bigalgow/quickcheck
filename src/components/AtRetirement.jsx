@@ -76,10 +76,10 @@ export default function AtRetirement() {
     inflationAssumption: "0.025",
     retirementAge: "65", // years only now
     hasDbPension: true,
-    desiredSpendAnnual: "0",
+    desiredSpendAnnual: "",
 
     // DC
-    dcPotNow: "0",
+    dcPotNow: "",
     takeDCTaxFree25: false,
     growthAssumption: "0.04",
     drawdownRate: "0.04",
@@ -89,11 +89,11 @@ export default function AtRetirement() {
     // DC contributions module (start-of-year contributions + inflate personal)
     dcIsContributing: false,
     dcContributionType: "employer", // "employer" | "personal"
-    salaryNow: "0",
+    salaryNow: "",
     eePct: "0.05",
     erPct: "0.05",
     // salary growth inputs removed (we use inflation in logic)
-    personalAnnualContrib: "0",
+    personalAnnualContrib: "",
     // personal escalation input removed (we use inflation in logic)
 
     // DB
@@ -102,19 +102,19 @@ export default function AtRetirement() {
     // State Pension & Other
     statePensionAnnual: String(Math.round(230.25 * 52)),
     statePensionAge: "67",
-    otherIncomeNow: "0",
+    otherIncomeNow: "",
 
     // Savings
-    isaBalance: "0",
-    isaAddPerYear: "0",
+    isaBalance: "",
+    isaAddPerYear: "",
     isaRate: "0.03",
 
-    taxableSavingsBalance: "0",
-    taxableSavingsAddPerYear: "0",
+    taxableSavingsBalance: "",
+    taxableSavingsAddPerYear: "",
     taxableSavingsRate: "0.03",
 
     // Other
-    additionalSavingsToRetirementPerYear: "0",
+    additionalSavingsToRetirementPerYear: "",
   });
 
   // ===== DB Schemes =====
@@ -123,9 +123,9 @@ export default function AtRetirement() {
       id: "active-1",
       kind: "active",
       accrualDenominator: "60",
-      serviceYearsToDate: "0",
+      serviceYearsToDate: "",
       maxServiceYears: "40",
-      pensionableSalaryNow: "0",
+      pensionableSalaryNow: "",
       // salary growth inputs removed; we use inflation
     },
   ]);
@@ -135,7 +135,7 @@ export default function AtRetirement() {
       {
         id: `deferred-${Date.now()}`,
         kind: "deferred",
-        preservedPensionNow: "0",
+        preservedPensionNow: "",
         revaluationAssumption: "0.025",
         accrualDenominator: "",
         serviceYearsToDate: "",
@@ -1623,12 +1623,13 @@ const HelpToggle = ({ text }) => {
         </div>
 
         {/* QUICK MODELLING (live sliders) */}
-        <Section
-          title="Quick Modelling"
-          sectionKey="results"
-          openFlag={open.modelling}
-          onToggle={() => toggle("modelling")}
-        >
+        <div className="quick-modelling-section">
+          <Section
+            title="Quick Modelling"
+            sectionKey="results"
+            openFlag={open.modelling}
+            onToggle={() => toggle("modelling")}
+          >
           <div
             style={{
               display: "grid",
@@ -1779,6 +1780,7 @@ const HelpToggle = ({ text }) => {
             save; Reset to undo a row; Reset all to clear every override.
           </MiniHelp>
         </Section>
+        </div>
       </div>
     </div>
   );

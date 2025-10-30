@@ -28,10 +28,10 @@ export default function PostRetirementProjection() {
 
   // Projection inputs state - initialize from localStorage if available
   const [isaRecurringAmount, setIsaRecurringAmount] = useState(
-    savedInputs?.isaRecurringAmount ?? 0
+    savedInputs?.isaRecurringAmount ?? ""
   );
   const [isaRecurringYears, setIsaRecurringYears] = useState(
-    savedInputs?.isaRecurringYears ?? 0
+    savedInputs?.isaRecurringYears ?? ""
   );
   const [dcDrawdownPercent, setDcDrawdownPercent] = useState(
     savedInputs?.dcDrawdownPercent ?? openingValues?.dcDrawdownPercent ?? 4.0
@@ -116,8 +116,8 @@ export default function PostRetirementProjection() {
         onImportJson={(data) => {
           // Handle imported data - update projection inputs if present
           if (data?.projection) {
-            setIsaRecurringAmount(data.projection.isaRecurringAmount ?? 0);
-            setIsaRecurringYears(data.projection.isaRecurringYears ?? 0);
+            setIsaRecurringAmount(data.projection.isaRecurringAmount ?? "");
+            setIsaRecurringYears(data.projection.isaRecurringYears ?? "");
             setDcDrawdownPercent(data.projection.dcDrawdownPercent ?? 4.0);
             setLifeEvents(data.projection.lifeEvents ?? []);
           }

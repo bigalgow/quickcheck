@@ -110,3 +110,10 @@ select:focus {
     max-width: 100%;
   }
 }
+
+/* Hide Quick Modelling sliders on mobile portrait only (too difficult to use) */
+@media (max-width: 768px) and (orientation: portrait) {
+  .quick-modelling-section {
+    display: none !important;
+  }
+}
