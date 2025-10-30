@@ -94,9 +94,9 @@ export default function PostRetirementProjection() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
+    <div className="max-w-full md:max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 mb-2">
           25-Year Retirement Projection
         </h1>
         <button

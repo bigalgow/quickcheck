@@ -9,11 +9,11 @@ import PostRetirementProjection from "./components/PostRetirementProjection.jsx"
 
 export default function App() {
   return (
-    <div className="App" style={{ padding: 24 }}>
+    <div className="App" style={{ padding: "24px 16px", maxWidth: "100%" }}>
       <Routes>
         <Route path="/" element={
           <>
-            <h1>RetirePlan — At-Retirement Calculator</h1>
+            <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2.5rem)" }}>RetirePlan — At-Retirement Calculator</h1>
             <AtRetirement />
           </>
         } />
