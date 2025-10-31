@@ -416,11 +416,11 @@ export default function AtRetirement() {
       setModel(savedModel);
     }
 
-    // Mark initial load complete after a short delay to allow state updates
+    // Mark initial load complete after delay longer than auto-save debounce (800ms)
     setTimeout(() => {
       isInitialLoadRef.current = false;
       console.log('✅ At Retirement: Initial load complete');
-    }, 100);
+    }, 1000);
   }, []); // Only run once on mount
 
   // ---- Autosave (debounced) ----
@@ -838,12 +838,12 @@ const HelpToggle = ({ text }) => {
             dbSchemes: data.inputs?.dbSchemes ?? data.dbSchemes ?? dbSchemes,
           });
 
-          // Reset loading flag and clear unsaved changes after data loads
+          // Reset loading flag and clear unsaved changes after data loads (longer than auto-save debounce)
           setTimeout(() => {
             isInitialLoadRef.current = false;
             setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
             console.log('✅ Import complete - no unsaved changes');
-          }, 100);
+          }, 1000);
         }}
         onClearLocal={() => {
           clearAutosave();

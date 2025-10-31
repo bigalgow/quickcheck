@@ -45,10 +45,18 @@ export default function PostRetirementProjection() {
 
   // Mark initial load complete after component mounts and initial data is set
   useEffect(() => {
+    // If no saved data, mark load complete immediately
+    if (!savedInputs) {
+      console.log('📊 Projection: No saved data found');
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    // Otherwise wait for state updates to complete (generous timeout to be safe)
     setTimeout(() => {
       isInitialLoadRef.current = false;
       console.log('✅ Projection: Initial load complete');
-    }, 100);
+    }, 500);
   }, []);
 
   // Auto-save projection inputs to localStorage whenever they change
@@ -142,12 +150,12 @@ export default function PostRetirementProjection() {
           }
           // Note: At Retirement data is handled by sessionStorage auto-load
 
-          // Reset loading flag and clear unsaved changes after data loads
+          // Reset loading flag and clear unsaved changes after data loads (generous timeout)
           setTimeout(() => {
             isInitialLoadRef.current = false;
             setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
             console.log('✅ Projection: Import complete - no unsaved changes');
-          }, 100);
+          }, 500);
         }}
         onClearLocal={() => {
           if (confirm("Clear all local data? This will reset both At Retirement and Projection data.")) {
