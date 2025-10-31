@@ -1,5 +1,5 @@
 // src/components/PostRetirementProjection.jsx
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { calculateProjection, extractWarnings } from '../logic/projection';
 import ProjectionInputs from './ProjectionInputs';
@@ -41,6 +41,15 @@ export default function PostRetirementProjection() {
 
   // Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const isInitialLoadRef = useRef(true); // Track if we're in initial load phase
+
+  // Mark initial load complete after component mounts and initial data is set
+  useEffect(() => {
+    setTimeout(() => {
+      isInitialLoadRef.current = false;
+      console.log('✅ Projection: Initial load complete');
+    }, 100);
+  }, []);
 
   // Auto-save projection inputs to localStorage whenever they change
   useEffect(() => {
@@ -52,7 +61,14 @@ export default function PostRetirementProjection() {
     };
     console.log('💾 Projection: Saving to localStorage:', dataToSave);
     saveProjectionInputs(dataToSave);
-    setHasUnsavedChanges(true);
+
+    // Only mark as unsaved if not in initial load phase
+    if (!isInitialLoadRef.current) {
+      console.log('💾 Projection: Auto-save triggered - marking as unsaved changes');
+      setHasUnsavedChanges(true);
+    } else {
+      console.log('💾 Projection: Auto-save during initial load - NOT marking as unsaved');
+    }
   }, [isaRecurringAmount, isaRecurringYears, dcDrawdownPercent, lifeEvents]);
 
   // Calculate projection when inputs change
@@ -114,6 +130,9 @@ export default function PostRetirementProjection() {
         hasUnsavedChanges={hasUnsavedChanges}
         onSaveSuccess={() => setHasUnsavedChanges(false)}
         onImportJson={(data) => {
+          // Temporarily mark as loading to prevent unsaved changes flag
+          isInitialLoadRef.current = true;
+
           // Handle imported data - update projection inputs if present
           if (data?.projection) {
             setIsaRecurringAmount(data.projection.isaRecurringAmount ?? "");
@@ -122,6 +141,13 @@ export default function PostRetirementProjection() {
             setLifeEvents(data.projection.lifeEvents ?? []);
           }
           // Note: At Retirement data is handled by sessionStorage auto-load
+
+          // Reset loading flag and clear unsaved changes after data loads
+          setTimeout(() => {
+            isInitialLoadRef.current = false;
+            setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
+            console.log('✅ Projection: Import complete - no unsaved changes');
+          }, 100);
         }}
         onClearLocal={() => {
           if (confirm("Clear all local data? This will reset both At Retirement and Projection data.")) {

@@ -1,5 +1,5 @@
 // src/components/AtRetirement.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { atRetirement } from "../logic/atRetirement.js";
 import {
@@ -388,6 +388,7 @@ export default function AtRetirement() {
   // ---- Track unsaved changes ----
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastCloudSave, setLastCloudSave] = useState(null);
+  const isInitialLoadRef = useRef(true); // Track if we're in initial load phase
 
   // ---- Autosave restore (automatic) ----
   useEffect(() => {
@@ -395,6 +396,7 @@ export default function AtRetirement() {
     console.log('🏠 At Retirement: Loaded autosave data:', snap);
     if (!snap) {
       console.log('🏠 At Retirement: No saved data found');
+      isInitialLoadRef.current = false; // Mark initial load complete
       return;
     }
 
@@ -413,6 +415,12 @@ export default function AtRetirement() {
       console.log('✅ At Retirement: Auto-restoring model');
       setModel(savedModel);
     }
+
+    // Mark initial load complete after a short delay to allow state updates
+    setTimeout(() => {
+      isInitialLoadRef.current = false;
+      console.log('✅ At Retirement: Initial load complete');
+    }, 100);
   }, []); // Only run once on mount
 
   // ---- Autosave (debounced) ----
@@ -429,8 +437,13 @@ export default function AtRetirement() {
           assetsTotal,
         },
       });
-      // Mark as having unsaved changes (changes exist in sessionStorage but not in cloud)
-      setHasUnsavedChanges(true);
+      // Only mark as unsaved if not in initial load phase (i.e., user actually made changes)
+      if (!isInitialLoadRef.current) {
+        console.log('💾 At Retirement: Auto-save triggered - marking as unsaved changes');
+        setHasUnsavedChanges(true);
+      } else {
+        console.log('💾 At Retirement: Auto-save during initial load - NOT marking as unsaved');
+      }
     }, 800);
     return () => clearTimeout(h);
   }, [
@@ -779,6 +792,9 @@ const HelpToggle = ({ text }) => {
         onImportJson={(data) => {
           console.log('📥 Importing JSON data:', data);
 
+          // Temporarily mark as loading to prevent unsaved changes flag
+          isInitialLoadRef.current = true;
+
           // Handle numeric inputs from exported JSON - convert to strings for form
           if (data?.inputs) {
             const formData = {};
@@ -821,6 +837,13 @@ const HelpToggle = ({ text }) => {
             form: data.inputs ? formData : data.form ?? form,
             dbSchemes: data.inputs?.dbSchemes ?? data.dbSchemes ?? dbSchemes,
           });
+
+          // Reset loading flag and clear unsaved changes after data loads
+          setTimeout(() => {
+            isInitialLoadRef.current = false;
+            setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
+            console.log('✅ Import complete - no unsaved changes');
+          }, 100);
         }}
         onClearLocal={() => {
           clearAutosave();
