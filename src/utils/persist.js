@@ -122,3 +122,41 @@ export function saveProjectionInputs(payload) {
 export function clearProjectionInputs() {
   clearUnifiedData();
 }
+
+// ===== Cloud Save Timestamp Tracking =====
+// Stores when data was last saved to cloud, shared across both pages
+
+const CLOUD_SAVE_KEY = 'retireplan.lastCloudSave';
+
+/**
+ * Get the timestamp of the last successful cloud save
+ * Returns ISO string or null if never saved
+ */
+export function getLastCloudSave() {
+  try {
+    return sessionStorage.getItem(CLOUD_SAVE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Update the cloud save timestamp (call after successful cloud save)
+ */
+export function setLastCloudSave(timestamp = new Date().toISOString()) {
+  try {
+    sessionStorage.setItem(CLOUD_SAVE_KEY, timestamp);
+    console.log('☁️ Updated last cloud save timestamp:', timestamp);
+  } catch {
+    // ignore quota errors
+  }
+}
+
+/**
+ * Clear the cloud save timestamp
+ */
+export function clearLastCloudSave() {
+  try {
+    sessionStorage.removeItem(CLOUD_SAVE_KEY);
+  } catch {}
+}

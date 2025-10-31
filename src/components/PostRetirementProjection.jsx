@@ -8,7 +8,7 @@ import ProjectionTable from './ProjectionTable';
 import ProjectionCharts from './ProjectionCharts';
 import SaveBar from './SaveBar';
 import { formatCurrency } from '../utils/money';
-import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData } from '../utils/persist';
+import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData, getLastCloudSave, setLastCloudSave } from '../utils/persist';
 
 export default function PostRetirementProjection() {
   const location = useLocation();
@@ -56,6 +56,18 @@ export default function PostRetirementProjection() {
     setTimeout(() => {
       isInitialLoadRef.current = false;
       console.log('✅ Projection: Initial load complete');
+
+      // Check if data was recently saved to cloud (e.g., from At-Retirement page)
+      const lastCloudSave = getLastCloudSave();
+      if (lastCloudSave) {
+        const cloudSaveTime = new Date(lastCloudSave).getTime();
+        const now = Date.now();
+        // If cloud save was within last 5 seconds, assume sessionStorage is in sync
+        if (now - cloudSaveTime < 5000) {
+          console.log('☁️ Recent cloud save detected - clearing unsaved changes flag');
+          setHasUnsavedChanges(false);
+        }
+      }
     }, 500);
   }, []);
 
@@ -136,7 +148,10 @@ export default function PostRetirementProjection() {
         inputs={exportData.inputs}
         outputs={exportData.outputs}
         hasUnsavedChanges={hasUnsavedChanges}
-        onSaveSuccess={() => setHasUnsavedChanges(false)}
+        onSaveSuccess={() => {
+          setHasUnsavedChanges(false);
+          setLastCloudSave(); // Update shared cloud save timestamp
+        }}
         onImportJson={(data) => {
           // Temporarily mark as loading to prevent unsaved changes flag
           isInitialLoadRef.current = true;

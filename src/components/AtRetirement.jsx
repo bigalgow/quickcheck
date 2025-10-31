@@ -11,7 +11,7 @@ import { calculateStatePensionAge, formatStatePensionAge } from "../utils/stateP
 import "./AtRetirement.css";
 
 import SaveBar from "./SaveBar.jsx";
-import { loadAutosave, saveAutosave, clearAutosave } from "../utils/persist.js";
+import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -387,7 +387,6 @@ export default function AtRetirement() {
 
   // ---- Track unsaved changes ----
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastCloudSave, setLastCloudSave] = useState(null);
   const isInitialLoadRef = useRef(true); // Track if we're in initial load phase
 
   // ---- Autosave restore (automatic) ----
@@ -420,6 +419,18 @@ export default function AtRetirement() {
     setTimeout(() => {
       isInitialLoadRef.current = false;
       console.log('✅ At Retirement: Initial load complete');
+
+      // Check if data was recently saved to cloud (e.g., from Projection page)
+      const lastCloudSave = getLastCloudSave();
+      if (lastCloudSave) {
+        const cloudSaveTime = new Date(lastCloudSave).getTime();
+        const now = Date.now();
+        // If cloud save was within last 5 seconds, assume sessionStorage is in sync
+        if (now - cloudSaveTime < 5000) {
+          console.log('☁️ Recent cloud save detected - clearing unsaved changes flag');
+          setHasUnsavedChanges(false);
+        }
+      }
     }, 1000);
   }, []); // Only run once on mount
 
@@ -787,7 +798,7 @@ const HelpToggle = ({ text }) => {
         hasUnsavedChanges={hasUnsavedChanges}
         onSaveSuccess={() => {
           setHasUnsavedChanges(false);
-          setLastCloudSave(new Date().toISOString());
+          setLastCloudSave(); // Update shared cloud save timestamp
         }}
         onImportJson={(data) => {
           console.log('📥 Importing JSON data:', data);
