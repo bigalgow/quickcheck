@@ -388,6 +388,7 @@ export default function AtRetirement() {
   // ---- Track unsaved changes ----
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const isInitialLoadRef = useRef(true); // Track if we're in initial load phase
+  const cloudLoadPendingRef = useRef(false); // Track if cloud load is in progress
 
   // ---- Autosave restore (automatic) ----
   useEffect(() => {
@@ -416,7 +417,13 @@ export default function AtRetirement() {
     }
 
     // Mark initial load complete after delay longer than auto-save debounce (800ms)
+    // But if cloud load is pending, wait for it to complete
     setTimeout(() => {
+      if (cloudLoadPendingRef.current) {
+        console.log('⏳ At Retirement: Waiting for cloud load to complete before marking initial load done');
+        return; // Don't mark as complete yet - cloud load callback will do it
+      }
+
       isInitialLoadRef.current = false;
       console.log('✅ At Retirement: Initial load complete');
 
@@ -799,6 +806,17 @@ const HelpToggle = ({ text }) => {
         onSaveSuccess={() => {
           setHasUnsavedChanges(false);
           setLastCloudSave(); // Update shared cloud save timestamp
+        }}
+        onCloudLoadStart={() => {
+          console.log('☁️ At Retirement: Cloud load starting');
+          cloudLoadPendingRef.current = true;
+        }}
+        onCloudLoadComplete={() => {
+          console.log('☁️ At Retirement: Cloud load complete');
+          cloudLoadPendingRef.current = false;
+          // Mark initial load as complete now that cloud data has loaded
+          isInitialLoadRef.current = false;
+          setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
         }}
         onImportJson={(data) => {
           console.log('📥 Importing JSON data:', data);

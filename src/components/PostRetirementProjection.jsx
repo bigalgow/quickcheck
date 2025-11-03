@@ -42,6 +42,7 @@ export default function PostRetirementProjection() {
   // Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const isInitialLoadRef = useRef(true); // Track if we're in initial load phase
+  const cloudLoadPendingRef = useRef(false); // Track if cloud load is in progress
 
   // Mark initial load complete after component mounts and initial data is set
   useEffect(() => {
@@ -53,7 +54,13 @@ export default function PostRetirementProjection() {
     }
 
     // Otherwise wait for state updates to complete (generous timeout to be safe)
+    // But if cloud load is pending, wait for it to complete
     setTimeout(() => {
+      if (cloudLoadPendingRef.current) {
+        console.log('⏳ Projection: Waiting for cloud load to complete before marking initial load done');
+        return; // Don't mark as complete yet - cloud load callback will do it
+      }
+
       isInitialLoadRef.current = false;
       console.log('✅ Projection: Initial load complete');
 
@@ -147,10 +154,22 @@ export default function PostRetirementProjection() {
       <SaveBar
         inputs={exportData.inputs}
         outputs={exportData.outputs}
+        projection={exportData.projection}
         hasUnsavedChanges={hasUnsavedChanges}
         onSaveSuccess={() => {
           setHasUnsavedChanges(false);
           setLastCloudSave(); // Update shared cloud save timestamp
+        }}
+        onCloudLoadStart={() => {
+          console.log('☁️ Projection: Cloud load starting');
+          cloudLoadPendingRef.current = true;
+        }}
+        onCloudLoadComplete={() => {
+          console.log('☁️ Projection: Cloud load complete');
+          cloudLoadPendingRef.current = false;
+          // Mark initial load as complete now that cloud data has loaded
+          isInitialLoadRef.current = false;
+          setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
         }}
         onImportJson={(data) => {
           // Temporarily mark as loading to prevent unsaved changes flag

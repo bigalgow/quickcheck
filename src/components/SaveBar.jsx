@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 
-export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, hasUnsavedChanges, onSaveSuccess }) {
+export default function SaveBar({ inputs, outputs, projection, onImportJson, onClearLocal, hasUnsavedChanges, onSaveSuccess, onCloudLoadStart, onCloudLoadComplete }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -11,13 +11,19 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
   const doSignOut = () => signOut();
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ inputs, outputs }, null, 2)], {
+    const dataToExport = { inputs, outputs };
+    // Include projection data if available (from Projection page)
+    if (projection) {
+      dataToExport.projection = projection;
+    }
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "retireplan-at-retirement.json";
+    const filename = projection ? "retireplan-full.json" : "retireplan-at-retirement.json";
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -39,9 +45,12 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
   // ---- load saved data from backend
   const loadProfile = async () => {
     try {
+      onCloudLoadStart?.(); // Notify parent that cloud load is starting
+
       const audience = import.meta.env.VITE_API_AUDIENCE;
       if (!audience) {
         console.info("ℹ️ VITE_API_AUDIENCE not configured - cloud save/load disabled (OK for local dev)");
+        onCloudLoadComplete?.(); // No cloud load will happen
         return;
       }
 
@@ -58,6 +67,7 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
         } else {
           console.warn("Load API error:", res.status, await res.text());
         }
+        onCloudLoadComplete?.(); // Load attempt finished
         return; // Don't show error to user on auto-load
       }
 
@@ -70,12 +80,14 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
       } else {
         console.log("ℹ️ No saved data found in cloud");
       }
+      onCloudLoadComplete?.(); // Load complete
     } catch (e) {
       if (e.name === 'SyntaxError' || e.message?.includes('JSON')) {
         console.info("ℹ️ API endpoint not available (OK in local dev)");
       } else {
         console.warn("Load failed:", e.message);
       }
+      onCloudLoadComplete?.(); // Load attempt finished (with error)
       // Don't show error to user on auto-load
     }
   };
@@ -97,10 +109,16 @@ export default function SaveBar({ inputs, outputs, onImportJson, onClearLocal, h
       const token = await getAccessToken(audience);
       // or: const token = await getAccessToken({ resource: audience });
 
+      const dataToSave = { inputs, outputs, savedAt: new Date().toISOString() };
+      // Include projection data if available (from Projection page)
+      if (projection) {
+        dataToSave.projection = projection;
+      }
+
       const res = await fetch("/api/me/retireplan", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ inputs, outputs, savedAt: new Date().toISOString() }),
+        body: JSON.stringify(dataToSave),
       });
 
       if (!res.ok) {
