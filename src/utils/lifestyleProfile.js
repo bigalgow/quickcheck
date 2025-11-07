@@ -1,5 +1,6 @@
 // src/utils/lifestyleProfile.js
 // Utility functions for lifestyle profile operations
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * PLSA (Pension and Lifetime Savings Association) benchmark values for 2024
@@ -112,12 +113,13 @@ export function getAgeAppropriateMessage(userAge, context) {
  */
 export function transformToProjectionEvents(exceptionalItems, retirementAge) {
   return exceptionalItems.map(item => ({
+    id: uuidv4(), // Generate unique ID for each event
     name: item.name,
     age: retirementAge + (item.year || 0),
     amount: item.cost,
     type: 'expense', // All lifestyle items are expenses
-    recurring: item.timing === 'recurring',
-    years: item.duration || (item.timing === 'oneOff' ? 1 : null),
+    isRecurring: item.timing === 'recurring', // Match LifeEvents field name
+    recurringYears: item.duration || (item.timing === 'oneOff' ? 1 : null), // Match LifeEvents field name
     source: 'lifestyleProfile' // Mark as coming from profile
   }));
 }
