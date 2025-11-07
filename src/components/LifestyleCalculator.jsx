@@ -731,7 +731,7 @@ function Step3ExceptionalItems({
           <h3 className="font-semibold text-slate-800 mb-2">
             Selected: {exceptionalItems.length} item{exceptionalItems.length !== 1 ? 's' : ''}
           </h3>
-          <ul className="space-y-2">
+          <ul className="space-y-2 mb-3">
             {exceptionalItems.map((item, idx) => (
               <li key={idx} className="flex justify-between items-center text-sm">
                 <span className="text-slate-700">{item.name}</span>
@@ -752,6 +752,11 @@ function Step3ExceptionalItems({
               </li>
             ))}
           </ul>
+          <div className="pt-3 border-t border-sky-300">
+            <p className="text-xs text-slate-600">
+              💡 <strong>Tip:</strong> You can adjust timing (start age, duration) and add more detail in the full projection planner after saving.
+            </p>
+          </div>
         </div>
       )}
 

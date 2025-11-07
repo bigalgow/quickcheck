@@ -86,7 +86,7 @@ export default function PostRetirementProjection() {
     }, 500);
   }, []);
 
-  // Load lifestyle profile and auto-populate events
+  // Load lifestyle profile and smart-merge events
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -119,20 +119,26 @@ export default function PostRetirementProjection() {
             console.log('✅ Loaded lifestyle profile:', profile);
             setLifestyleProfile(profile);
 
-            // Only auto-populate events if we haven't done so yet and no events exist
-            if (!profileEventsLoadedRef.current && lifeEvents.length === 0) {
-              const retirementAge = openingValues.retirementAge;
-              const transformedEvents = transformToProjectionEvents(
-                profile.exceptionalItems,
-                retirementAge
-              );
+            const retirementAge = openingValues.retirementAge;
+            const newProfileEvents = transformToProjectionEvents(
+              profile.exceptionalItems,
+              retirementAge
+            );
 
-              if (transformedEvents.length > 0) {
-                console.log('✅ Auto-populated events from profile:', transformedEvents);
-                setLifeEvents(transformedEvents);
-                profileEventsLoadedRef.current = true;
-              }
-            }
+            // Smart merge: Remove old profile-sourced events, keep manual events, add new profile events
+            setLifeEvents(currentEvents => {
+              // Keep only manual events (no source field or source !== 'lifestyleProfile')
+              const manualEvents = currentEvents.filter(e => e.source !== 'lifestyleProfile');
+
+              // Combine with new profile events
+              const mergedEvents = [...manualEvents, ...newProfileEvents];
+
+              console.log(`✅ Smart merge: ${manualEvents.length} manual + ${newProfileEvents.length} profile = ${mergedEvents.length} total events`);
+
+              return mergedEvents;
+            });
+
+            profileEventsLoadedRef.current = true;
           }
         }
       } catch (e) {
@@ -331,15 +337,17 @@ export default function PostRetirementProjection() {
       <div className="mb-6">
         {lifestyleProfile && profileEventsLoadedRef.current && lifeEvents.some(e => e.source === 'lifestyleProfile') && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-700">
-              📋 <strong>Events from your lifestyle profile have been added below.</strong>
-              {' '}You can edit, delete, or add more events.
+            <p className="text-sm text-green-700 mb-2">
+              📋 <strong>Events from your lifestyle profile ("{lifestyleProfile.profileName}") are shown below.</strong>
+            </p>
+            <p className="text-xs text-green-600">
+              You can edit timing, amounts, or delete these events. Manual events you add will be preserved.
               {' '}
               <button
                 onClick={() => navigate('/lifestyle')}
                 className="text-sky-600 hover:text-sky-700 underline font-medium"
               >
-                Edit lifestyle profile
+                Update lifestyle profile
               </button>
             </p>
           </div>
