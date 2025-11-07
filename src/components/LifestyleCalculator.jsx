@@ -1,5 +1,5 @@
 // src/components/LifestyleCalculator.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import {
@@ -15,18 +15,28 @@ import {
 
 export default function LifestyleCalculator({ existingProfile = null, onComplete }) {
   const navigate = useNavigate();
-  const { isAuthenticated, userInfo, getAccessToken } = useAuth();
-
-  // Calculate user age from DOB if available (simplified - use current year)
-  const userAge = 50; // TODO: Calculate from userInfo.birthdate if available
+  const { isAuthenticated, userInfo, getAccessToken, signIn } = useAuth();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [loadingExisting, setLoadingExisting] = useState(true);
 
-  // Step 1: Household
+  // Step 1: Household & Age
+  const [ageRange, setAgeRange] = useState(existingProfile?.ageRange || '');
   const [householdType, setHouseholdType] = useState(existingProfile?.householdType || '');
+
+  // Calculate user age midpoint from age range for calculations
+  const userAge = useMemo(() => {
+    const ranges = {
+      '30-39': 35,
+      '40-49': 45,
+      '50-59': 55,
+      '60+': 65
+    };
+    return ranges[ageRange] || 50;
+  }, [ageRange]);
 
   // Step 2: Baseline
   const [baselineTier, setBaselineTier] = useState(existingProfile?.baselineTier || '');
@@ -55,6 +65,58 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
     [exceptionalItems]
   );
 
+  // Load existing profile on mount (if authenticated and no existingProfile prop)
+  useEffect(() => {
+    const loadExistingProfile = async () => {
+      // If profile passed as prop, use that
+      if (existingProfile) {
+        setLoadingExisting(false);
+        return;
+      }
+
+      // If not authenticated, skip loading
+      if (!isAuthenticated) {
+        setLoadingExisting(false);
+        return;
+      }
+
+      try {
+        const audience = import.meta.env.VITE_API_AUDIENCE;
+        if (!audience) {
+          console.log('No API audience - skipping profile load');
+          setLoadingExisting(false);
+          return;
+        }
+
+        const token = await getAccessToken(audience);
+        const res = await fetch('/api/me/lifestyle', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile) {
+            console.log('✅ Loaded existing lifestyle profile:', profile);
+            // Populate form with existing profile data
+            setAgeRange(profile.ageRange || '');
+            setHouseholdType(profile.householdType || '');
+            setBaselineTier(profile.baselineTier || '');
+            setBaselineAmount(profile.baselineAmount || 0);
+            setBaselineSource(profile.baselineSource || '');
+            setExceptionalItems(profile.exceptionalItems || []);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load existing lifestyle profile:', e);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExistingProfile();
+  }, [isAuthenticated, getAccessToken, existingProfile]);
+
   // Navigation
   const goToStep = (step) => {
     if (step >= 1 && step <= 4) {
@@ -65,8 +127,8 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
 
   const goNext = () => {
     // Validation before moving forward
-    if (currentStep === 1 && !householdType) {
-      setError('Please select a household type');
+    if (currentStep === 1 && (!ageRange || !householdType)) {
+      setError('Please select your age range and household type');
       return;
     }
     if (currentStep === 2 && (!baselineTier || !baselineAmount)) {
@@ -84,7 +146,14 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
 
   // Save profile
   const saveProfile = async () => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      setError('Please sign in to save your profile');
+      return;
+    }
+
     const profile = {
+      ageRange,
       householdType,
       baselineTier,
       baselineAmount,
@@ -111,7 +180,14 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
       setError(null);
 
       const audience = import.meta.env.VITE_API_AUDIENCE;
+      if (!audience) {
+        throw new Error('API configuration missing');
+      }
+
       const token = await getAccessToken(audience);
+      if (!token) {
+        throw new Error('Failed to get access token');
+      }
 
       const res = await fetch('/api/me/lifestyle', {
         method: 'POST',
@@ -123,8 +199,11 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
       });
 
       if (!res.ok) {
-        throw new Error(`Save failed: ${res.status}`);
+        const errorText = await res.text();
+        throw new Error(`Save failed: ${res.status} - ${errorText}`);
       }
+
+      console.log('✅ Lifestyle profile saved successfully');
 
       // Success - navigate to calculator or call completion handler
       if (onComplete) {
@@ -134,11 +213,22 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
       }
     } catch (e) {
       console.error('Save lifestyle profile error:', e);
-      setError(e.message || 'Failed to save profile');
+      setError(e.message || 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
     }
   };
+
+  // Show loading state while checking for existing profile
+  if (loadingExisting) {
+    return (
+      <div className="max-w-full md:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6">
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-full md:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6">
@@ -178,6 +268,8 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
 
       {/* Steps */}
       {currentStep === 1 && <Step1Household
+        ageRange={ageRange}
+        setAgeRange={setAgeRange}
         householdType={householdType}
         setHouseholdType={setHouseholdType}
         onNext={goNext}
@@ -218,7 +310,10 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
         totalAnnual={totalAnnual}
         totalOneOff={totalOneOff}
         saving={saving}
+        isAuthenticated={isAuthenticated}
+        userInfo={userInfo}
         onSave={saveProfile}
+        onSignIn={signIn}
         onBack={goBack}
         onEdit={() => goToStep(1)}
       />}
@@ -226,9 +321,16 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
   );
 }
 
-// ===== STEP 1: HOUSEHOLD COMPOSITION =====
-function Step1Household({ householdType, setHouseholdType, onNext }) {
-  const options = [
+// ===== STEP 1: HOUSEHOLD COMPOSITION & AGE =====
+function Step1Household({ ageRange, setAgeRange, householdType, setHouseholdType, onNext }) {
+  const ageOptions = [
+    { value: '30-39', label: '30-39', description: 'Early career' },
+    { value: '40-49', label: '40-49', description: 'Mid career' },
+    { value: '50-59', label: '50-59', description: 'Pre-retirement' },
+    { value: '60+', label: '60+', description: 'Retirement age' }
+  ];
+
+  const householdOptions = [
     { value: 'solo', label: 'Just me', description: 'Planning for one person' },
     { value: 'couple', label: 'Me and my partner', description: 'Planning for two people' },
     { value: 'dependents', label: 'Me plus dependents', description: 'Including children or other dependents' }
@@ -236,46 +338,77 @@ function Step1Household({ householdType, setHouseholdType, onNext }) {
 
   return (
     <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-6">
-      <h2 className="text-xl font-bold text-slate-800 mb-4">
-        Who will this retirement plan cover?
+      <h2 className="text-xl font-bold text-slate-800 mb-6">
+        About You
       </h2>
 
-      <div className="space-y-3 mb-6">
-        {options.map(option => (
-          <button
-            key={option.value}
-            onClick={() => setHouseholdType(option.value)}
-            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-              householdType === option.value
-                ? 'border-sky-600 bg-sky-50'
-                : 'border-slate-200 hover:border-sky-300'
-            }`}
-          >
-            <div className="flex items-center">
-              <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+      {/* Age Range Section */}
+      <div className="mb-8">
+        <h3 className="text-base font-semibold text-slate-700 mb-3">
+          What's your age range?
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {ageOptions.map(option => (
+            <button
+              key={option.value}
+              onClick={() => setAgeRange(option.value)}
+              className={`p-4 rounded-lg border-2 transition-all ${
+                ageRange === option.value
+                  ? 'border-sky-600 bg-sky-50'
+                  : 'border-slate-200 hover:border-sky-300'
+              }`}
+            >
+              <div className="text-center">
+                <div className="font-bold text-slate-800 text-lg mb-1">{option.label}</div>
+                <div className="text-xs text-slate-600">{option.description}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Household Type Section */}
+      <div className="mb-6">
+        <h3 className="text-base font-semibold text-slate-700 mb-3">
+          Who will this retirement plan cover?
+        </h3>
+        <div className="space-y-3">
+          {householdOptions.map(option => (
+            <button
+              key={option.value}
+              onClick={() => setHouseholdType(option.value)}
+              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                 householdType === option.value
-                  ? 'border-sky-600 bg-sky-600'
-                  : 'border-slate-300'
-              }`}>
-                {householdType === option.value && (
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                )}
+                  ? 'border-sky-600 bg-sky-50'
+                  : 'border-slate-200 hover:border-sky-300'
+              }`}
+            >
+              <div className="flex items-center">
+                <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                  householdType === option.value
+                    ? 'border-sky-600 bg-sky-600'
+                    : 'border-slate-300'
+                }`}>
+                  {householdType === option.value && (
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-800">{option.label}</div>
+                  <div className="text-sm text-slate-600">{option.description}</div>
+                </div>
               </div>
-              <div>
-                <div className="font-semibold text-slate-800">{option.label}</div>
-                <div className="text-sm text-slate-600">{option.description}</div>
-              </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex justify-end">
         <button
           onClick={onNext}
-          disabled={!householdType}
+          disabled={!ageRange || !householdType}
           className={`px-6 py-2 rounded-md font-medium transition-colors ${
-            householdType
+            ageRange && householdType
               ? 'bg-sky-600 text-white hover:bg-sky-700'
               : 'bg-slate-300 text-slate-500 cursor-not-allowed'
           }`}
@@ -506,19 +639,80 @@ function Step3ExceptionalItems({
 }) {
   const ageMessage = getAgeAppropriateMessage(userAge, 'preamble');
 
-  const addItem = (item) => {
-    setExceptionalItems([...exceptionalItems, { ...item, id: Date.now() }]);
+  // Suggested exceptional items by category
+  const suggestedItems = {
+    travel: [
+      { name: 'Bucket list trip (world cruise, safari)', cost: 15000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Extended travel (6+ weeks abroad)', cost: 8000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Regular long-haul holidays', cost: 5000, timing: 'recurring', year: 0, duration: null },
+      { name: 'Annual European breaks', cost: 2500, timing: 'recurring', year: 0, duration: null }
+    ],
+    purchases: [
+      { name: 'New car', cost: 25000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Home improvements', cost: 15000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Caravan/motorhome', cost: 30000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Major appliances upgrade', cost: 5000, timing: 'oneOff', year: 0, duration: 1 }
+    ],
+    family: [
+      { name: 'House deposit for child', cost: 50000, timing: 'oneOff', year: 5, duration: 1 },
+      { name: 'Grandchildren education fund', cost: 10000, timing: 'recurring', year: 0, duration: 10 },
+      { name: 'Regular family support', cost: 3000, timing: 'recurring', year: 0, duration: null },
+      { name: 'Wedding contribution', cost: 15000, timing: 'oneOff', year: 3, duration: 1 }
+    ],
+    lifestyle: [
+      { name: 'Second property (holiday home)', cost: 150000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Boat purchase', cost: 40000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Hobby/sports equipment', cost: 5000, timing: 'oneOff', year: 0, duration: 1 },
+      { name: 'Golf club membership', cost: 2000, timing: 'recurring', year: 0, duration: null }
+    ]
   };
 
-  const removeItem = (id) => {
-    setExceptionalItems(exceptionalItems.filter(item => item.id !== id));
-  };
+  const categories = [
+    { key: 'travel', title: 'Travel & Experiences', icon: '✈️', description: 'Holidays, bucket list trips' },
+    { key: 'purchases', title: 'Major Purchases', icon: '🏠', description: 'Cars, home improvements' },
+    { key: 'family', title: 'Family Support', icon: '👨‍👩‍👧', description: 'Help for children, grandchildren' },
+    { key: 'lifestyle', title: 'Lifestyle Upgrades', icon: '⛵', description: 'Second property, hobbies' }
+  ];
 
   const toggleCategory = (category) => {
     setExpandedCategories({
       ...expandedCategories,
       [category]: !expandedCategories[category]
     });
+  };
+
+  const toggleItem = (item) => {
+    // Check if item already selected
+    const existingIndex = exceptionalItems.findIndex(
+      e => e.name === item.name && e.cost === item.cost
+    );
+
+    if (existingIndex >= 0) {
+      // Remove item
+      const updated = [...exceptionalItems];
+      updated.splice(existingIndex, 1);
+      setExceptionalItems(updated);
+    } else {
+      // Add item with unique ID
+      setExceptionalItems([...exceptionalItems, { ...item, id: Date.now() + Math.random() }]);
+    }
+  };
+
+  const isItemSelected = (item) => {
+    return exceptionalItems.some(
+      e => e.name === item.name && e.cost === item.cost
+    );
+  };
+
+  const updateItemCost = (item, newCost) => {
+    const index = exceptionalItems.findIndex(
+      e => e.name === item.name
+    );
+    if (index >= 0) {
+      const updated = [...exceptionalItems];
+      updated[index].cost = parseFloat(newCost) || 0;
+      setExceptionalItems(updated);
+    }
   };
 
   return (
@@ -528,25 +722,28 @@ function Step3ExceptionalItems({
       </h2>
       <p className="text-slate-600 text-sm mb-1">{ageMessage}</p>
       <p className="text-slate-500 text-xs mb-6">
-        All amounts in today's money - we'll adjust for inflation later
+        Select any special expenses beyond your baseline. All amounts in today's money.
       </p>
 
       {/* Selected items summary */}
       {exceptionalItems.length > 0 && (
-        <div className="mb-6 p-4 bg-sky-50 rounded-lg">
+        <div className="mb-6 p-4 bg-sky-50 border border-sky-200 rounded-lg">
           <h3 className="font-semibold text-slate-800 mb-2">
-            Selected items ({exceptionalItems.length})
+            Selected: {exceptionalItems.length} item{exceptionalItems.length !== 1 ? 's' : ''}
           </h3>
           <ul className="space-y-2">
-            {exceptionalItems.map(item => (
-              <li key={item.id} className="flex justify-between items-center text-sm">
+            {exceptionalItems.map((item, idx) => (
+              <li key={idx} className="flex justify-between items-center text-sm">
                 <span className="text-slate-700">{item.name}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-sky-600 font-semibold">
-                    £{item.cost.toLocaleString()}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={item.cost}
+                    onChange={(e) => updateItemCost(item, e.target.value)}
+                    className="w-24 px-2 py-1 border border-slate-300 rounded text-right text-sm"
+                  />
                   <button
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => toggleItem(item)}
                     className="text-red-600 hover:text-red-700 text-xs"
                   >
                     Remove
@@ -560,16 +757,65 @@ function Step3ExceptionalItems({
 
       {/* Categories */}
       <div className="space-y-4 mb-6">
-        {/* Simplified placeholder - would expand with full category UI */}
-        <div className="p-4 bg-slate-50 rounded-lg">
-          <p className="text-sm text-slate-600 text-center">
-            Category selection UI would go here (Travel, Purchases, Family Support, Lifestyle Upgrades)
-          </p>
-          <p className="text-xs text-slate-500 text-center mt-2">
-            For this MVP, users can skip or add items via the projection module
-          </p>
-        </div>
+        {categories.map(category => (
+          <div key={category.key} className="border border-slate-200 rounded-lg">
+            {/* Category Header */}
+            <button
+              onClick={() => toggleCategory(category.key)}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{category.icon}</span>
+                <div className="text-left">
+                  <div className="font-semibold text-slate-800">{category.title}</div>
+                  <div className="text-xs text-slate-600">{category.description}</div>
+                </div>
+              </div>
+              <span className="text-slate-400">
+                {expandedCategories[category.key] ? '▼' : '▶'}
+              </span>
+            </button>
+
+            {/* Category Items */}
+            {expandedCategories[category.key] && (
+              <div className="p-4 pt-0 space-y-2">
+                {suggestedItems[category.key].map((item, idx) => (
+                  <label
+                    key={idx}
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      isItemSelected(item)
+                        ? 'border-sky-600 bg-sky-50'
+                        : 'border-slate-200 hover:border-sky-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isItemSelected(item)}
+                        onChange={() => toggleItem(item)}
+                        className="w-4 h-4"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-slate-800">{item.name}</div>
+                        <div className="text-xs text-slate-600">
+                          {item.timing === 'oneOff' ? 'One-off' : 'Annual'} • £{item.cost.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sky-600 font-semibold">
+                      £{item.cost.toLocaleString()}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
+
+      <p className="text-xs text-slate-500 text-center mb-6">
+        💡 You can adjust amounts in the summary above or add custom items later in the projection planner
+      </p>
 
       {/* Navigation */}
       <div className="flex justify-between">
@@ -600,7 +846,10 @@ function Step4Results({
   totalAnnual,
   totalOneOff,
   saving,
+  isAuthenticated,
+  userInfo,
   onSave,
+  onSignIn,
   onBack,
   onEdit
 }) {
@@ -616,6 +865,32 @@ function Step4Results({
       <h2 className="text-2xl font-bold text-slate-800 mb-2 pb-2 border-b-2 border-slate-200">
         Your Retirement Lifestyle Profile
       </h2>
+
+      {/* Authentication status */}
+      {!isAuthenticated && (
+        <div className="mt-4 mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-amber-800 text-sm mb-3">
+            💾 <strong>Sign in to save your profile</strong>
+          </p>
+          <p className="text-amber-700 text-xs mb-3">
+            You can continue without signing in, but your profile won't be saved to your account.
+          </p>
+          <button
+            onClick={onSignIn}
+            className="px-4 py-2 bg-sky-600 text-white rounded-md font-medium hover:bg-sky-700 text-sm"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
+
+      {isAuthenticated && userInfo && (
+        <div className="mt-4 mb-6 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-700 text-sm">
+            ✓ Signed in as <strong>{userInfo.email || userInfo.username}</strong>
+          </p>
+        </div>
+      )}
 
       <div className="my-6">
         <h3 className="text-xl font-semibold text-sky-600 mb-4">
@@ -688,10 +963,10 @@ function Step4Results({
         </button>
         <button
           onClick={onSave}
-          disabled={saving}
+          disabled={saving || !isAuthenticated}
           className="flex-1 px-6 py-3 bg-sky-600 text-white rounded-md font-medium hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving...' : 'Save Profile & Start Planning'}
+          {saving ? 'Saving...' : isAuthenticated ? 'Save Profile & Start Planning' : 'Sign In to Save & Continue'}
         </button>
       </div>
     </div>
