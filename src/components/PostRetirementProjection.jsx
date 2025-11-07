@@ -9,11 +9,19 @@ import ProjectionCharts from './ProjectionCharts';
 import SaveBar from './SaveBar';
 import { formatCurrency } from '../utils/money';
 import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData, getLastCloudSave, setLastCloudSave } from '../utils/persist';
+import { useAuth } from '../auth/AuthProvider';
+import { transformToProjectionEvents } from '../utils/lifestyleProfile';
 
 export default function PostRetirementProjection() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, getAccessToken } = useAuth();
   const openingValues = location.state?.openingValues;
+
+  // Lifestyle profile state
+  const [lifestyleProfile, setLifestyleProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const profileEventsLoadedRef = useRef(false); // Track if we've loaded profile events
 
   // Load saved projection inputs from localStorage
   const savedInputs = loadProjectionInputs();
@@ -77,6 +85,65 @@ export default function PostRetirementProjection() {
       }
     }, 500);
   }, []);
+
+  // Load lifestyle profile and auto-populate events
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        if (!isAuthenticated) {
+          setLoadingProfile(false);
+          return;
+        }
+
+        if (!openingValues) {
+          setLoadingProfile(false);
+          return;
+        }
+
+        const audience = import.meta.env.VITE_API_AUDIENCE;
+        if (!audience) {
+          console.log('No API audience - skipping profile load');
+          setLoadingProfile(false);
+          return;
+        }
+
+        const token = await getAccessToken(audience);
+        const res = await fetch('/api/me/lifestyle', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile && profile.exceptionalItems && profile.exceptionalItems.length > 0) {
+            console.log('✅ Loaded lifestyle profile:', profile);
+            setLifestyleProfile(profile);
+
+            // Only auto-populate events if we haven't done so yet and no events exist
+            if (!profileEventsLoadedRef.current && lifeEvents.length === 0) {
+              const retirementAge = openingValues.retirementAge;
+              const transformedEvents = transformToProjectionEvents(
+                profile.exceptionalItems,
+                retirementAge
+              );
+
+              if (transformedEvents.length > 0) {
+                console.log('✅ Auto-populated events from profile:', transformedEvents);
+                setLifeEvents(transformedEvents);
+                profileEventsLoadedRef.current = true;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load lifestyle profile:', e);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+  }, [isAuthenticated, getAccessToken, openingValues]); // Re-run if auth or openingValues change
 
   // Auto-save projection inputs to localStorage whenever they change
   useEffect(() => {
@@ -262,6 +329,21 @@ export default function PostRetirementProjection() {
 
       {/* Lifestyle Events */}
       <div className="mb-6">
+        {lifestyleProfile && profileEventsLoadedRef.current && lifeEvents.some(e => e.source === 'lifestyleProfile') && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-700">
+              📋 <strong>Events from your lifestyle profile have been added below.</strong>
+              {' '}You can edit, delete, or add more events.
+              {' '}
+              <button
+                onClick={() => navigate('/lifestyle')}
+                className="text-sky-600 hover:text-sky-700 underline font-medium"
+              >
+                Edit lifestyle profile
+              </button>
+            </p>
+          </div>
+        )}
         <LifeEvents
           currentAge={openingValues.retirementAge}
           retirementAge={openingValues.retirementAge + 25}
