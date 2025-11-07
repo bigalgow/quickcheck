@@ -12,6 +12,8 @@ import "./AtRetirement.css";
 
 import SaveBar from "./SaveBar.jsx";
 import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
+import { useAuth } from "../auth/AuthProvider";
+import { loadLifestyleProfile } from "../utils/lifestyleProfile";
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -67,6 +69,11 @@ function Txt({ value, onCommit, style, placeholder, disabled, inputMode }) {
 
 export default function AtRetirement() {
   const navigate = useNavigate();
+  const { isAuthenticated, getAccessToken } = useAuth();
+
+  // ===== Lifestyle Profile =====
+  const [lifestyleProfile, setLifestyleProfile] = useState(null);
+  const [profileLoadAttempted, setProfileLoadAttempted] = useState(false);
 
   // ===== Core form (strings) =====
   const [form, setForm] = useState({
@@ -440,6 +447,36 @@ export default function AtRetirement() {
       }
     }, 1000);
   }, []); // Only run once on mount
+
+  // ---- Load Lifestyle Profile (if authenticated) ----
+  useEffect(() => {
+    async function loadProfile() {
+      if (isAuthenticated && getAccessToken && !profileLoadAttempted) {
+        try {
+          console.log('🎯 At Retirement: Loading lifestyle profile...');
+          const profile = await loadLifestyleProfile(getAccessToken);
+          if (profile) {
+            console.log('✅ At Retirement: Lifestyle profile loaded:', profile);
+            setLifestyleProfile(profile);
+
+            // Auto-populate desiredSpendAnnual if not already set
+            if (!form.desiredSpendAnnual && profile.baselineAmount) {
+              console.log('✅ At Retirement: Auto-populating baseline from profile:', profile.baselineAmount);
+              setForm(f => ({ ...f, desiredSpendAnnual: String(profile.baselineAmount) }));
+            }
+          } else {
+            console.log('ℹ️ At Retirement: No lifestyle profile found');
+          }
+        } catch (e) {
+          console.error('Error loading lifestyle profile:', e);
+        } finally {
+          setProfileLoadAttempted(true);
+        }
+      }
+    }
+
+    loadProfile();
+  }, [isAuthenticated, getAccessToken, profileLoadAttempted, form.desiredSpendAnnual]);
 
   // ---- Autosave (debounced) ----
   useEffect(() => {
@@ -982,12 +1019,47 @@ const HelpToggle = ({ text }) => {
                 label="Spend target (annual) (£)"
                 help="Your desired annual spending in retirement, in today's money. This will be adjusted for inflation."
               >
-                <Txt
-                  value={form.desiredSpendAnnual}
-                  onCommit={(v) => set({ desiredSpendAnnual: v })}
-                  style={{ width: 140 }}
-                  inputMode="numeric"
-                />
+                <div>
+                  <Txt
+                    value={form.desiredSpendAnnual}
+                    onCommit={(v) => set({ desiredSpendAnnual: v })}
+                    style={{ width: 140 }}
+                    inputMode="numeric"
+                  />
+                  {lifestyleProfile ? (
+                    <div style={{ marginTop: 8, padding: 8, backgroundColor: '#ecfdf5', border: '1px solid #10b981', borderRadius: 4, fontSize: 13 }}>
+                      <div style={{ color: '#065f46', fontWeight: 500, marginBottom: 4 }}>
+                        ✓ From your lifestyle profile: {fmt(lifestyleProfile.baselineAmount)}/year
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => navigate('/lifestyle', { state: { editing: true } })}
+                          style={{ fontSize: 12, color: '#0284c7', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          Edit Profile
+                        </button>
+                        <button
+                          onClick={() => setForm(f => ({ ...f, desiredSpendAnnual: '' }))}
+                          style={{ fontSize: 12, color: '#64748b', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          Clear and enter manually
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 8, padding: 8, backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13 }}>
+                      <div style={{ color: '#475569', marginBottom: 4 }}>
+                        Need help estimating this?
+                      </div>
+                      <button
+                        onClick={() => navigate('/lifestyle')}
+                        style={{ fontSize: 12, color: '#0284c7', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        💭 Discover Your Lifestyle Profile (5 min)
+                      </button>
+                    </div>
+                  )}
+                </div>
               </FieldRow>
             </div>
 

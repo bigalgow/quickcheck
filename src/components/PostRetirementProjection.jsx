@@ -9,11 +9,16 @@ import ProjectionCharts from './ProjectionCharts';
 import SaveBar from './SaveBar';
 import { formatCurrency } from '../utils/money';
 import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData, getLastCloudSave, setLastCloudSave } from '../utils/persist';
+import { useAuth } from '../auth/AuthProvider';
+import { loadLifestyleProfile, transformProfileItemsToEvents } from '../utils/lifestyleProfile';
 
 export default function PostRetirementProjection() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, getAccessToken } = useAuth();
   const openingValues = location.state?.openingValues;
+  const [lifestyleProfile, setLifestyleProfile] = useState(null);
+  const [profileEventsLoaded, setProfileEventsLoaded] = useState(false);
 
   // Load saved projection inputs from localStorage
   const savedInputs = loadProjectionInputs();
@@ -77,6 +82,44 @@ export default function PostRetirementProjection() {
       }
     }, 500);
   }, []);
+
+  // ---- Load Lifestyle Profile and auto-populate events ----
+  useEffect(() => {
+    async function loadProfileAndPopulateEvents() {
+      // Only load if authenticated, not already loaded, and no saved events exist
+      if (isAuthenticated && getAccessToken && !profileEventsLoaded && openingValues) {
+        try {
+          console.log('🎯 Projection: Loading lifestyle profile for events...');
+          const profile = await loadLifestyleProfile(getAccessToken);
+
+          if (profile) {
+            console.log('✅ Projection: Lifestyle profile loaded:', profile);
+            setLifestyleProfile(profile);
+
+            // Only auto-populate if there are no saved events and profile has exceptional items
+            if (lifeEvents.length === 0 && profile.exceptionalItems && profile.exceptionalItems.length > 0) {
+              console.log('✅ Projection: Auto-populating events from profile');
+              const events = transformProfileItemsToEvents(
+                profile.exceptionalItems,
+                openingValues.retirementAge
+              );
+              setLifeEvents(events);
+            } else if (lifeEvents.length > 0) {
+              console.log('ℹ️ Projection: Events already exist, not auto-populating from profile');
+            }
+          } else {
+            console.log('ℹ️ Projection: No lifestyle profile found');
+          }
+        } catch (e) {
+          console.error('Error loading lifestyle profile for events:', e);
+        } finally {
+          setProfileEventsLoaded(true);
+        }
+      }
+    }
+
+    loadProfileAndPopulateEvents();
+  }, [isAuthenticated, getAccessToken, profileEventsLoaded, openingValues, lifeEvents.length]);
 
   // Auto-save projection inputs to localStorage whenever they change
   useEffect(() => {
@@ -262,6 +305,23 @@ export default function PostRetirementProjection() {
 
       {/* Lifestyle Events */}
       <div className="mb-6">
+        {lifestyleProfile && lifestyleProfile.exceptionalItems && lifestyleProfile.exceptionalItems.length > 0 && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-green-800 font-medium text-sm mb-1">
+              📋 Events from your lifestyle profile have been added below.
+            </div>
+            <div className="text-green-700 text-sm">
+              You can edit, delete, or add more events as needed.
+            </div>
+            <button
+              onClick={() => navigate('/lifestyle', { state: { editing: true } })}
+              className="mt-2 text-sm text-sky-600 hover:text-sky-700 underline"
+            >
+              Edit Lifestyle Profile
+            </button>
+          </div>
+        )}
+
         <LifeEvents
           currentAge={openingValues.retirementAge}
           retirementAge={openingValues.retirementAge + 25}

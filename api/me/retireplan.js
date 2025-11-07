@@ -70,13 +70,32 @@ export default async function handler(req, res) {
     const currentRP = current.retirePlan ?? null;
 
     if (req.method === 'GET') {
-      // Return the latest snapshot if it exists
-      return res.status(200).json(currentRP?.latest ?? null);
+      // Return both retirePlan data and lifestyleProfile
+      return res.status(200).json({
+        ...(currentRP?.latest ?? {}),
+        lifestyleProfile: current.lifestyleProfile ?? null
+      });
     }
 
     if (req.method === 'POST') {
       const body = req.body ?? {};
-      const next = { ...current, retirePlan: { latest: body } }; // store latest snapshot
+
+      // Extract lifestyleProfile if provided separately
+      const { lifestyleProfile, ...retirePlanData } = body;
+
+      // Build next customData, preserving both fields
+      const next = { ...current };
+
+      // Update retirePlan if there's data other than lifestyleProfile
+      if (Object.keys(retirePlanData).length > 0 || !lifestyleProfile) {
+        next.retirePlan = { latest: retirePlanData };
+      }
+
+      // Update lifestyleProfile if provided (can be null to delete)
+      if (lifestyleProfile !== undefined) {
+        next.lifestyleProfile = lifestyleProfile;
+      }
+
       await updateUserCustomData(userId, next, mgmtToken);
       return res.status(204).end();
     }
