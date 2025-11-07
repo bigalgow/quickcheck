@@ -275,52 +275,147 @@ export default function PostRetirementProjection() {
       {/* Opening Values Summary */}
       <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 sm:p-6 mb-6">
         <h2 className="text-base sm:text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200">
-          Opening Values (At Retirement)
+          Opening Position (At Retirement, Age {openingValues.retirementAge})
         </h2>
-        <div className="space-y-2 text-base sm:text-base">
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">Retirement Age:</span>
-            <span className="font-semibold text-slate-800">{openingValues.retirementAge}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">DC Pot (after PCLS):</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.dcPotAfterPCLS)}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">ISA Savings:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.isaSavings)}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">Taxable Savings:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.taxableSavings)}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">DB Pension:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.dbPension)}/year</span>
-          </div>
-          {openingValues.annuityIncome > 0 && (
-            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-              <span className="text-slate-600">Annuity Income:</span>
-              <span className="font-semibold text-slate-800">{formatCurrency(openingValues.annuityIncome)}/year</span>
+
+        {/* Financial Summary Box */}
+        <div className="bg-sky-50 border-2 border-sky-200 rounded-lg p-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Total Assets */}
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Total Assets</div>
+              <div className="text-2xl font-bold text-slate-800">
+                {formatCurrency(
+                  openingValues.dcPotAfterPCLS +
+                  openingValues.isaSavings +
+                  openingValues.taxableSavings
+                )}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                DC + ISA + Taxable
+              </div>
             </div>
-          )}
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">State Pension:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.statePension)}/year (from age {openingValues.statePensionAge})</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">Other Income:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.otherIncome)}/year</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 border-t border-slate-200 mt-2 pt-2 gap-1">
-            <span className="text-slate-600">Target Annual Spend:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(openingValues.annualSpend)}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1">
-            <span className="text-slate-600">Inflation Assumption:</span>
-            <span className="font-semibold text-slate-800">{openingValues.inflation}%</span>
+
+            {/* Total Annual Income */}
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Total Annual Income</div>
+              <div className="text-2xl font-bold text-green-700">
+                {formatCurrency(
+                  openingValues.dbPension +
+                  openingValues.annuityIncome +
+                  (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                  openingValues.otherIncome +
+                  (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)
+                )}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Pensions + DC Drawdown ({dcDrawdownPercent}%)
+              </div>
+            </div>
+
+            {/* Target Expenditure */}
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Target Expenditure</div>
+              <div className="text-2xl font-bold text-slate-800">
+                {formatCurrency(openingValues.annualSpend)}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Annual spending goal
+              </div>
+            </div>
+
+            {/* Surplus/Deficit */}
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Annual Surplus/Deficit</div>
+              <div className={`text-2xl font-bold ${
+                (openingValues.dbPension +
+                 openingValues.annuityIncome +
+                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                 openingValues.otherIncome +
+                 (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)) -
+                openingValues.annualSpend >= 0
+                  ? 'text-green-700'
+                  : 'text-red-700'
+              }`}>
+                {formatCurrency(Math.abs(
+                  (openingValues.dbPension +
+                   openingValues.annuityIncome +
+                   (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                   openingValues.otherIncome +
+                   (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)) -
+                  openingValues.annualSpend
+                ))}
+                {(openingValues.dbPension +
+                  openingValues.annuityIncome +
+                  (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                  openingValues.otherIncome +
+                  (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)) -
+                 openingValues.annualSpend < 0 && ' shortfall'}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Income minus expenditure
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Detailed Breakdown */}
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-semibold text-sky-600 hover:text-sky-700 mb-2">
+            Show detailed breakdown
+          </summary>
+          <div className="space-y-2 text-base sm:text-base mt-3 pt-3 border-t border-slate-200">
+            <h3 className="font-semibold text-slate-700 mb-2">Assets:</h3>
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">DC Pot (after PCLS):</span>
+              <span className="font-semibold text-slate-800">{formatCurrency(openingValues.dcPotAfterPCLS)}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">ISA Savings:</span>
+              <span className="font-semibold text-slate-800">{formatCurrency(openingValues.isaSavings)}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">Taxable Savings:</span>
+              <span className="font-semibold text-slate-800">{formatCurrency(openingValues.taxableSavings)}</span>
+            </div>
+
+            <h3 className="font-semibold text-slate-700 mb-2 mt-4">Annual Income:</h3>
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">DB Pension:</span>
+              <span className="font-semibold text-slate-800">{formatCurrency(openingValues.dbPension)}</span>
+            </div>
+            {openingValues.annuityIncome > 0 && (
+              <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+                <span className="text-slate-600">Annuity Income:</span>
+                <span className="font-semibold text-slate-800">{formatCurrency(openingValues.annuityIncome)}</span>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">State Pension:</span>
+              <span className="font-semibold text-slate-800">
+                {formatCurrency(openingValues.statePension)}
+                {openingValues.retirementAge < openingValues.statePensionAge &&
+                  <span className="text-xs text-amber-600"> (from age {openingValues.statePensionAge})</span>
+                }
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">Other Income:</span>
+              <span className="font-semibold text-slate-800">{formatCurrency(openingValues.otherIncome)}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 gap-1 pl-4">
+              <span className="text-slate-600">DC Drawdown ({dcDrawdownPercent}%):</span>
+              <span className="font-semibold text-slate-800">
+                {formatCurrency(openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1 border-t border-slate-200 mt-2 pt-2 gap-1">
+              <span className="text-slate-600">Inflation Assumption:</span>
+              <span className="font-semibold text-slate-800">{openingValues.inflation}%</span>
+            </div>
+          </div>
+        </details>
       </div>
 
       {/* Projection Inputs */}
