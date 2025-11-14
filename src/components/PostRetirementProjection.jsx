@@ -296,10 +296,10 @@ export default function PostRetirementProjection() {
               </div>
             </div>
 
-            {/* Total Annual Income */}
+            {/* Gross Annual Income */}
             <div>
-              <div className="text-sm text-slate-600 mb-1">Total Annual Income</div>
-              <div className="text-2xl font-bold text-green-700">
+              <div className="text-sm text-slate-600 mb-1">Gross Annual Income</div>
+              <div className="text-2xl font-bold text-slate-800">
                 {formatCurrency(
                   openingValues.dbPension +
                   openingValues.annuityIncome +
@@ -310,6 +310,35 @@ export default function PostRetirementProjection() {
               </div>
               <div className="text-xs text-slate-500 mt-1">
                 Pensions + DC Drawdown ({dcDrawdownPercent}%)
+              </div>
+            </div>
+
+            {/* Income Tax */}
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Income Tax</div>
+              <div className="text-2xl font-bold text-red-700">
+                {formatCurrency(openingValues.incomeTax || 0)}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Estimated annual tax
+              </div>
+            </div>
+
+            {/* Net Annual Income */}
+            <div>
+              <div className="text-sm text-slate-600 mb-1">Net Annual Income</div>
+              <div className="text-2xl font-bold text-green-700">
+                {formatCurrency(
+                  openingValues.dbPension +
+                  openingValues.annuityIncome +
+                  (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                  openingValues.otherIncome +
+                  (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
+                  (openingValues.incomeTax || 0)
+                )}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                After tax
               </div>
             </div>
 
@@ -332,7 +361,8 @@ export default function PostRetirementProjection() {
                  openingValues.annuityIncome +
                  (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                  openingValues.otherIncome +
-                 (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)) -
+                 (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
+                 (openingValues.incomeTax || 0)) -
                 openingValues.annualSpend >= 0
                   ? 'text-green-700'
                   : 'text-red-700'
@@ -342,18 +372,20 @@ export default function PostRetirementProjection() {
                    openingValues.annuityIncome +
                    (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                    openingValues.otherIncome +
-                   (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)) -
+                   (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
+                   (openingValues.incomeTax || 0)) -
                   openingValues.annualSpend
                 ))}
                 {(openingValues.dbPension +
                   openingValues.annuityIncome +
                   (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                   openingValues.otherIncome +
-                  (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)) -
+                  (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
+                  (openingValues.incomeTax || 0)) -
                  openingValues.annualSpend < 0 && ' shortfall'}
               </div>
               <div className="text-xs text-slate-500 mt-1">
-                Income minus expenditure
+                Net income minus expenditure
               </div>
             </div>
           </div>
