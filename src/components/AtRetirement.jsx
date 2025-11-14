@@ -1603,13 +1603,9 @@ const HelpToggle = ({ text }) => {
                 {spaWarning && (
                   <>
                     {" "}
-                    <em>— included but only from SPA {inputsNum.statePensionAge}</em>
+                    <em>— not included in totals until SPA {inputsNum.statePensionAge}</em>
                   </>
                 )}
-              </div>
-              <div>
-                Taxable savings interest:{" "}
-                <strong>£{fmt(income.taxableInterest)}</strong>
               </div>
               <div
                 style={{
@@ -1644,6 +1640,11 @@ const HelpToggle = ({ text }) => {
               >
                 Surplus / Deficit vs spend: £{fmt(surplusDeficit)}
               </div>
+              {surplusDeficit < 0 && (
+                <MiniHelp>
+                  Any initial deficit will be funded from savings if available
+                </MiniHelp>
+              )}
             </Card>
 
             {/* Assets + Real terms */}
@@ -1726,6 +1727,7 @@ const HelpToggle = ({ text }) => {
                     statePensionAge: inputsNum.statePensionAge,
                     otherIncome: income.otherIncomeAtRet,
                     annualSpend: inputsNum.desiredSpendAnnual,
+                    incomeTax: estTax,
                     inflation: inputsNum.inflationAssumption * 100,
                     dcGrowth: inputsNum.growthAssumption * 100,
                     isaGrowth: inputsNum.isaRate * 100,

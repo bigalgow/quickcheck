@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { loadUnifiedData, saveAtRetirement } from '../utils/persist';
 import {
   PLSA_VALUES,
   getPLSAValue,
@@ -204,6 +205,26 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
       }
 
       console.log('✅ Lifestyle profile saved successfully');
+
+      // Update sessionStorage with new expenditure amount
+      try {
+        const unifiedData = loadUnifiedData();
+        if (unifiedData?.atRetirement) {
+          // Update the desiredSpendAnnual field in the stored AtRetirement data
+          const updatedAtRetirement = {
+            ...unifiedData.atRetirement,
+            form: {
+              ...unifiedData.atRetirement.form,
+              desiredSpendAnnual: String(baselineAmount)
+            }
+          };
+          saveAtRetirement(updatedAtRetirement);
+          console.log('✅ Updated desiredSpendAnnual in AtRetirement data to:', baselineAmount);
+        }
+      } catch (storageError) {
+        console.warn('Failed to update sessionStorage:', storageError);
+        // Don't fail the save if storage update fails
+      }
 
       // Success - navigate to calculator or call completion handler
       if (onComplete) {
@@ -644,8 +665,8 @@ function Step3ExceptionalItems({
     travel: [
       { name: 'Bucket list trip (world cruise, safari)', cost: 15000, timing: 'oneOff', year: 0, duration: 1 },
       { name: 'Extended travel (6+ weeks abroad)', cost: 8000, timing: 'oneOff', year: 0, duration: 1 },
-      { name: 'Regular long-haul holidays', cost: 5000, timing: 'recurring', year: 0, duration: null },
-      { name: 'Annual European breaks', cost: 2500, timing: 'recurring', year: 0, duration: null }
+      { name: 'Regular long-haul holidays', cost: 5000, timing: 'recurring', year: 0, duration: 10 },
+      { name: 'Annual European breaks', cost: 2500, timing: 'recurring', year: 0, duration: 10 }
     ],
     purchases: [
       { name: 'New car', cost: 25000, timing: 'oneOff', year: 0, duration: 1 },
@@ -656,14 +677,14 @@ function Step3ExceptionalItems({
     family: [
       { name: 'House deposit for child', cost: 50000, timing: 'oneOff', year: 5, duration: 1 },
       { name: 'Grandchildren education fund', cost: 10000, timing: 'recurring', year: 0, duration: 10 },
-      { name: 'Regular family support', cost: 3000, timing: 'recurring', year: 0, duration: null },
+      { name: 'Regular family support', cost: 3000, timing: 'recurring', year: 0, duration: 10 },
       { name: 'Wedding contribution', cost: 15000, timing: 'oneOff', year: 3, duration: 1 }
     ],
     lifestyle: [
       { name: 'Second property (holiday home)', cost: 150000, timing: 'oneOff', year: 0, duration: 1 },
       { name: 'Boat purchase', cost: 40000, timing: 'oneOff', year: 0, duration: 1 },
       { name: 'Hobby/sports equipment', cost: 5000, timing: 'oneOff', year: 0, duration: 1 },
-      { name: 'Golf club membership', cost: 2000, timing: 'recurring', year: 0, duration: null }
+      { name: 'Golf club membership', cost: 2000, timing: 'recurring', year: 0, duration: 10 }
     ]
   };
 

@@ -182,9 +182,10 @@ export function atRetirement(inputs, taxFns) {
   );
   const taxableInterest = Math.max(0, taxableAtRet * inputs.taxableSavingsRate);
 
-  // ---- Tax
+  // ---- Tax (only include state pension if at or past SPA)
+  const statePensionForIncome = spaWarning ? 0 : statePensionAtRetNominal;
   const pensionableIncome =
-    dcIncome + dbAfter + otherIncomeAtRet + statePensionAtRetNominal;
+    dcIncome + dbAfter + otherIncomeAtRet + statePensionForIncome;
   const taxRes =
     inputs.region === "Scotland"
       ? taxFns.taxScot({ pensionableIncome, savingsInterest: taxableInterest })
@@ -214,13 +215,14 @@ export function atRetirement(inputs, taxFns) {
     dbIncomeAfter: dbAfter,
     otherIncomeAtRet,
     statePensionAtRetNominal,
+    statePensionForIncome, // Actual amount used in calculations (0 if before SPA)
     taxableInterest,
   };
   const incomeGrossTotal =
     income.dcIncome +
     income.dbIncomeAfter +
     income.otherIncomeAtRet +
-    income.statePensionAtRetNominal +
+    income.statePensionForIncome +
     income.taxableInterest;
 
   // ---- Real terms
@@ -239,6 +241,7 @@ export function atRetirement(inputs, taxFns) {
       dbIncomeAfter: deflate(income.dbIncomeAfter),
       otherIncomeAtRet: deflate(income.otherIncomeAtRet),
       statePensionAtRetNominal: deflate(income.statePensionAtRetNominal),
+      statePensionForIncome: deflate(income.statePensionForIncome),
       taxableInterest: deflate(income.taxableInterest),
     },
     incomeGrossTotal: deflate(incomeGrossTotal),

@@ -119,7 +119,10 @@ export function transformToProjectionEvents(exceptionalItems, retirementAge) {
     amount: item.cost,
     type: 'expense', // All lifestyle items are expenses
     isRecurring: item.timing === 'recurring', // Match LifeEvents field name
-    recurringYears: item.duration || (item.timing === 'oneOff' ? 1 : null), // Match LifeEvents field name
+    // For recurring events with null/undefined duration, default to 10 years (user can adjust in projection planner)
+    // For one-off events, use 1 year
+    // For recurring events with explicit duration, use that
+    recurringYears: item.timing === 'oneOff' ? 1 : (item.duration || 10), // Match LifeEvents field name
     source: 'lifestyleProfile' // Mark as coming from profile
   }));
 }
