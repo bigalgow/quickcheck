@@ -209,18 +209,20 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
       // Update sessionStorage with new expenditure amount
       try {
         const unifiedData = loadUnifiedData();
-        if (unifiedData?.atRetirement) {
-          // Update the desiredSpendAnnual field in the stored AtRetirement data
-          const updatedAtRetirement = {
-            ...unifiedData.atRetirement,
-            form: {
-              ...unifiedData.atRetirement.form,
-              desiredSpendAnnual: String(baselineAmount)
-            }
-          };
-          saveAtRetirement(updatedAtRetirement);
-          console.log('✅ Updated desiredSpendAnnual in AtRetirement data to:', baselineAmount);
-        }
+        const existingAtRetirement = unifiedData?.atRetirement || {};
+        const existingForm = existingAtRetirement.form || {};
+
+        // Update or create the desiredSpendAnnual field
+        const updatedAtRetirement = {
+          ...existingAtRetirement,
+          form: {
+            ...existingForm,
+            desiredSpendAnnual: String(baselineAmount)
+          }
+        };
+
+        saveAtRetirement(updatedAtRetirement);
+        console.log('✅ Updated desiredSpendAnnual in sessionStorage to:', baselineAmount);
       } catch (storageError) {
         console.warn('Failed to update sessionStorage:', storageError);
         // Don't fail the save if storage update fails

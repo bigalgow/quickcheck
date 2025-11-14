@@ -1714,6 +1714,12 @@ const HelpToggle = ({ text }) => {
                 },
               });
 
+              // Check sessionStorage for the latest desiredSpendAnnual (may have been updated by lifestyle calculator)
+              const latestData = loadAutosave();
+              const latestSpend = latestData?.form?.desiredSpendAnnual
+                ? N(latestData.form.desiredSpendAnnual)
+                : inputsNum.desiredSpendAnnual;
+
               navigate('/projection', {
                 state: {
                   openingValues: {
@@ -1726,7 +1732,7 @@ const HelpToggle = ({ text }) => {
                     statePension: income.statePensionAtRetNominal,
                     statePensionAge: inputsNum.statePensionAge,
                     otherIncome: income.otherIncomeAtRet,
-                    annualSpend: inputsNum.desiredSpendAnnual,
+                    annualSpend: latestSpend, // Use latest value from sessionStorage
                     incomeTax: estTax,
                     inflation: inputsNum.inflationAssumption * 100,
                     dcGrowth: inputsNum.growthAssumption * 100,
