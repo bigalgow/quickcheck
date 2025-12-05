@@ -7,6 +7,7 @@ import LifeEvents from './LifeEvents';
 import ProjectionTable from './ProjectionTable';
 import ProjectionCharts from './ProjectionCharts';
 import SaveBar from './SaveBar';
+import HeaderLayout from './HeaderLayout';
 import { formatCurrency } from '../utils/money';
 import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData, getLastCloudSave, setLastCloudSave } from '../utils/persist';
 import { useAuth } from '../auth/AuthProvider';
@@ -224,53 +225,55 @@ export default function PostRetirementProjection() {
       </div>
 
       {/* Save / Print / Export */}
-      <SaveBar
-        inputs={exportData.inputs}
-        outputs={exportData.outputs}
-        projection={exportData.projection}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onSaveSuccess={() => {
-          setHasUnsavedChanges(false);
-          setLastCloudSave(); // Update shared cloud save timestamp
-        }}
-        onCloudLoadStart={() => {
-          console.log('☁️ Projection: Cloud load starting');
-          cloudLoadPendingRef.current = true;
-        }}
-        onCloudLoadComplete={() => {
-          console.log('☁️ Projection: Cloud load complete');
-          cloudLoadPendingRef.current = false;
-          // Mark initial load as complete now that cloud data has loaded
-          isInitialLoadRef.current = false;
-          setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
-        }}
-        onImportJson={(data) => {
-          // Temporarily mark as loading to prevent unsaved changes flag
-          isInitialLoadRef.current = true;
-
-          // Handle imported data - update projection inputs if present
-          if (data?.projection) {
-            setIsaRecurringAmount(data.projection.isaRecurringAmount ?? "");
-            setIsaRecurringYears(data.projection.isaRecurringYears ?? "");
-            setDcDrawdownPercent(data.projection.dcDrawdownPercent ?? 4.0);
-            setLifeEvents(data.projection.lifeEvents ?? []);
-          }
-          // Note: At Retirement data is handled by sessionStorage auto-load
-
-          // Reset loading flag and clear unsaved changes after data loads (generous timeout)
-          setTimeout(() => {
+      <HeaderLayout>
+        <SaveBar
+          inputs={exportData.inputs}
+          outputs={exportData.outputs}
+          projection={exportData.projection}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onSaveSuccess={() => {
+            setHasUnsavedChanges(false);
+            setLastCloudSave(); // Update shared cloud save timestamp
+          }}
+          onCloudLoadStart={() => {
+            console.log('☁️ Projection: Cloud load starting');
+            cloudLoadPendingRef.current = true;
+          }}
+          onCloudLoadComplete={() => {
+            console.log('☁️ Projection: Cloud load complete');
+            cloudLoadPendingRef.current = false;
+            // Mark initial load as complete now that cloud data has loaded
             isInitialLoadRef.current = false;
-            setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
-            console.log('✅ Projection: Import complete - no unsaved changes');
-          }, 500);
-        }}
-        onClearLocal={() => {
-          if (confirm("Clear all local data? This will reset both At Retirement and Projection data.")) {
-            sessionStorage.clear();
-            navigate('/');
-          }
-        }}
-      />
+            setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
+          }}
+          onImportJson={(data) => {
+            // Temporarily mark as loading to prevent unsaved changes flag
+            isInitialLoadRef.current = true;
+
+            // Handle imported data - update projection inputs if present
+            if (data?.projection) {
+              setIsaRecurringAmount(data.projection.isaRecurringAmount ?? "");
+              setIsaRecurringYears(data.projection.isaRecurringYears ?? "");
+              setDcDrawdownPercent(data.projection.dcDrawdownPercent ?? 4.0);
+              setLifeEvents(data.projection.lifeEvents ?? []);
+            }
+            // Note: At Retirement data is handled by sessionStorage auto-load
+
+            // Reset loading flag and clear unsaved changes after data loads (generous timeout)
+            setTimeout(() => {
+              isInitialLoadRef.current = false;
+              setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
+              console.log('✅ Projection: Import complete - no unsaved changes');
+            }, 500);
+          }}
+          onClearLocal={() => {
+            if (confirm("Clear all local data? This will reset both At Retirement and Projection data.")) {
+              sessionStorage.clear();
+              navigate('/');
+            }
+          }}
+        />
+      </HeaderLayout>
 
       {/* Opening Values Summary */}
       <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 sm:p-6 mb-6">

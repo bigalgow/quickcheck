@@ -170,19 +170,12 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
 
   return (
     <div
-      className="no-print"
       style={{
         display: "flex",
         gap: 8,
         alignItems: "center",
         flexWrap: "wrap",
-        marginBottom: 24,
-        padding: "16px",
-        backgroundColor: hasUnsavedChanges ? "#fef3c7" : "#ffffff",
-        border: `2px solid ${hasUnsavedChanges ? "#f59e0b" : "#e2e8f0"}`,
-        borderRadius: "8px",
-        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-        maxWidth: "100%",
+        width: "100%",
       }}
     >
       {hasUnsavedChanges && (
@@ -273,21 +266,6 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
       </button>
 
       <button
-        onClick={exportJson}
-        style={{
-          padding: "8px 16px",
-          fontSize: "14px",
-          color: "#475569",
-          backgroundColor: "white",
-          border: "1px solid #cbd5e1",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
-      >
-        Export JSON
-      </button>
-
-      <button
         onClick={() => setShowAdvanced(!showAdvanced)}
         style={{
           padding: "8px 16px",
@@ -304,6 +282,21 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
 
       {showAdvanced && (
         <>
+          <button
+            onClick={exportJson}
+            style={{
+              padding: "8px 16px",
+              fontSize: "14px",
+              color: "#475569",
+              backgroundColor: "white",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Export JSON
+          </button>
+
           <label
             style={{
               display: "inline-flex",

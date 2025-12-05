@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import HeaderLayout from './HeaderLayout';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -54,16 +55,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-4">
-          Welcome to RetirePlan
-        </h1>
-        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Plan your retirement with confidence. Choose how you'd like to start:
-        </p>
-      </div>
+    <>
+      <HeaderLayout></HeaderLayout>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <p className="text-xl sm:text-2xl font-bold text-slate-800 max-w-2xl mx-auto">
+            Plan your retirement with confidence. Choose how you'd like to start:
+          </p>
+        </div>
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -147,5 +147,6 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+    </>
   );
 }

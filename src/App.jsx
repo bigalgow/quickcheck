@@ -11,7 +11,7 @@ import LifestyleCalculator from "./components/LifestyleCalculator.jsx";
 
 export default function App() {
   return (
-    <div className="App" style={{ padding: "24px 16px", maxWidth: "100%" }}>
+    <div className="App" style={{ paddingTop: "80px", padding: "80px 16px 24px", maxWidth: "100%" }}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/calculator" element={

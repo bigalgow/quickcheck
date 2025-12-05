@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { loadUnifiedData, saveAtRetirement } from '../utils/persist';
+import HeaderLayout from './HeaderLayout';
 import {
   PLSA_VALUES,
   getPLSAValue,
@@ -254,7 +255,9 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
   }
 
   return (
-    <div className="max-w-full md:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6">
+    <>
+      <HeaderLayout></HeaderLayout>
+      <div className="max-w-full md:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
@@ -340,7 +343,8 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
         onBack={goBack}
         onEdit={() => goToStep(1)}
       />}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -890,9 +894,9 @@ function Step4Results({
 
   return (
     <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-6">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2 pb-2 border-b-2 border-slate-200">
-        Your Retirement Lifestyle Profile
-      </h2>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2 pb-2 border-b-2 border-slate-200">
+          Your Retirement Lifestyle Profile
+        </h2>
 
       {/* Authentication status */}
       {!isAuthenticated && (

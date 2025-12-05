@@ -11,6 +11,7 @@ import { calculateStatePensionAge, formatStatePensionAge } from "../utils/stateP
 import "./AtRetirement.css";
 
 import SaveBar from "./SaveBar.jsx";
+import HeaderLayout from "./HeaderLayout.jsx";
 import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -853,86 +854,88 @@ const HelpToggle = ({ text }) => {
       )}
 
       {/* Save / Print / Export */}
-      <SaveBar
-        inputs={inputsNum}
-        outputs={out}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onSaveSuccess={() => {
-          setHasUnsavedChanges(false);
-          setLastCloudSave(); // Update shared cloud save timestamp
-        }}
-        onCloudLoadStart={() => {
-          console.log('☁️ At Retirement: Cloud load starting');
-          cloudLoadPendingRef.current = true;
-        }}
-        onCloudLoadComplete={() => {
-          console.log('☁️ At Retirement: Cloud load complete');
-          cloudLoadPendingRef.current = false;
-          // Mark initial load as complete now that cloud data has loaded
-          isInitialLoadRef.current = false;
-          setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
-        }}
-        onImportJson={(data) => {
-          console.log('📥 Importing JSON data:', data);
-
-          // Temporarily mark as loading to prevent unsaved changes flag
-          isInitialLoadRef.current = true;
-
-          // Handle numeric inputs from exported JSON - convert to strings for form
-          if (data?.inputs) {
-            const formData = {};
-            Object.entries(data.inputs).forEach(([key, value]) => {
-              // Skip dbSchemes - handled separately
-              if (key === 'dbSchemes') return;
-              // Convert numbers to strings for form fields
-              if (typeof value === 'number') {
-                formData[key] = String(value);
-              } else if (typeof value === 'boolean') {
-                formData[key] = value;
-              } else if (typeof value === 'string') {
-                formData[key] = value;
-              }
-            });
-            setForm((f) => ({ ...f, ...formData }));
-
-            // Handle dbSchemes separately - convert numeric values to strings
-            if (Array.isArray(data.inputs.dbSchemes)) {
-              const convertedSchemes = data.inputs.dbSchemes.map(scheme => ({
-                ...scheme,
-                accrualDenominator: String(scheme.accrualDenominator ?? ''),
-                serviceYearsToDate: String(scheme.serviceYearsToDate ?? ''),
-                maxServiceYears: String(scheme.maxServiceYears ?? ''),
-                pensionableSalaryNow: String(scheme.pensionableSalaryNow ?? ''),
-                preservedPensionNow: String(scheme.preservedPensionNow ?? ''),
-                revaluationAssumption: String(scheme.revaluationAssumption ?? ''),
-                salaryAtLeaving: String(scheme.salaryAtLeaving ?? ''),
-              }));
-              console.log('📥 Setting dbSchemes:', convertedSchemes);
-              setDbSchemes(convertedSchemes);
-            }
-          } else if (data?.form) {
-            setForm(data.form);
-            if (Array.isArray(data?.dbSchemes)) setDbSchemes(data.dbSchemes);
-          }
-
-          // Save to sessionStorage
-          saveAutosave({
-            form: data.inputs ? formData : data.form ?? form,
-            dbSchemes: data.inputs?.dbSchemes ?? data.dbSchemes ?? dbSchemes,
-          });
-
-          // Reset loading flag and clear unsaved changes after data loads (longer than auto-save debounce)
-          setTimeout(() => {
+      <HeaderLayout>
+        <SaveBar
+          inputs={inputsNum}
+          outputs={out}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onSaveSuccess={() => {
+            setHasUnsavedChanges(false);
+            setLastCloudSave(); // Update shared cloud save timestamp
+          }}
+          onCloudLoadStart={() => {
+            console.log('☁️ At Retirement: Cloud load starting');
+            cloudLoadPendingRef.current = true;
+          }}
+          onCloudLoadComplete={() => {
+            console.log('☁️ At Retirement: Cloud load complete');
+            cloudLoadPendingRef.current = false;
+            // Mark initial load as complete now that cloud data has loaded
             isInitialLoadRef.current = false;
-            setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
-            console.log('✅ Import complete - no unsaved changes');
-          }, 1000);
-        }}
-        onClearLocal={() => {
-          clearAutosave();
-          alert("Local data cleared");
-        }}
-      />
+            setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
+          }}
+          onImportJson={(data) => {
+            console.log('📥 Importing JSON data:', data);
+
+            // Temporarily mark as loading to prevent unsaved changes flag
+            isInitialLoadRef.current = true;
+
+            // Handle numeric inputs from exported JSON - convert to strings for form
+            if (data?.inputs) {
+              const formData = {};
+              Object.entries(data.inputs).forEach(([key, value]) => {
+                // Skip dbSchemes - handled separately
+                if (key === 'dbSchemes') return;
+                // Convert numbers to strings for form fields
+                if (typeof value === 'number') {
+                  formData[key] = String(value);
+                } else if (typeof value === 'boolean') {
+                  formData[key] = value;
+                } else if (typeof value === 'string') {
+                  formData[key] = value;
+                }
+              });
+              setForm((f) => ({ ...f, ...formData }));
+
+              // Handle dbSchemes separately - convert numeric values to strings
+              if (Array.isArray(data.inputs.dbSchemes)) {
+                const convertedSchemes = data.inputs.dbSchemes.map(scheme => ({
+                  ...scheme,
+                  accrualDenominator: String(scheme.accrualDenominator ?? ''),
+                  serviceYearsToDate: String(scheme.serviceYearsToDate ?? ''),
+                  maxServiceYears: String(scheme.maxServiceYears ?? ''),
+                  pensionableSalaryNow: String(scheme.pensionableSalaryNow ?? ''),
+                  preservedPensionNow: String(scheme.preservedPensionNow ?? ''),
+                  revaluationAssumption: String(scheme.revaluationAssumption ?? ''),
+                  salaryAtLeaving: String(scheme.salaryAtLeaving ?? ''),
+                }));
+                console.log('📥 Setting dbSchemes:', convertedSchemes);
+                setDbSchemes(convertedSchemes);
+              }
+            } else if (data?.form) {
+              setForm(data.form);
+              if (Array.isArray(data?.dbSchemes)) setDbSchemes(data.dbSchemes);
+            }
+
+            // Save to sessionStorage
+            saveAutosave({
+              form: data.inputs ? formData : data.form ?? form,
+              dbSchemes: data.inputs?.dbSchemes ?? data.dbSchemes ?? dbSchemes,
+            });
+
+            // Reset loading flag and clear unsaved changes after data loads (longer than auto-save debounce)
+            setTimeout(() => {
+              isInitialLoadRef.current = false;
+              setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
+              console.log('✅ Import complete - no unsaved changes');
+            }, 1000);
+          }}
+          onClearLocal={() => {
+            clearAutosave();
+            alert("Local data cleared");
+          }}
+        />
+      </HeaderLayout>
 
       {/* ================== PAGE 1: INPUTS ================== */}
       <div className="print-page">
