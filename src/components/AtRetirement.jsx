@@ -92,6 +92,7 @@ export default function AtRetirement() {
     drawdownRate: "0.04",
     useAnnuity: false,
     annuityRate: "0.06",
+    dcAnnuityPct: "0", // NEW: % of post-PCLS DC pot to annuitize (0-100)
 
     // DC contributions module (start-of-year contributions + inflate personal)
     dcIsContributing: false,
@@ -109,7 +110,9 @@ export default function AtRetirement() {
     // State Pension & Other
     statePensionAnnual: String(Math.round(230.25 * 52)),
     statePensionAge: "67",
-    otherIncomeNow: "",
+    propertyIncomeNow: "",
+    dividendIncomeNow: "",
+    anyOtherIncomeNow: "",
 
     // Savings
     isaBalance: "",
@@ -312,6 +315,7 @@ export default function AtRetirement() {
       drawdownRate: effDraw,
       useAnnuity: !!form.useAnnuity,
       annuityRate: effAnnu,
+      dcAnnuityPct: N(form.dcAnnuityPct), // NEW: % to annuitize
 
       // DC contributions
       dcIsContributing: !!form.dcIsContributing,
@@ -330,7 +334,9 @@ export default function AtRetirement() {
       // State Pension & Other
       statePensionAnnual: N(form.statePensionAnnual),
       statePensionAge: N(form.statePensionAge),
-      otherIncomeNow: N(form.otherIncomeNow),
+      propertyIncomeNow: N(form.propertyIncomeNow),
+      dividendIncomeNow: N(form.dividendIncomeNow),
+      anyOtherIncomeNow: N(form.anyOtherIncomeNow),
 
       // Savings
       isaBalance: N(form.isaBalance),
@@ -372,7 +378,10 @@ export default function AtRetirement() {
     out?.income ?? {
       dcIncome: 0,
       dbIncomeAfter: 0,
-      otherIncomeAtRet: 0,
+      propertyIncomeAtRet: 0,
+      dividendIncomeAtRet: 0,
+      anyOtherIncomeAtRet: 0,
+      otherIncomeAtRet: 0, // Total of above three categories
       statePensionAtRetNominal: 0,
       taxableInterest: 0,
     };
@@ -1098,6 +1107,24 @@ const HelpToggle = ({ text }) => {
               </FieldRow>
 
               <FieldRow
+                label="State Pension (annual)"
+                help="The maximum new State Pension is currently £11,973/year. You can check your personal entitlement at gov.uk/check-state-pension"
+              >
+                <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                  <span>£</span>
+                  <Txt
+                    value={form.statePensionAnnual}
+                    onCommit={(v) => set({ statePensionAnnual: v })}
+                    style={{ width: 120 }}
+                    inputMode="numeric"
+                  />
+                  <span style={{ fontSize: "13px", color: "#64748b" }}>
+                    (Default: £{Math.round(230.25 * 52).toLocaleString()})
+                  </span>
+                </div>
+              </FieldRow>
+
+              <FieldRow
                 label="Inflation assumption"
                 help="Expected annual inflation rate. Used to project future values in today's money. Default is 2.5%."
               >
@@ -1297,28 +1324,41 @@ const HelpToggle = ({ text }) => {
           </SectionBox>
 
           <SectionBox title="Withdrawal Method">
-            <FieldRow label={form.useAnnuity ? "Annuity rate" : "Drawdown rate"}>
+            <FieldRow label="Drawdown rate">
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <Txt
-                  value={toPercent(form.useAnnuity ? form.annuityRate : form.drawdownRate)}
-                  onCommit={(v) =>
-                    set(form.useAnnuity ? { annuityRate: fromPercent(v) } : { drawdownRate: fromPercent(v) })
-                  }
+                  value={toPercent(form.drawdownRate)}
+                  onCommit={(v) => set({ drawdownRate: fromPercent(v) })}
                   style={{ width: 90 }}
                   inputMode="decimal"
                 />
                 <span>%</span>
               </div>
             </FieldRow>
-            <FieldRow label="">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={form.useAnnuity}
-                  onChange={(e) => set({ useAnnuity: e.target.checked })}
-                />{" "}
-                Use annuity (instead of drawdown)
-              </label>
+            <FieldRow label="Annuity rate">
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <Txt
+                  value={toPercent(form.annuityRate)}
+                  onCommit={(v) => set({ annuityRate: fromPercent(v) })}
+                  style={{ width: 90 }}
+                  inputMode="decimal"
+                />
+                <span>%</span>
+              </div>
+            </FieldRow>
+            <FieldRow label="% of pot to annuitize">
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <Txt
+                  value={form.dcAnnuityPct}
+                  onCommit={(v) => set({ dcAnnuityPct: v })}
+                  style={{ width: 90 }}
+                  inputMode="decimal"
+                />
+                <span>%</span>
+                <span style={{ fontSize: "13px", color: "#64748b", marginLeft: 8 }}>
+                  (0=all drawdown, 100=all annuity)
+                </span>
+              </div>
             </FieldRow>
           </SectionBox>
 
@@ -1563,12 +1603,36 @@ const HelpToggle = ({ text }) => {
               </div>
             </FieldRow>
 
-            <FieldRow label="Other income (now)">
+            <FieldRow label="Property income (now)">
               <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
                 <span>Annual £</span>
                 <Txt
-                  value={form.otherIncomeNow}
-                  onCommit={(v) => set({ otherIncomeNow: v })}
+                  value={form.propertyIncomeNow}
+                  onCommit={(v) => set({ propertyIncomeNow: v })}
+                  style={{ width: 140 }}
+                  inputMode="numeric"
+                />
+              </div>
+            </FieldRow>
+
+            <FieldRow label="Dividend income (now)">
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                <span>Annual £</span>
+                <Txt
+                  value={form.dividendIncomeNow}
+                  onCommit={(v) => set({ dividendIncomeNow: v })}
+                  style={{ width: 140 }}
+                  inputMode="numeric"
+                />
+              </div>
+            </FieldRow>
+
+            <FieldRow label="Any other income (now)">
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                <span>Annual £</span>
+                <Txt
+                  value={form.anyOtherIncomeNow}
+                  onCommit={(v) => set({ anyOtherIncomeNow: v })}
                   style={{ width: 140 }}
                   inputMode="numeric"
                 />
@@ -1589,17 +1653,66 @@ const HelpToggle = ({ text }) => {
           <div className="grid-2">
             {/* Income card */}
             <Card title="Retirement Income (first year)">
-              <div>
-                DC income ({inputsNum.useAnnuity ? "annuity" : "drawdown"}):{" "}
-                <strong>£{fmt(income.dcIncome)}</strong>
-              </div>
+              {/* Show blended DC income breakdown if using both strategies */}
+              {income.dcAnnuityIncome > 0 && income.dcDrawdownIncome > 0 ? (
+                <>
+                  <div>
+                    DC Annuity income:{" "}
+                    <strong>£{fmt(income.dcAnnuityIncome)}</strong>
+                    <span style={{ fontSize: "13px", color: "#64748b", marginLeft: 6 }}>
+                      ({inputsNum.dcAnnuityPct}% of pot)
+                    </span>
+                  </div>
+                  <div>
+                    DC Drawdown income:{" "}
+                    <strong>£{fmt(income.dcDrawdownIncome)}</strong>
+                    <span style={{ fontSize: "13px", color: "#64748b", marginLeft: 6 }}>
+                      ({(100 - inputsNum.dcAnnuityPct).toFixed(0)}% of pot)
+                    </span>
+                  </div>
+                  <div style={{ marginLeft: 16, fontSize: "14px", color: "#64748b" }}>
+                    Total DC: £{fmt(income.dcIncome)}
+                  </div>
+                </>
+              ) : (
+                <div>
+                  DC income ({income.dcAnnuityIncome > 0 ? "annuity" : "drawdown"}):{" "}
+                  <strong>£{fmt(income.dcIncome)}</strong>
+                </div>
+              )}
               <div>
                 DB income {form.takeDBTaxFree25 ? "(after PCLS)" : ""}:{" "}
                 <strong>£{fmt(income.dbIncomeAfter)}</strong>
               </div>
-              <div>
-                Other income: <strong>£{fmt(income.otherIncomeAtRet)}</strong>
-              </div>
+              {/* Other Income: Show breakdown if any category has value */}
+              {income.propertyIncomeAtRet > 0 || income.dividendIncomeAtRet > 0 || income.anyOtherIncomeAtRet > 0 ? (
+                <>
+                  {income.propertyIncomeAtRet > 0 && (
+                    <div style={{ fontSize: "14px" }}>
+                      Property income: <strong>£{fmt(income.propertyIncomeAtRet)}</strong>
+                    </div>
+                  )}
+                  {income.dividendIncomeAtRet > 0 && (
+                    <div style={{ fontSize: "14px" }}>
+                      Dividend income: <strong>£{fmt(income.dividendIncomeAtRet)}</strong>
+                    </div>
+                  )}
+                  {income.anyOtherIncomeAtRet > 0 && (
+                    <div style={{ fontSize: "14px" }}>
+                      Any other income: <strong>£{fmt(income.anyOtherIncomeAtRet)}</strong>
+                    </div>
+                  )}
+                  {income.otherIncomeAtRet > 0 && (
+                    <div style={{ marginLeft: 16, fontSize: "14px", color: "#64748b" }}>
+                      Total other income: £{fmt(income.otherIncomeAtRet)}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div>
+                  Other income: <strong>£{fmt(income.otherIncomeAtRet)}</strong>
+                </div>
+              )}
               <div>
                 State Pension (inflated):{" "}
                 <strong>£{fmt(income.statePensionAtRetNominal)}</strong>
@@ -1654,8 +1767,13 @@ const HelpToggle = ({ text }) => {
             <div className="grid" style={{ gap: 16 }}>
               <Card title="Retirement Assets (at retirement)">
                 <div>
-                  DC pot (after PCLS):{" "}
-                  <strong>£{fmt(assets.dcAtRetAfterPCLS)}</strong>
+                  DC pot (after PCLS & annuity purchase):{" "}
+                  <strong>£{fmt(assets.dcPotForDrawdown)}</strong>
+                  {assets.dcPotForAnnuity > 0 && (
+                    <span style={{ fontSize: "13px", color: "#64748b", marginLeft: 6 }}>
+                      (£{fmt(assets.dcPotForAnnuity)} used to purchase annuity)
+                    </span>
+                  )}
                 </div>
                 {assets.dcPclsCash > 0 && (
                   <div>
@@ -1727,14 +1845,17 @@ const HelpToggle = ({ text }) => {
                 state: {
                   openingValues: {
                     retirementAge: inputsNum.retirementAge,
-                    dcPotAfterPCLS: inputsNum.useAnnuity ? 0 : assets.dcAtRetAfterPCLS,
+                    dcPotAfterPCLS: assets.dcPotForDrawdown, // Only drawdown pot (after annuity purchase)
                     isaSavings: assets.isaAtRet,
                     taxableSavings: assets.taxableAtRet + assets.dcPclsCash + assets.dbPclsCash,
                     dbPension: income.dbIncomeAfter,
-                    annuityIncome: inputsNum.useAnnuity ? income.dcIncome : 0,
+                    annuityIncome: income.dcAnnuityIncome, // Annuity income from annuitized portion
                     statePension: income.statePensionAtRetNominal,
                     statePensionAge: inputsNum.statePensionAge,
-                    otherIncome: income.otherIncomeAtRet,
+                    propertyIncome: income.propertyIncomeAtRet, // Property income (separate for future tax differentiation)
+                    dividendIncome: income.dividendIncomeAtRet, // Dividend income (separate for future tax differentiation)
+                    anyOtherIncome: income.anyOtherIncomeAtRet, // Any other income (separate for future tax differentiation)
+                    otherIncome: income.otherIncomeAtRet, // Total other income (for backward compatibility)
                     annualSpend: latestSpend, // Use latest value from sessionStorage
                     incomeTax: estTax,
                     inflation: inputsNum.inflationAssumption * 100,

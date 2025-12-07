@@ -148,10 +148,15 @@ export function atRetirement(inputs, taxFns) {
   const dcAtRetAfterPCLS = dcProjected - dcPclsAllowed;
   const { dbAfter } = applyDbPclsAmount(dbBeforePcls, dbPclsAllowed);
 
-  // ---- DC income from AFTER-PCLS pot
-  const dcIncome = inputs.useAnnuity
-    ? dcAtRetAfterPCLS * inputs.annuityRate
-    : dcAtRetAfterPCLS * inputs.drawdownRate;
+  // ---- DC income from AFTER-PCLS pot: Support blended annuity/drawdown strategy
+  // dcAnnuityPct: 0-100, percentage of post-PCLS DC pot to annuitize
+  const annuityPct = inputs.dcAnnuityPct ?? 0; // Default 0% (all drawdown)
+  const dcPotForAnnuity = dcAtRetAfterPCLS * (annuityPct / 100);
+  const dcPotForDrawdown = dcAtRetAfterPCLS * (1 - annuityPct / 100);
+
+  const dcAnnuityIncome = dcPotForAnnuity * inputs.annuityRate;
+  const dcDrawdownIncome = dcPotForDrawdown * inputs.drawdownRate;
+  const dcIncome = dcAnnuityIncome + dcDrawdownIncome;
 
   // ---- State Pension & Other (inflated to retirement)
   const statePensionAtRetNominal = inflateToRetirement(
@@ -161,11 +166,23 @@ export function atRetirement(inputs, taxFns) {
   );
   const spaWarning = retirementAgeYears < inputs.statePensionAge;
 
-  const otherIncomeAtRet = inflateToRetirement(
-    inputs.otherIncomeNow,
+  // ---- Other Income: Split into categories for future tax differentiation
+  const propertyIncomeAtRet = inflateToRetirement(
+    inputs.propertyIncomeNow,
     years,
     inputs.inflationAssumption
   );
+  const dividendIncomeAtRet = inflateToRetirement(
+    inputs.dividendIncomeNow,
+    years,
+    inputs.inflationAssumption
+  );
+  const anyOtherIncomeAtRet = inflateToRetirement(
+    inputs.anyOtherIncomeNow,
+    years,
+    inputs.inflationAssumption
+  );
+  const otherIncomeAtRet = propertyIncomeAtRet + dividendIncomeAtRet + anyOtherIncomeAtRet;
 
   // ---- Savings to retirement
   const isaAtRet = projectWithContrib(
@@ -197,14 +214,17 @@ export function atRetirement(inputs, taxFns) {
 
   // ---- Group outputs
   const assets = {
-    dcAtRetAfterPCLS,
+    dcAtRetAfterPCLS, // Total pot after PCLS (for reference)
+    dcPotForDrawdown, // NEW: Actual remaining liquid pot (after annuity purchase)
+    dcPotForAnnuity,  // NEW: Amount used to purchase annuity (no longer liquid)
     dcPclsCash: dcPclsAllowed,
     dbPclsCash: dbPclsAllowed,
     isaAtRet,
     taxableAtRet,
   };
+  // Total assets = liquid assets only (annuitized pot is converted to income stream)
   const assetsTotal =
-    assets.dcAtRetAfterPCLS +
+    assets.dcPotForDrawdown + // Only count remaining drawdown pot as liquid asset
     assets.dcPclsCash +
     assets.dbPclsCash +
     assets.isaAtRet +
@@ -212,8 +232,15 @@ export function atRetirement(inputs, taxFns) {
 
   const income = {
     dcIncome,
+    dcAnnuityIncome, // NEW: Separate annuity income stream
+    dcDrawdownIncome, // NEW: Separate drawdown income stream
+    dcPotForAnnuity, // NEW: Pot used for annuity
+    dcPotForDrawdown, // NEW: Pot used for drawdown
     dbIncomeAfter: dbAfter,
-    otherIncomeAtRet,
+    propertyIncomeAtRet, // NEW: Property income category
+    dividendIncomeAtRet, // NEW: Dividend income category
+    anyOtherIncomeAtRet, // NEW: Any other income category
+    otherIncomeAtRet, // Total of above three categories
     statePensionAtRetNominal,
     statePensionForIncome, // Actual amount used in calculations (0 if before SPA)
     taxableInterest,
@@ -230,6 +257,8 @@ export function atRetirement(inputs, taxFns) {
   const real = {
     assets: {
       dcAtRetAfterPCLS: deflate(assets.dcAtRetAfterPCLS),
+      dcPotForDrawdown: deflate(assets.dcPotForDrawdown),
+      dcPotForAnnuity: deflate(assets.dcPotForAnnuity),
       dcPclsCash: deflate(assets.dcPclsCash),
       dbPclsCash: deflate(assets.dbPclsCash),
       isaAtRet: deflate(assets.isaAtRet),
@@ -238,7 +267,14 @@ export function atRetirement(inputs, taxFns) {
     assetsTotal: deflate(assetsTotal),
     income: {
       dcIncome: deflate(income.dcIncome),
+      dcAnnuityIncome: deflate(income.dcAnnuityIncome),
+      dcDrawdownIncome: deflate(income.dcDrawdownIncome),
+      dcPotForAnnuity: deflate(income.dcPotForAnnuity),
+      dcPotForDrawdown: deflate(income.dcPotForDrawdown),
       dbIncomeAfter: deflate(income.dbIncomeAfter),
+      propertyIncomeAtRet: deflate(income.propertyIncomeAtRet),
+      dividendIncomeAtRet: deflate(income.dividendIncomeAtRet),
+      anyOtherIncomeAtRet: deflate(income.anyOtherIncomeAtRet),
       otherIncomeAtRet: deflate(income.otherIncomeAtRet),
       statePensionAtRetNominal: deflate(income.statePensionAtRetNominal),
       statePensionForIncome: deflate(income.statePensionForIncome),
