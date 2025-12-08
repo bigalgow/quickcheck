@@ -16,6 +16,7 @@ import AtRetirementResults from "./AtRetirementResults.jsx";
 import CoreAssumptions from "./CoreAssumptions.jsx";
 import DCPensionSection from "./DCPensionSection.jsx";
 import DBSchemesSection from "./DBSchemesSection.jsx";
+import SavingsAndOtherSection from "./SavingsAndOtherSection.jsx";
 import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -1002,102 +1003,16 @@ const HelpToggle = ({ text }) => {
         />
 
         {/* SAVINGS & OTHER — tidy rows */}
-        <Section
-          title="SAVINGS & OTHER"
-          sectionKey="savings"
-          openFlag={open.savings}
-          onToggle={() => toggle("savings")}
-        >
-          <SectionBox>
-            <FieldRow label="ISA">
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  alignItems: "baseline",
-                }}
-              >
-                <span>Balance £</span>
-                <Txt
-                  value={form.isaBalance}
-                  onCommit={(v) => set({ isaBalance: v })}
-                  style={{ width: 110 }}
-                  inputMode="numeric"
-                />
-                <span>Add/yr £</span>
-                <Txt
-                  value={form.isaAddPerYear}
-                  onCommit={(v) => set({ isaAddPerYear: v })}
-                  style={{ width: 110 }}
-                  inputMode="numeric"
-                />
-              </div>
-            </FieldRow>
-
-            <FieldRow label="Taxable savings">
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  alignItems: "baseline",
-                }}
-              >
-                <span>Balance £</span>
-                <Txt
-                  value={form.taxableSavingsBalance}
-                  onCommit={(v) => set({ taxableSavingsBalance: v })}
-                  style={{ width: 110 }}
-                  inputMode="numeric"
-                />
-                <span>Add/yr £</span>
-                <Txt
-                  value={form.taxableSavingsAddPerYear}
-                  onCommit={(v) => set({ taxableSavingsAddPerYear: v })}
-                  style={{ width: 110 }}
-                  inputMode="numeric"
-                />
-              </div>
-            </FieldRow>
-
-            <FieldRow label="Property income (now)">
-              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                <span>Annual £</span>
-                <Txt
-                  value={form.propertyIncomeNow}
-                  onCommit={(v) => set({ propertyIncomeNow: v })}
-                  style={{ width: 140 }}
-                  inputMode="numeric"
-                />
-              </div>
-            </FieldRow>
-
-            <FieldRow label="Dividend income (now)">
-              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                <span>Annual £</span>
-                <Txt
-                  value={form.dividendIncomeNow}
-                  onCommit={(v) => set({ dividendIncomeNow: v })}
-                  style={{ width: 140 }}
-                  inputMode="numeric"
-                />
-              </div>
-            </FieldRow>
-
-            <FieldRow label="Any other income (now)">
-              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                <span>Annual £</span>
-                <Txt
-                  value={form.anyOtherIncomeNow}
-                  onCommit={(v) => set({ anyOtherIncomeNow: v })}
-                  style={{ width: 140 }}
-                  inputMode="numeric"
-                />
-              </div>
-            </FieldRow>
-          </SectionBox>
-        </Section>
+        <SavingsAndOtherSection
+          form={form}
+          set={set}
+          Section={Section}
+          FieldRow={FieldRow}
+          SectionBox={SectionBox}
+          Txt={Txt}
+          open={open}
+          toggle={toggle}
+        />
       </div>
 
       {/* ================== PAGE 2: OUTPUTS ================== */}
