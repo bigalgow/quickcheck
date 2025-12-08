@@ -1669,7 +1669,6 @@ const HelpToggle = ({ text }) => {
         saveAutosave={saveAutosave}
         loadAutosave={loadAutosave}
       />
-      </div>
     </div>
   );
 }
