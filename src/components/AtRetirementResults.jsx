@@ -193,7 +193,7 @@ export default function AtRetirementResults({
                 Taxable savings balance:{" "}
                 <strong>£{fmt(assets.taxableAtRet)}</strong>
               </div>
-              <TotalLine label="Total assets" value={assetsTotal} />
+              <TotalLine label="Total assets" value={assetsTotal} fmt={fmt} />
             </Card>
 
             <Card title="Real terms (today's prices)">
@@ -209,7 +209,7 @@ export default function AtRetirementResults({
                 Surplus/Deficit (real):{" "}
                 <strong>£{fmt(real.surplusDeficit)}</strong>
               </div>
-              <TotalLine label="Assets total (real)" value={real.assetsTotal} />
+              <TotalLine label="Assets total (real)" value={real.assetsTotal} fmt={fmt} />
               <MiniHelp>
                 Deflated {yearsToRetirement.toFixed(2)} year(s) at{" "}
                 {(inputsNum.inflationAssumption * 100).toFixed(1)}% p.a.

@@ -1,6 +1,6 @@
 // src/components/DCPensionSection.jsx
 import React from "react";
-import { MiniHelp } from "./common";
+import { MiniHelp } from "./common.jsx";
 
 /**
  * DCPensionSection - DC pension inputs section
