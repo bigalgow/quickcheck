@@ -15,11 +15,15 @@ import {
 export default function ResultsWizard({
   results, // From atRetirement() calculation
   form,
+  dbSchemes,
   model,
   setModel,
   applyModelToForm, // Function to apply slider changes permanently
+  inputsNum,
+  navigate,
+  saveAutosave,
+  loadAutosave,
   onEditSection, // Function to navigate to specific wizard step
-  onNext, // Function to continue to next page (projection)
   fmt,
   N,
 }) {
@@ -452,15 +456,63 @@ export default function ResultsWizard({
         </div>
       </div>
 
-      {/* Next Step Button */}
+      {/* Next Step Button - 25-Year Projection */}
       <div style={{
         marginTop: '24px',
         paddingTop: '24px',
         borderTop: '1px solid #e5e7eb',
+        textAlign: 'center',
       }}>
         <button
           type="button"
-          onClick={onNext}
+          onClick={() => {
+            // Save immediately before navigating (don't wait for debounce)
+            saveAutosave({
+              form,
+              dbSchemes,
+              model,
+              atRetirement: {
+                yearsToRetirement: results.yearsToRetirement,
+                netIncome: results.netIncome,
+                incomeGrossTotal: results.incomeGrossTotal,
+                assetsTotal: results.assetsTotal,
+              },
+            });
+
+            // Check sessionStorage for the latest desiredSpendAnnual (may have been updated by lifestyle calculator)
+            const latestData = loadAutosave();
+            const latestSpend = latestData?.form?.desiredSpendAnnual
+              ? N(latestData.form.desiredSpendAnnual)
+              : inputsNum.desiredSpendAnnual;
+
+            navigate('/projection', {
+              state: {
+                openingValues: {
+                  retirementAge: inputsNum.retirementAge,
+                  dcPotAfterPCLS: results.assets.dcPotForDrawdown, // Only drawdown pot (after annuity purchase)
+                  isaSavings: results.assets.isaAtRet,
+                  taxableSavings: results.assets.taxableAtRet + results.assets.dcPclsCash + results.assets.dbPclsCash,
+                  dbPension: results.income.dbIncomeAfter,
+                  annuityIncome: results.income.dcAnnuityIncome, // Annuity income from annuitized portion
+                  statePension: results.income.statePensionAtRetNominal,
+                  statePensionAge: inputsNum.statePensionAge,
+                  propertyIncome: results.income.propertyIncomeAtRet, // Property income (separate for future tax differentiation)
+                  dividendIncome: results.income.dividendIncomeAtRet, // Dividend income (separate for future tax differentiation)
+                  anyOtherIncome: results.income.anyOtherIncomeAtRet, // Any other income (separate for future tax differentiation)
+                  otherIncome: results.income.otherIncomeAtRet, // Total other income (for backward compatibility)
+                  annualSpend: latestSpend, // Use latest value from sessionStorage
+                  incomeTax: results.estTax,
+                  inflation: inputsNum.inflationAssumption * 100,
+                  dcGrowth: inputsNum.growthAssumption * 100,
+                  isaGrowth: inputsNum.isaRate * 100,
+                  savingsGrowth: inputsNum.taxableSavingsRate * 100,
+                  taxRegion: inputsNum.region === 'Scotland' ? 'scotland' : 'england',
+                  dcDrawdownPercent: inputsNum.drawdownRate * 100,
+                  yearsToRetirement: results.yearsToRetirement,
+                }
+              }
+            });
+          }}
           style={{
             width: '100%',
             padding: '16px 32px',

@@ -1115,54 +1115,21 @@ const HelpToggle = ({ text }) => {
             spaWarning,
           }}
           form={form}
+          dbSchemes={dbSchemes}
           model={model}
           setModel={setModel}
           applyModelToForm={applyModelToForm}
+          inputsNum={inputsNum}
+          navigate={navigate}
+          saveAutosave={saveAutosave}
+          loadAutosave={loadAutosave}
           onEditSection={(step) => {
             setCurrentStep(step);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onNext={() => {
-            setCurrentStep(5);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           fmt={fmt}
           N={N}
         />
-      ) : wizardMode && currentStep === 5 ? (
-        <div style={{
-          maxWidth: '800px',
-          margin: '0 auto',
-          padding: '48px 16px',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '24px' }}>📊</div>
-          <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#1e293b', marginBottom: '16px' }}>
-            25-Year Projection
-          </h2>
-          <p style={{ fontSize: '16px', color: '#64748b', marginBottom: '32px' }}>
-            This feature will show a detailed year-by-year projection of your retirement finances.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setCurrentStep(4);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            style={{
-              padding: '14px 28px',
-              fontSize: '16px',
-              fontWeight: '500',
-              color: '#374151',
-              backgroundColor: 'white',
-              border: '2px solid #d1d5db',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          >
-            ← Back to Results
-          </button>
-        </div>
       ) : !wizardMode ? (
         <AtRetirementResults
           yearsToRetirement={yearsToRetirement}
