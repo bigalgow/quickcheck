@@ -19,6 +19,7 @@ export default function ResultsWizard({
   setModel,
   applyModelToForm, // Function to apply slider changes permanently
   onEditSection, // Function to navigate to specific wizard step
+  onNext, // Function to continue to next page (projection)
   fmt,
   N,
 }) {
@@ -87,7 +88,7 @@ export default function ResultsWizard({
         icon: '📈',
         title: 'Boost your pension savings',
         description: `You have ${results.yearsToRetirement.toFixed(1)} years until retirement. Increasing contributions now could significantly improve your position.`,
-        action: 'Edit DC Pension details to increase contributions',
+        action: 'Use "Edit Your Details" menu below to adjust your contributions',
       });
     }
 
@@ -450,6 +451,32 @@ export default function ResultsWizard({
           )}
         </div>
       </div>
+
+      {/* Next Step Button */}
+      <div style={{
+        marginTop: '24px',
+        paddingTop: '24px',
+        borderTop: '1px solid #e5e7eb',
+      }}>
+        <button
+          type="button"
+          onClick={onNext}
+          style={{
+            width: '100%',
+            padding: '16px 32px',
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'white',
+            backgroundColor: '#0284c7',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          Continue to 25-Year Projection →
+        </button>
+      </div>
     </ConversationalContainer>
   );
 }
@@ -567,22 +594,6 @@ function ModelingSliders({ form, model, setModel, applyModelToForm, fmt, N }) {
       format: (v) => `${v}`,
     },
     {
-      label: 'DC pot (now)',
-      key: 'dcPotNow',
-      min: 0,
-      max: 500000,
-      step: 5000,
-      format: (v) => `£${fmt(v)}`,
-    },
-    {
-      label: 'Drawdown rate',
-      key: 'drawdownRate',
-      min: 0,
-      max: 0.10,
-      step: 0.0025,
-      format: (v) => `${(v * 100).toFixed(2)}%`,
-    },
-    {
       label: 'Investment growth',
       key: 'growthAssumption',
       min: 0,
@@ -593,6 +604,14 @@ function ModelingSliders({ form, model, setModel, applyModelToForm, fmt, N }) {
     {
       label: 'Inflation',
       key: 'inflationAssumption',
+      min: 0,
+      max: 0.10,
+      step: 0.0025,
+      format: (v) => `${(v * 100).toFixed(2)}%`,
+    },
+    {
+      label: 'Drawdown rate',
+      key: 'drawdownRate',
       min: 0,
       max: 0.10,
       step: 0.0025,
