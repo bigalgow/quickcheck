@@ -17,6 +17,11 @@ import CoreAssumptions from "./CoreAssumptions.jsx";
 import DCPensionSection from "./DCPensionSection.jsx";
 import DBSchemesSection from "./DBSchemesSection.jsx";
 import SavingsAndOtherSection from "./SavingsAndOtherSection.jsx";
+import ConversationalWizard from "./ConversationalWizard.jsx";
+import DCPensionWizard from "./DCPensionWizard.jsx";
+import DBPensionWizard from "./DBPensionWizard.jsx";
+import SavingsWizard from "./SavingsWizard.jsx";
+import ResultsWizard from "./ResultsWizard.jsx";
 import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -87,6 +92,7 @@ export default function AtRetirement() {
     alreadyRetired: false,
     inflationAssumption: "0.025",
     retirementAge: "65", // years only now
+    hasDcPension: true, // Track if user has DC pension
     hasDbPension: true,
     desiredSpendAnnual: "",
 
@@ -953,94 +959,198 @@ const HelpToggle = ({ text }) => {
 
       {/* ================== PAGE 1: INPUTS ================== */}
       <div className="print-page">
-        {/* CORE ASSUMPTIONS */}
-        <CoreAssumptions
-          form={form}
-          set={set}
-          lifestyleProfile={lifestyleProfile}
-          loadingProfile={loadingProfile}
-          Section={Section}
-          FieldRow={FieldRow}
-          Txt={Txt}
-          HelpToggle={HelpToggle}
-          toPercent={toPercent}
-          fromPercent={fromPercent}
-          calculateStatePensionAge={calculateStatePensionAge}
-          formatStatePensionAge={formatStatePensionAge}
-          open={open}
-          toggle={toggle}
-        />
+        {/* CORE ASSUMPTIONS - Conversational wizard or classic form */}
+        {wizardMode && currentStep === 0 ? (
+          <ConversationalWizard
+            form={form}
+            set={set}
+            onComplete={() => {
+              console.log('✅ Conversational wizard Phase 1 complete');
+              console.log('   hasDcPension:', form.hasDcPension);
+              console.log('   Current step before navigation:', currentStep);
+              // Skip DC wizard if user doesn't have a DC pension
+              if (!form.hasDcPension) {
+                console.log('⏭️  Skipping DC Pension wizard (user has no DC pension)');
+                setCurrentStep(2); // Skip to DB Pensions
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                console.log('➡️  Advancing to DC Pension wizard');
+                nextStep(); // Advance to DC Pensions section
+              }
+            }}
+          />
+        ) : (
+          <CoreAssumptions
+            form={form}
+            set={set}
+            lifestyleProfile={lifestyleProfile}
+            loadingProfile={loadingProfile}
+            Section={Section}
+            FieldRow={FieldRow}
+            Txt={Txt}
+            HelpToggle={HelpToggle}
+            toPercent={toPercent}
+            fromPercent={fromPercent}
+            calculateStatePensionAge={calculateStatePensionAge}
+            formatStatePensionAge={formatStatePensionAge}
+            open={open}
+            toggle={toggle}
+          />
+        )}
 
-        {/* DC PENSIONS */}
-        <DCPensionSection
-          form={form}
-          set={set}
-          Section={Section}
-          FieldRow={FieldRow}
-          SectionBox={SectionBox}
-          TwoCol={TwoCol}
-          Txt={Txt}
-          toPercent={toPercent}
-          fromPercent={fromPercent}
-          open={open}
-          toggle={toggle}
-        />
+        {/* DC PENSIONS - Conversational wizard or classic form */}
+        {(() => {
+          console.log('🔍 DC Section: wizardMode=', wizardMode, 'currentStep=', currentStep, 'hasDcPension=', form.hasDcPension);
+          if (wizardMode && currentStep === 1) {
+            console.log('✅ Rendering DCPensionWizard');
+            return (
+              <DCPensionWizard
+                form={form}
+                set={set}
+                onComplete={() => {
+                  console.log('✅ DC Pension wizard complete');
+                  // Skip DB wizard if user doesn't have a DB pension
+                  if (!form.hasDbPension) {
+                    console.log('⏭️  Skipping DB Pension wizard (user has no DB pension)');
+                    setCurrentStep(3); // Skip to Savings & Other
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else {
+                    nextStep(); // Advance to DB Pensions section
+                  }
+                }}
+              />
+            );
+          } else if (!wizardMode) {
+            console.log('📋 Rendering DCPensionSection (classic mode)');
+            return (
+              <DCPensionSection
+                form={form}
+                set={set}
+                Section={Section}
+                FieldRow={FieldRow}
+                SectionBox={SectionBox}
+                TwoCol={TwoCol}
+                Txt={Txt}
+                toPercent={toPercent}
+                fromPercent={fromPercent}
+                open={open}
+                toggle={toggle}
+              />
+            );
+          } else {
+            console.log('⏭️  Skipping DC section (wizard mode, step ' + currentStep + ')');
+            return null;
+          }
+        })()}
 
-        {/* DB PENSIONS */}
-        <DBSchemesSection
-          form={form}
-          set={set}
-          dbSchemes={dbSchemes}
-          updateScheme={updateScheme}
-          removeScheme={removeScheme}
-          addDeferred={addDeferred}
-          Section={Section}
-          FieldRow={FieldRow}
-          TwoCol={TwoCol}
-          Txt={Txt}
-          open={open}
-          toggle={toggle}
-        />
+        {/* DB PENSIONS - Conversational wizard or classic form */}
+        {wizardMode && currentStep === 2 ? (
+          <DBPensionWizard
+            form={form}
+            set={set}
+            dbSchemes={dbSchemes}
+            updateScheme={updateScheme}
+            removeScheme={removeScheme}
+            addDeferred={addDeferred}
+            onComplete={() => {
+              console.log('✅ DB Pension wizard complete');
+              nextStep(); // Advance to Savings & Other section
+            }}
+          />
+        ) : !wizardMode ? (
+          <DBSchemesSection
+            form={form}
+            set={set}
+            dbSchemes={dbSchemes}
+            updateScheme={updateScheme}
+            removeScheme={removeScheme}
+            addDeferred={addDeferred}
+            Section={Section}
+            FieldRow={FieldRow}
+            TwoCol={TwoCol}
+            Txt={Txt}
+            open={open}
+            toggle={toggle}
+          />
+        ) : null}
 
-        {/* SAVINGS & OTHER — tidy rows */}
-        <SavingsAndOtherSection
-          form={form}
-          set={set}
-          Section={Section}
-          FieldRow={FieldRow}
-          SectionBox={SectionBox}
-          Txt={Txt}
-          open={open}
-          toggle={toggle}
-        />
+        {/* SAVINGS & OTHER - Conversational wizard or classic form */}
+        {wizardMode && currentStep === 3 ? (
+          <SavingsWizard
+            form={form}
+            set={set}
+            onComplete={() => {
+              console.log('✅ Savings wizard complete');
+              nextStep(); // Advance to Results section
+            }}
+          />
+        ) : !wizardMode ? (
+          <SavingsAndOtherSection
+            form={form}
+            set={set}
+            Section={Section}
+            FieldRow={FieldRow}
+            SectionBox={SectionBox}
+            Txt={Txt}
+            open={open}
+            toggle={toggle}
+          />
+        ) : null}
       </div>
 
       {/* ================== PAGE 2: OUTPUTS ================== */}
-      <AtRetirementResults
-        yearsToRetirement={yearsToRetirement}
-        income={income}
-        assets={assets}
-        assetsTotal={assetsTotal}
-        incomeGrossTotal={incomeGrossTotal}
-        estTax={estTax}
-        netIncome={netIncome}
-        surplusDeficit={surplusDeficit}
-        real={real}
-        spaWarning={spaWarning}
-        form={form}
-        inputsNum={inputsNum}
-        dbSchemes={dbSchemes}
-        model={model}
-        setModel={setModel}
-        applyModelToForm={applyModelToForm}
-        resetModel={resetModel}
-        open={open}
-        toggle={toggle}
-        fmt={fmt}
-        N={N}
-        saveAutosave={saveAutosave}
-        loadAutosave={loadAutosave}
-      />
+      {/* Show ResultsWizard in wizard mode, AtRetirementResults in classic mode */}
+      {wizardMode && currentStep === 4 ? (
+        <ResultsWizard
+          results={{
+            yearsToRetirement,
+            income,
+            assets,
+            assetsTotal,
+            incomeGrossTotal,
+            estTax,
+            netIncome,
+            surplusDeficit,
+            real,
+            spaWarning,
+          }}
+          form={form}
+          model={model}
+          setModel={setModel}
+          onEditSection={(step) => {
+            setCurrentStep(step);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          fmt={fmt}
+          N={N}
+        />
+      ) : !wizardMode ? (
+        <AtRetirementResults
+          yearsToRetirement={yearsToRetirement}
+          income={income}
+          assets={assets}
+          assetsTotal={assetsTotal}
+          incomeGrossTotal={incomeGrossTotal}
+          estTax={estTax}
+          netIncome={netIncome}
+          surplusDeficit={surplusDeficit}
+          real={real}
+          spaWarning={spaWarning}
+          form={form}
+          inputsNum={inputsNum}
+          dbSchemes={dbSchemes}
+          model={model}
+          setModel={setModel}
+          applyModelToForm={applyModelToForm}
+          resetModel={resetModel}
+          open={open}
+          toggle={toggle}
+          fmt={fmt}
+          N={N}
+          saveAutosave={saveAutosave}
+          loadAutosave={loadAutosave}
+        />
+      ) : null}
     </div>
   );
 }
