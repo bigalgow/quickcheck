@@ -12,6 +12,7 @@ import { formatCurrency } from '../utils/money';
 import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData, getLastCloudSave, setLastCloudSave } from '../utils/persist';
 import { useAuth } from '../auth/AuthProvider';
 import { transformToProjectionEvents } from '../utils/lifestyleProfile';
+import { estimateIncomeTax, TAX_2025_EWNI, TAX_2025_SCOTLAND } from '../utils/tax';
 
 export default function PostRetirementProjection() {
   const location = useLocation();
@@ -172,6 +173,37 @@ export default function PostRetirementProjection() {
     }
   }, [isaRecurringAmount, isaRecurringYears, dcDrawdownPercent, lifeEvents]);
 
+  // Calculate correct opening tax based on actual gross income shown in opening summary
+  const openingTaxCorrect = useMemo(() => {
+    if (!openingValues) return 0;
+
+    const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100;
+    const statePensionAmount = openingValues.retirementAge >= openingValues.statePensionAge
+      ? openingValues.statePension
+      : 0;
+
+    const grossIncome =
+      openingValues.dbPension +
+      openingValues.annuityIncome +
+      statePensionAmount +
+      openingValues.otherIncome +
+      dcDrawdownAmount;
+
+    // Get the correct tax bands based on region
+    const taxBands = openingValues.taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
+
+    // Calculate tax using the same function as At Retirement
+    const tax = estimateIncomeTax({
+      grossIncome,
+      totalSavings: openingValues.isaSavings + openingValues.taxableSavings,
+      propertyIncome: openingValues.propertyIncome || 0,
+      dividendIncome: openingValues.dividendIncome || 0,
+      taxBands,
+    });
+
+    return tax;
+  }, [openingValues, dcDrawdownPercent]);
+
   // Calculate projection when inputs change
   const projectionResults = useMemo(() => {
     if (!openingValues) return null;
@@ -320,7 +352,7 @@ export default function PostRetirementProjection() {
             <div>
               <div className="text-sm text-slate-600 mb-1">Income Tax</div>
               <div className="text-2xl font-bold text-red-700">
-                {formatCurrency(openingValues.incomeTax || 0)}
+                {formatCurrency(openingTaxCorrect)}
               </div>
               <div className="text-xs text-slate-500 mt-1">
                 Estimated annual tax
@@ -337,7 +369,7 @@ export default function PostRetirementProjection() {
                   (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                   openingValues.otherIncome +
                   (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
-                  (openingValues.incomeTax || 0)
+                  openingTaxCorrect
                 )}
               </div>
               <div className="text-xs text-slate-500 mt-1">
@@ -365,7 +397,7 @@ export default function PostRetirementProjection() {
                  (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                  openingValues.otherIncome +
                  (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
-                 (openingValues.incomeTax || 0)) -
+                 openingTaxCorrect) -
                 openingValues.annualSpend >= 0
                   ? 'text-green-700'
                   : 'text-red-700'
@@ -376,7 +408,7 @@ export default function PostRetirementProjection() {
                    (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                    openingValues.otherIncome +
                    (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
-                   (openingValues.incomeTax || 0)) -
+                   openingTaxCorrect) -
                   openingValues.annualSpend
                 ))}
                 {(openingValues.dbPension +
@@ -384,7 +416,7 @@ export default function PostRetirementProjection() {
                   (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                   openingValues.otherIncome +
                   (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
-                  (openingValues.incomeTax || 0)) -
+                  openingTaxCorrect) -
                  openingValues.annualSpend < 0 && ' shortfall'}
               </div>
               <div className="text-xs text-slate-500 mt-1">
