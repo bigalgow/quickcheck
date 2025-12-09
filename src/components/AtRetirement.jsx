@@ -1117,6 +1117,7 @@ const HelpToggle = ({ text }) => {
           form={form}
           model={model}
           setModel={setModel}
+          applyModelToForm={applyModelToForm}
           onEditSection={(step) => {
             setCurrentStep(step);
             window.scrollTo({ top: 0, behavior: 'smooth' });

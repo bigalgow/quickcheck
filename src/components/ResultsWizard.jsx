@@ -17,6 +17,7 @@ export default function ResultsWizard({
   form,
   model,
   setModel,
+  applyModelToForm, // Function to apply slider changes permanently
   onEditSection, // Function to navigate to specific wizard step
   fmt,
   N,
@@ -61,22 +62,12 @@ export default function ResultsWizard({
 
     // Suggestion 2: Use savings to bridge the gap
     if (hasSavings && deficit > 0) {
-      const yearsOfCover = Math.floor(results.assetsTotal / deficit);
-      if (yearsOfCover >= 5) {
-        suggestions.push({
-          icon: '💰',
-          title: 'Bridge with savings',
-          description: `Your £${fmt(results.assetsTotal)} in assets could cover the £${fmt(deficit)} annual shortfall for approximately ${yearsOfCover} years${results.spaWarning ? ' until state pension begins' : ''}.`,
-          action: results.spaWarning ? 'Consider retiring closer to State Pension Age' : 'Monitor spending in early retirement',
-        });
-      } else if (yearsOfCover >= 1) {
-        suggestions.push({
-          icon: '💰',
-          title: 'Partial savings bridge',
-          description: `Your £${fmt(results.assetsTotal)} in assets could help bridge the gap for ${yearsOfCover} year${yearsOfCover > 1 ? 's' : ''}, but you may need to reduce spending or increase income.`,
-          action: 'Consider combining with spending reduction',
-        });
-      }
+      suggestions.push({
+        icon: '💰',
+        title: 'Bridge with savings',
+        description: `Your £${fmt(results.assetsTotal)} in assets could help bridge the £${fmt(deficit)} annual shortfall${results.spaWarning ? ' until state pension begins' : ' in early retirement'}.`,
+        action: results.spaWarning ? 'Consider retiring closer to State Pension Age' : 'Monitor spending carefully',
+      });
     }
 
     // Suggestion 3: Reduce spending target
@@ -122,70 +113,6 @@ export default function ResultsWizard({
 
   return (
     <ConversationalContainer>
-      {/* Opening Impact Statement */}
-      <div style={{
-        backgroundColor: statusColors.bg,
-        border: `3px solid ${statusColors.border}`,
-        borderRadius: '16px',
-        padding: '24px',
-        marginBottom: '32px',
-      }}>
-        <div style={{
-          fontSize: '24px',
-          fontWeight: '700',
-          color: statusColors.text,
-          marginBottom: '12px',
-        }}>
-          {statusMessage}
-        </div>
-        <div style={{
-          fontSize: '16px',
-          color: statusColors.text,
-          lineHeight: '1.6',
-        }}>
-          In {results.yearsToRetirement.toFixed(1)} years, at age {N(getModelValue('retirementAge'))},
-          you'll have £{fmt(results.assetsTotal)} in total assets and
-          £{fmt(results.netIncome)} annual income after tax.
-        </div>
-      </div>
-
-      {/* Suggestions (only show if deficit) */}
-      {suggestions.length > 0 && (
-        <div style={{
-          backgroundColor: '#fefce8',
-          border: '2px solid #fde047',
-          borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '24px',
-        }}>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            marginBottom: '16px',
-            color: '#854d0e',
-          }}>
-            💡 Ways to improve your position
-          </div>
-          {suggestions.map((suggestion, idx) => (
-            <div key={idx} style={{
-              marginBottom: idx < suggestions.length - 1 ? '16px' : '0',
-              paddingBottom: idx < suggestions.length - 1 ? '16px' : '0',
-              borderBottom: idx < suggestions.length - 1 ? '1px solid #fde047' : 'none',
-            }}>
-              <div style={{ fontSize: '16px', fontWeight: '600', color: '#713f12', marginBottom: '4px' }}>
-                {suggestion.icon} {suggestion.title}
-              </div>
-              <div style={{ fontSize: '14px', color: '#854d0e', marginBottom: '4px' }}>
-                {suggestion.description}
-              </div>
-              <div style={{ fontSize: '13px', color: '#a16207', fontStyle: 'italic' }}>
-                → {suggestion.action}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <Question>Your retirement snapshot</Question>
 
       <HelpText>
@@ -367,11 +294,76 @@ export default function ResultsWizard({
         </div>
       </div>
 
+      {/* Status Message */}
+      <div style={{
+        backgroundColor: statusColors.bg,
+        border: `3px solid ${statusColors.border}`,
+        borderRadius: '16px',
+        padding: '24px',
+        marginBottom: '24px',
+      }}>
+        <div style={{
+          fontSize: '24px',
+          fontWeight: '700',
+          color: statusColors.text,
+          marginBottom: '12px',
+        }}>
+          {statusMessage}
+        </div>
+        <div style={{
+          fontSize: '16px',
+          color: statusColors.text,
+          lineHeight: '1.6',
+        }}>
+          In {results.yearsToRetirement.toFixed(1)} years, at age {N(getModelValue('retirementAge'))},
+          you'll have £{fmt(results.assetsTotal)} in total assets and
+          £{fmt(results.netIncome)} annual income after tax.
+        </div>
+      </div>
+
+      {/* Suggestions (only show if deficit) */}
+      {suggestions.length > 0 && (
+        <div style={{
+          backgroundColor: '#fefce8',
+          border: '2px solid #fde047',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '24px',
+        }}>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            marginBottom: '16px',
+            color: '#854d0e',
+          }}>
+            💡 Ways to improve your position
+          </div>
+          {suggestions.map((suggestion, idx) => (
+            <div key={idx} style={{
+              marginBottom: idx < suggestions.length - 1 ? '16px' : '0',
+              paddingBottom: idx < suggestions.length - 1 ? '16px' : '0',
+              borderBottom: idx < suggestions.length - 1 ? '1px solid #fde047' : 'none',
+            }}>
+              <div style={{ fontSize: '16px', fontWeight: '600', color: '#713f12', marginBottom: '4px' }}>
+                {suggestion.icon} {suggestion.title}
+              </div>
+              <div style={{ fontSize: '14px', color: '#854d0e', marginBottom: '4px' }}>
+                {suggestion.description}
+              </div>
+              <div style={{ fontSize: '13px', color: '#a16207', fontStyle: 'italic' }}>
+                → {suggestion.action}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Interactive Modeling Sliders */}
       <ModelingSliders
         form={form}
         model={model}
         setModel={setModel}
+        applyModelToForm={applyModelToForm}
         fmt={fmt}
         N={N}
       />
@@ -560,7 +552,7 @@ function EditMenuItem({ label, description, onClick }) {
 /**
  * ModelingSliders - Interactive sliders for exploring scenarios
  */
-function ModelingSliders({ form, model, setModel, fmt, N }) {
+function ModelingSliders({ form, model, setModel, applyModelToForm, fmt, N }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getModelValue = (key) => model[key] ?? form[key];
@@ -692,23 +684,44 @@ function ModelingSliders({ form, model, setModel, fmt, N }) {
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={() => setModel({})}
-            style={{
-              marginTop: '12px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#64748b',
-              backgroundColor: 'white',
-              border: '2px solid #d1d5db',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          >
-            Reset All Sliders
-          </button>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setModel({})}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#64748b',
+                backgroundColor: 'white',
+                border: '2px solid #d1d5db',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              Reset All
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                applyModelToForm();
+                setIsExpanded(false);
+              }}
+              style={{
+                flex: 1,
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#10b981',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              Apply Changes
+            </button>
+          </div>
 
           <div style={{
             marginTop: '16px',
@@ -719,8 +732,7 @@ function ModelingSliders({ form, model, setModel, fmt, N }) {
             fontSize: '13px',
             color: '#1e40af',
           }}>
-            <strong>Tip:</strong> These changes are temporary and for exploration only.
-            To permanently update your plan, use the "Edit Your Details" menu above.
+            <strong>Tip:</strong> Use sliders to explore scenarios. Click "Apply Changes" to make them permanent, or continue exploring.
           </div>
         </>
       )}
