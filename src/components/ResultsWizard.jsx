@@ -113,12 +113,12 @@ export default function ResultsWizard({
     return suggestions;
   };
 
+  // Use model values if set, otherwise use form values (must be defined before getSuggestions)
+  const getModelValue = (key) => model[key] ?? form[key];
+
   const statusColors = getStatusColor(results.surplusDeficit);
   const statusMessage = getStatusMessage(results.surplusDeficit);
   const suggestions = results.surplusDeficit < 0 ? getSuggestions() : [];
-
-  // Use model values if set, otherwise use form values
-  const getModelValue = (key) => model[key] ?? form[key];
 
   return (
     <ConversationalContainer>
