@@ -24,6 +24,13 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
 
   const totalSteps = 6;
 
+  // Auto-advance to step 3 if already retired (skip active DB questions)
+  React.useEffect(() => {
+    if (form.alreadyRetired && step === 1) {
+      setStep(3);
+    }
+  }, [form.alreadyRetired, step]);
+
   const stepTitles = {
     1: "Active DB Pension",
     2: "Active Scheme Details",
@@ -38,61 +45,46 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
   const deferredSchemes = dbSchemes.filter(s => s.kind === 'deferred');
 
   // Step 1: Do you have an active DB pension?
-  const renderStep1 = () => {
-    // If already retired, skip directly to deferred pensions (step 3)
-    if (form.alreadyRetired) {
-      React.useEffect(() => {
-        setStep(3);
-      }, []);
-      return (
-        <>
-          <Question>Loading...</Question>
-          <HelpText>Since you're already retired, we'll skip to deferred pensions...</HelpText>
-        </>
-      );
-    }
+  const renderStep1 = () => (
+    <>
+      <Question>
+        Do you have an active final salary (DB) pension?
+      </Question>
 
-    return (
-      <>
-        <Question>
-          Do you have an active final salary (DB) pension?
-        </Question>
+      <HelpText>
+        This is a pension where you're still working for the employer and the pension is still accruing.
+        Also called 'defined benefit' or 'final salary' pension.
+      </HelpText>
 
-        <HelpText>
-          This is a pension where you're still working for the employer and the pension is still accruing.
-          Also called 'defined benefit' or 'final salary' pension.
-        </HelpText>
+      <YesNoToggle
+        value={hasActive}
+        onChange={(value) => {
+          setHasActive(value);
+          if (!value && activeScheme) {
+            // Remove active scheme if user says no
+            removeScheme(activeScheme.id);
+          } else if (value && !activeScheme) {
+            // Add active scheme if user says yes and there isn't one
+            // This will be handled by the parent component
+          }
+        }}
+        yesLabel="Yes, I have an active DB pension"
+        noLabel="No, I don't have one"
+      />
 
-        <YesNoToggle
-          value={hasActive}
-          onChange={(value) => {
-            setHasActive(value);
-            if (!value && activeScheme) {
-              // Remove active scheme if user says no
-              removeScheme(activeScheme.id);
-            } else if (value && !activeScheme) {
-              // Add active scheme if user says yes and there isn't one
-              // This will be handled by the parent component
-            }
-          }}
-          yesLabel="Yes, I have an active DB pension"
-          noLabel="No, I don't have one"
-        />
-
-        <NavigationButtons
-          onBack={() => {}}
-          onNext={() => {
-            if (hasActive) {
-              setStep(2); // Go to active scheme details
-            } else {
-              setStep(3); // Skip to deferred question
-            }
-          }}
-          showBack={false}
-        />
-      </>
-    );
-  };
+      <NavigationButtons
+        onBack={() => {}}
+        onNext={() => {
+          if (hasActive) {
+            setStep(2); // Go to active scheme details
+          } else {
+            setStep(3); // Skip to deferred question
+          }
+        }}
+        showBack={false}
+      />
+    </>
+  );
 
   // Step 2: Active scheme details
   const renderStep2 = () => {
