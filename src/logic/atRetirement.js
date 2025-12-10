@@ -245,12 +245,13 @@ export function atRetirement(inputs, taxFns) {
     statePensionForIncome, // Actual amount used in calculations (0 if before SPA)
     taxableInterest,
   };
-  // Gross income total for display - pension income only (taxable interest used for tax calc but not shown in total)
+  // Gross income total for display - includes taxable savings interest
   const incomeGrossTotal =
     income.dcIncome +
     income.dbIncomeAfter +
     income.otherIncomeAtRet +
-    income.statePensionForIncome;
+    income.statePensionForIncome +
+    taxableInterest;
 
   // ---- Real terms
   const deflate = (x) => deflateToToday(x, years, inputs.inflationAssumption);
