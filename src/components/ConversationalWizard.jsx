@@ -59,24 +59,16 @@ export default function ConversationalWizard({ form, set, onComplete }) {
   const renderStep1 = () => (
     <>
       <Question intro="Let's find out about you...">
-        What's your date of birth and intended retirement age?
+        {form.alreadyRetired
+          ? "What's your date of birth?"
+          : "What's your date of birth and intended retirement age?"
+        }
       </Question>
 
       <InputGroup label="Date of birth">
         <DateInput
           value={form.dateOfBirth}
           onChange={(value) => set({ dateOfBirth: value })}
-        />
-      </InputGroup>
-
-      <InputGroup
-        label="When do you plan to retire?"
-        help="This is the age you plan to stop working and start drawing your pension."
-      >
-        <NumberInput
-          value={form.retirementAge}
-          onChange={(value) => set({ retirementAge: value })}
-          suffix="years old"
         />
       </InputGroup>
 
@@ -87,6 +79,25 @@ export default function ConversationalWizard({ form, set, onComplete }) {
           label="I've already retired"
         />
       </InputGroup>
+
+      {!form.alreadyRetired && (
+        <InputGroup
+          label="When do you plan to retire?"
+          help="This is the age you plan to stop working and start drawing your pension."
+        >
+          <NumberInput
+            value={form.retirementAge}
+            onChange={(value) => set({ retirementAge: value })}
+            suffix="years old"
+          />
+        </InputGroup>
+      )}
+
+      {form.alreadyRetired && (
+        <HelpText>
+          Since you're already retired, we'll analyze your current financial position and project forward from today.
+        </HelpText>
+      )}
 
       <NavigationButtons
         onBack={() => {}}
@@ -178,19 +189,23 @@ export default function ConversationalWizard({ form, set, onComplete }) {
   const renderStep3 = () => (
     <>
       <Question>
-        Do you have a workplace or personal pension (defined contribution)?
+        {form.alreadyRetired
+          ? "Do you have a defined contribution pension pot?"
+          : "Do you have a workplace or personal pension (defined contribution)?"
+        }
       </Question>
 
       <HelpText>
-        This is a pension pot where you (and possibly your employer) have been
-        making contributions. It's sometimes called a 'money purchase' pension
-        or could be a personal pension or SIPP.
+        {form.alreadyRetired
+          ? "This is your pension pot that you can draw down from or use to purchase an annuity. It's sometimes called a 'money purchase' pension or could be a personal pension or SIPP."
+          : "This is a pension pot where you (and possibly your employer) have been making contributions. It's sometimes called a 'money purchase' pension or could be a personal pension or SIPP."
+        }
       </HelpText>
 
       <YesNoToggle
         value={form.hasDcPension}
         onChange={(value) => set({ hasDcPension: value })}
-        yesLabel="Yes, I have a DC pension"
+        yesLabel={form.alreadyRetired ? "Yes, I have a DC pot" : "Yes, I have a DC pension"}
         noLabel="No, I don't have one"
       />
 
@@ -205,13 +220,17 @@ export default function ConversationalWizard({ form, set, onComplete }) {
   const renderStep4 = () => (
     <>
       <Question>
-        Do you have a 'final salary' (defined benefit) pension?
+        {form.alreadyRetired
+          ? "Do you have a 'final salary' (defined benefit) pension income?"
+          : "Do you have a 'final salary' (defined benefit) pension?"
+        }
       </Question>
 
       <HelpText>
-        This could be either an active pension that you're still paying into,
-        or a deferred pension from a previous employer. If you don't have one,
-        we can skip those questions.
+        {form.alreadyRetired
+          ? "This is a guaranteed pension income, usually from a previous employer's final salary scheme. If you don't have one, we can skip those questions."
+          : "This could be either an active pension that you're still paying into, or a deferred pension from a previous employer. If you don't have one, we can skip those questions."
+        }
       </HelpText>
 
       <YesNoToggle
