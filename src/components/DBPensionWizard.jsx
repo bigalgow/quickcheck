@@ -38,46 +38,61 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
   const deferredSchemes = dbSchemes.filter(s => s.kind === 'deferred');
 
   // Step 1: Do you have an active DB pension?
-  const renderStep1 = () => (
-    <>
-      <Question>
-        Do you have an active final salary (DB) pension?
-      </Question>
+  const renderStep1 = () => {
+    // If already retired, skip directly to deferred pensions (step 3)
+    if (form.alreadyRetired) {
+      React.useEffect(() => {
+        setStep(3);
+      }, []);
+      return (
+        <>
+          <Question>Loading...</Question>
+          <HelpText>Since you're already retired, we'll skip to deferred pensions...</HelpText>
+        </>
+      );
+    }
 
-      <HelpText>
-        This is a pension where you're still working for the employer and the pension is still accruing.
-        Also called 'defined benefit' or 'final salary' pension.
-      </HelpText>
+    return (
+      <>
+        <Question>
+          Do you have an active final salary (DB) pension?
+        </Question>
 
-      <YesNoToggle
-        value={hasActive}
-        onChange={(value) => {
-          setHasActive(value);
-          if (!value && activeScheme) {
-            // Remove active scheme if user says no
-            removeScheme(activeScheme.id);
-          } else if (value && !activeScheme) {
-            // Add active scheme if user says yes and there isn't one
-            // This will be handled by the parent component
-          }
-        }}
-        yesLabel="Yes, I have an active DB pension"
-        noLabel="No, I don't have one"
-      />
+        <HelpText>
+          This is a pension where you're still working for the employer and the pension is still accruing.
+          Also called 'defined benefit' or 'final salary' pension.
+        </HelpText>
 
-      <NavigationButtons
-        onBack={() => {}}
-        onNext={() => {
-          if (hasActive) {
-            setStep(2); // Go to active scheme details
-          } else {
-            setStep(3); // Skip to deferred question
-          }
-        }}
-        showBack={false}
-      />
-    </>
-  );
+        <YesNoToggle
+          value={hasActive}
+          onChange={(value) => {
+            setHasActive(value);
+            if (!value && activeScheme) {
+              // Remove active scheme if user says no
+              removeScheme(activeScheme.id);
+            } else if (value && !activeScheme) {
+              // Add active scheme if user says yes and there isn't one
+              // This will be handled by the parent component
+            }
+          }}
+          yesLabel="Yes, I have an active DB pension"
+          noLabel="No, I don't have one"
+        />
+
+        <NavigationButtons
+          onBack={() => {}}
+          onNext={() => {
+            if (hasActive) {
+              setStep(2); // Go to active scheme details
+            } else {
+              setStep(3); // Skip to deferred question
+            }
+          }}
+          showBack={false}
+        />
+      </>
+    );
+  };
 
   // Step 2: Active scheme details
   const renderStep2 = () => {
@@ -202,29 +217,38 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
   const renderStep3 = () => (
     <>
       <Question>
-        Do you have any deferred DB pensions from previous employers?
+        {form.alreadyRetired
+          ? "Do you have any DB pension income?"
+          : "Do you have any deferred DB pensions from previous employers?"
+        }
       </Question>
 
       <HelpText>
-        These are pensions you've built up with previous employers but aren't currently contributing to.
-        They're 'preserved' and will pay out when you reach the scheme's retirement age.
+        {form.alreadyRetired
+          ? "This is a guaranteed pension income from a previous employer's final salary (defined benefit) scheme."
+          : "These are pensions you've built up with previous employers but aren't currently contributing to. They're 'preserved' and will pay out when you reach the scheme's retirement age."
+        }
       </HelpText>
 
       <YesNoToggle
         value={hasDeferred}
         onChange={(value) => setHasDeferred(value)}
-        yesLabel="Yes, I have deferred pensions"
+        yesLabel={form.alreadyRetired ? "Yes, I have DB pension income" : "Yes, I have deferred pensions"}
         noLabel="No, I don't have any"
       />
 
       <NavigationButtons
         onBack={() => {
-          if (hasActive) {
+          if (form.alreadyRetired) {
+            // Already retired users don't see steps 1-2
+            return;
+          } else if (hasActive) {
             setStep(2);
           } else {
             setStep(1);
           }
         }}
+        showBack={!form.alreadyRetired}
         onNext={() => {
           if (hasDeferred) {
             // Ensure at least one deferred scheme exists
@@ -235,7 +259,8 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
           } else {
             // Remove all deferred schemes if user says no
             deferredSchemes.forEach(s => removeScheme(s.id));
-            setStep(5); // Skip to tax-free cash
+            // Already retired users skip to review, others go to tax-free cash
+            setStep(form.alreadyRetired ? 6 : 5);
           }
         }}
       />
@@ -245,11 +270,18 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
   // Step 4: Deferred scheme details
   const renderStep4 = () => (
     <>
-      <Question>Tell us about your deferred pension(s)</Question>
+      <Question>
+        {form.alreadyRetired
+          ? "Tell us about your DB pension income"
+          : "Tell us about your deferred pension(s)"
+        }
+      </Question>
 
       <HelpText>
-        For each deferred pension, you can either enter the preserved pension amount directly,
-        or let us calculate it from your accrual details.
+        {form.alreadyRetired
+          ? "Enter the annual amount you receive from each DB pension."
+          : "For each deferred pension, you can either enter the preserved pension amount directly, or let us calculate it from your accrual details."
+        }
       </HelpText>
 
       {deferredSchemes.map((scheme, index) => (
@@ -290,7 +322,12 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
             )}
           </div>
 
-          <InputGroup label="Preserved pension (annual amount payable at retirement)">
+          <InputGroup
+            label={form.alreadyRetired
+              ? "Annual DB pension income"
+              : "Preserved pension (annual amount payable at retirement)"
+            }
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
               <input
@@ -311,28 +348,30 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
             </div>
           </InputGroup>
 
-          <InputGroup
-            label="Revaluation rate (how much it increases each year before you retire)"
-            help="Common rates: 0% (fixed), 2.5% (inflation), 5% (salary growth)"
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="text"
-                value={scheme.revaluationAssumption || ''}
-                onChange={(e) => updateScheme(scheme.id, { revaluationAssumption: e.target.value })}
-                inputMode="decimal"
-                placeholder="e.g. 2.5"
-                style={{
-                  padding: '12px 16px',
-                  fontSize: '16px',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '8px',
-                  width: '100px',
-                }}
-              />
-              <span style={{ fontSize: '16px', color: '#64748b' }}>% per year</span>
-            </div>
-          </InputGroup>
+          {!form.alreadyRetired && (
+            <InputGroup
+              label="Revaluation rate (how much it increases each year before you retire)"
+              help="Common rates: 0% (fixed), 2.5% (inflation), 5% (salary growth)"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={scheme.revaluationAssumption || ''}
+                  onChange={(e) => updateScheme(scheme.id, { revaluationAssumption: e.target.value })}
+                  inputMode="decimal"
+                  placeholder="e.g. 2.5"
+                  style={{
+                    padding: '12px 16px',
+                    fontSize: '16px',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    width: '100px',
+                  }}
+                />
+                <span style={{ fontSize: '16px', color: '#64748b' }}>% per year</span>
+              </div>
+            </InputGroup>
+          )}
         </div>
       ))}
 
@@ -357,7 +396,7 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
 
       <NavigationButtons
         onBack={() => setStep(3)}
-        onNext={() => setStep(5)}
+        onNext={() => setStep(form.alreadyRetired ? 6 : 5)}
       />
     </>
   );
@@ -412,33 +451,39 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
           Check everything looks correct before moving on.
         </HelpText>
 
-        <SummaryCard
-          title="Active DB Pension"
-          items={[
-            { label: 'Status', value: hasActive ? 'Yes' : 'No' },
-            ...(hasActive && activeScheme ? [
-              { label: 'Details', value: activeSummary },
-            ] : []),
-          ]}
-        />
+        {!form.alreadyRetired && (
+          <SummaryCard
+            title="Active DB Pension"
+            items={[
+              { label: 'Status', value: hasActive ? 'Yes' : 'No' },
+              ...(hasActive && activeScheme ? [
+                { label: 'Details', value: activeSummary },
+              ] : []),
+            ]}
+          />
+        )}
 
         <SummaryCard
-          title="Deferred DB Pensions"
+          title={form.alreadyRetired ? "DB Pension Income" : "Deferred DB Pensions"}
           items={[
             { label: 'Count', value: deferredSummary },
             ...deferredSchemes.map((s, i) => ({
               label: `Pension ${i + 1}`,
-              value: `£${Number(s.preservedPensionNow || 0).toLocaleString()}/year, ${s.revaluationAssumption || 0}% revaluation`
+              value: form.alreadyRetired
+                ? `£${Number(s.preservedPensionNow || 0).toLocaleString()}/year`
+                : `£${Number(s.preservedPensionNow || 0).toLocaleString()}/year, ${s.revaluationAssumption || 0}% revaluation`
             })),
           ]}
         />
 
-        <SummaryCard
-          title="Tax-Free Cash"
-          items={[
-            { label: 'Take tax-free cash from DB', value: form.takeDBTaxFree25 ? 'Yes' : 'No' },
-          ]}
-        />
+        {!form.alreadyRetired && (
+          <SummaryCard
+            title="Tax-Free Cash"
+            items={[
+              { label: 'Take tax-free cash from DB', value: form.takeDBTaxFree25 ? 'Yes' : 'No' },
+            ]}
+          />
+        )}
 
         <div
           style={{
