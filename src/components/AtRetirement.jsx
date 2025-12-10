@@ -22,6 +22,7 @@ import DCPensionWizard from "./DCPensionWizard.jsx";
 import DBPensionWizard from "./DBPensionWizard.jsx";
 import SavingsWizard from "./SavingsWizard.jsx";
 import ResultsWizard from "./ResultsWizard.jsx";
+import ProjectionWizard from "./ProjectionWizard.jsx";
 import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -168,9 +169,15 @@ export default function AtRetirement() {
   const updateScheme = (id, patch) =>
     setDbSchemes((arr) => arr.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
+  // ===== Projection State =====
+  const [isaRecurringAmount, setIsaRecurringAmount] = useState("");
+  const [isaRecurringYears, setIsaRecurringYears] = useState("");
+  const [dcDrawdownPercent, setDcDrawdownPercent] = useState("4.0");
+  const [lifeEvents, setLifeEvents] = useState([]);
+
   // ===== Wizard Mode =====
   const [wizardMode, setWizardMode] = useState(true); // Default to wizard mode
-  const [currentStep, setCurrentStep] = useState(-1); // -1 = start screen, 0-4 = steps
+  const [currentStep, setCurrentStep] = useState(-1); // -1 = start screen, 0-5 = steps
 
   const steps = [
     { key: 'core', title: 'CORE ASSUMPTIONS' },
@@ -178,6 +185,7 @@ export default function AtRetirement() {
     { key: 'db', title: 'DB PENSIONS' },
     { key: 'savings', title: 'SAVINGS & OTHER' },
     { key: 'results', title: 'RESULTS & MODELLING' },
+    { key: 'projection', title: '25-YEAR PROJECTION' },
   ];
 
   const startWizard = () => {
@@ -427,7 +435,12 @@ export default function AtRetirement() {
       return;
     }
 
-    const { form: savedForm, dbSchemes: savedSchemes, model: savedModel } = snap;
+    const {
+      form: savedForm,
+      dbSchemes: savedSchemes,
+      model: savedModel,
+      projection: savedProjection
+    } = snap;
 
     // Automatically restore saved data
     if (savedForm && typeof savedForm === "object") {
@@ -441,6 +454,21 @@ export default function AtRetirement() {
     if (savedModel) {
       console.log('✅ At Retirement: Auto-restoring model');
       setModel(savedModel);
+    }
+    if (savedProjection) {
+      console.log('✅ At Retirement: Auto-restoring projection data');
+      if (savedProjection.isaRecurringAmount !== undefined) {
+        setIsaRecurringAmount(savedProjection.isaRecurringAmount);
+      }
+      if (savedProjection.isaRecurringYears !== undefined) {
+        setIsaRecurringYears(savedProjection.isaRecurringYears);
+      }
+      if (savedProjection.dcDrawdownPercent !== undefined) {
+        setDcDrawdownPercent(savedProjection.dcDrawdownPercent);
+      }
+      if (Array.isArray(savedProjection.lifeEvents)) {
+        setLifeEvents(savedProjection.lifeEvents);
+      }
     }
 
     // Mark initial load complete after delay longer than auto-save debounce (800ms)
@@ -529,6 +557,12 @@ export default function AtRetirement() {
           incomeGrossTotal,
           assetsTotal,
         },
+        projection: {
+          isaRecurringAmount,
+          isaRecurringYears,
+          dcDrawdownPercent,
+          lifeEvents,
+        },
       });
       // Only mark as unsaved if not in initial load phase (i.e., user actually made changes)
       if (!isInitialLoadRef.current) {
@@ -547,6 +581,10 @@ export default function AtRetirement() {
     netIncome,
     incomeGrossTotal,
     assetsTotal,
+    isaRecurringAmount,
+    isaRecurringYears,
+    dcDrawdownPercent,
+    lifeEvents,
   ]);
 
   // Helpers / layout atoms (kept from your file)
@@ -880,6 +918,7 @@ const HelpToggle = ({ text }) => {
             <option value={2}>3. DB Pensions</option>
             <option value={3}>4. Savings & Other Income</option>
             <option value={4}>5. Results & Modeling</option>
+            <option value={5}>6. 25-Year Projection</option>
           </select>
         </div>
       )}
@@ -1167,6 +1206,7 @@ const HelpToggle = ({ text }) => {
           setModel={setModel}
           applyModelToForm={applyModelToForm}
           inputsNum={inputsNum}
+          setCurrentStep={setCurrentStep}
           navigate={navigate}
           saveAutosave={saveAutosave}
           loadAutosave={loadAutosave}
@@ -1176,6 +1216,47 @@ const HelpToggle = ({ text }) => {
           }}
           fmt={fmt}
           N={N}
+        />
+      ) : wizardMode && currentStep === 5 ? (
+        <ProjectionWizard
+          openingValues={{
+            retirementAge: inputsNum.retirementAge,
+            dcPotAfterPCLS: assets.dcPotForDrawdown,
+            isaSavings: assets.isaAtRet,
+            taxableSavings: assets.taxableAtRet + assets.dcPclsCash + assets.dbPclsCash,
+            dbPension: income.dbIncomeAfter,
+            annuityIncome: income.dcAnnuityIncome,
+            statePension: income.statePensionAtRetNominal,
+            statePensionAge: inputsNum.statePensionAge,
+            propertyIncome: income.propertyIncomeAtRet,
+            dividendIncome: income.dividendIncomeAtRet,
+            anyOtherIncome: income.anyOtherIncomeAtRet,
+            otherIncome: income.otherIncomeAtRet,
+            annualSpend: inputsNum.desiredSpendAnnual,
+            incomeTax: estTax,
+            inflation: inputsNum.inflationAssumption * 100,
+            dcGrowth: inputsNum.growthAssumption * 100,
+            isaGrowth: inputsNum.isaRate * 100,
+            savingsGrowth: inputsNum.taxableSavingsRate * 100,
+            taxRegion: inputsNum.region === 'Scotland' ? 'scotland' : 'england',
+            dcDrawdownPercent: inputsNum.drawdownRate * 100,
+            yearsToRetirement,
+          }}
+          isaRecurringAmount={isaRecurringAmount}
+          setIsaRecurringAmount={setIsaRecurringAmount}
+          isaRecurringYears={isaRecurringYears}
+          setIsaRecurringYears={setIsaRecurringYears}
+          dcDrawdownPercent={dcDrawdownPercent}
+          setDcDrawdownPercent={setDcDrawdownPercent}
+          lifeEvents={lifeEvents}
+          setLifeEvents={setLifeEvents}
+          helpVisibility={{}}
+          setHelpVisibility={() => {}}
+          onBack={() => {
+            setCurrentStep(4);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          navigate={navigate}
         />
       ) : !wizardMode ? (
         <AtRetirementResults
