@@ -40,7 +40,25 @@ export default function ProjectionWizard({
   const openingTaxCorrect = useMemo(() => {
     if (!openingValues) return 0;
 
-    const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100);
+    // Debug: Log opening values to diagnose NaN issue
+    console.log('🔍 ProjectionWizard openingValues:', {
+      dcPotAfterPCLS: openingValues.dcPotAfterPCLS,
+      dcDrawdownPercent: openingValues.dcDrawdownPercent,
+      dbPension: openingValues.dbPension,
+      annuityIncome: openingValues.annuityIncome,
+      statePension: openingValues.statePension,
+      otherIncome: openingValues.otherIncome,
+      taxRegion: openingValues.taxRegion,
+    });
+
+    // Defensive check: ensure dcDrawdownPercent is a valid number
+    const drawdownPercent = typeof openingValues.dcDrawdownPercent === 'number'
+      ? openingValues.dcDrawdownPercent
+      : parseFloat(openingValues.dcDrawdownPercent) || 4.0;
+
+    console.log('🔍 Calculated drawdownPercent:', drawdownPercent);
+
+    const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (drawdownPercent / 100);
     const statePensionAmount = openingValues.retirementAge >= openingValues.statePensionAge
       ? openingValues.statePension
       : 0;
@@ -132,7 +150,7 @@ export default function ProjectionWizard({
                 openingValues.annuityIncome +
                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                 openingValues.otherIncome +
-                (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100))
+                (openingValues.dcPotAfterPCLS * ((typeof openingValues.dcDrawdownPercent === 'number' ? openingValues.dcDrawdownPercent : parseFloat(openingValues.dcDrawdownPercent) || 4.0) / 100))
               )}
             </div>
           </div>
@@ -150,7 +168,7 @@ export default function ProjectionWizard({
                 openingValues.annuityIncome +
                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                 openingValues.otherIncome +
-                (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100)) -
+                (openingValues.dcPotAfterPCLS * ((typeof openingValues.dcDrawdownPercent === 'number' ? openingValues.dcDrawdownPercent : parseFloat(openingValues.dcDrawdownPercent) || 4.0) / 100)) -
                 openingTaxCorrect
               )}
             </div>
