@@ -964,6 +964,12 @@ const HelpToggle = ({ text }) => {
         <SaveBar
           inputs={inputsNum}
           outputs={out}
+          projection={{
+            isaRecurringAmount,
+            isaRecurringYears,
+            dcDrawdownPercent,
+            lifeEvents,
+          }}
           hasUnsavedChanges={hasUnsavedChanges}
           onSaveSuccess={() => {
             setHasUnsavedChanges(false);
@@ -1279,6 +1285,14 @@ const HelpToggle = ({ text }) => {
           resetModel={resetModel}
           open={open}
           toggle={toggle}
+          isaRecurringAmount={isaRecurringAmount}
+          setIsaRecurringAmount={setIsaRecurringAmount}
+          isaRecurringYears={isaRecurringYears}
+          setIsaRecurringYears={setIsaRecurringYears}
+          dcDrawdownPercent={dcDrawdownPercent}
+          setDcDrawdownPercent={setDcDrawdownPercent}
+          lifeEvents={lifeEvents}
+          setLifeEvents={setLifeEvents}
           fmt={fmt}
           N={N}
           saveAutosave={saveAutosave}

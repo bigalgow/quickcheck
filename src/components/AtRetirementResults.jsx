@@ -38,6 +38,16 @@ export default function AtRetirementResults({
   open,
   toggle,
 
+  // Projection state (passed from parent)
+  isaRecurringAmount,
+  setIsaRecurringAmount,
+  isaRecurringYears,
+  setIsaRecurringYears,
+  dcDrawdownPercent,
+  setDcDrawdownPercent,
+  lifeEvents,
+  setLifeEvents,
+
   // Utilities
   fmt,
   N,
@@ -46,12 +56,8 @@ export default function AtRetirementResults({
 }) {
   const navigate = useNavigate();
 
-  // Projection state
+  // Local projection UI state
   const [showProjection, setShowProjection] = useState(false);
-  const [isaRecurringAmount, setIsaRecurringAmount] = useState("");
-  const [isaRecurringYears, setIsaRecurringYears] = useState("");
-  const [dcDrawdownPercent, setDcDrawdownPercent] = useState(String(inputsNum.drawdownRate * 100));
-  const [lifeEvents, setLifeEvents] = useState([]);
   const [helpVisibility, setHelpVisibility] = useState({});
 
   // Build opening values for projection
