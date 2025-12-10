@@ -36,10 +36,11 @@ export default function ProjectionWizard({
   navigate,
 }) {
   // Calculate correct opening tax based on actual gross income
+  // Uses openingValues.dcDrawdownPercent to match at-retirement calculation exactly
   const openingTaxCorrect = useMemo(() => {
     if (!openingValues) return 0;
 
-    const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100;
+    const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100);
     const statePensionAmount = openingValues.retirementAge >= openingValues.statePensionAge
       ? openingValues.statePension
       : 0;
@@ -63,7 +64,7 @@ export default function ProjectionWizard({
     });
 
     return tax;
-  }, [openingValues, dcDrawdownPercent]);
+  }, [openingValues]);
 
   // Calculate projection
   const projectionResults = useMemo(() => {
@@ -131,7 +132,7 @@ export default function ProjectionWizard({
                 openingValues.annuityIncome +
                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                 openingValues.otherIncome +
-                (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100)
+                (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100))
               )}
             </div>
           </div>
@@ -149,7 +150,7 @@ export default function ProjectionWizard({
                 openingValues.annuityIncome +
                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                 openingValues.otherIncome +
-                (openingValues.dcPotAfterPCLS * (parseFloat(dcDrawdownPercent) || 4.0) / 100) -
+                (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100)) -
                 openingTaxCorrect
               )}
             </div>
