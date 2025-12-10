@@ -85,23 +85,27 @@ export default function SavingsWizard({ form, set, onComplete }) {
       <Question>Tell us about your savings</Question>
 
       <HelpText>
-        Enter your current balances and how much you're adding each year (if any).
-        Leave blank if you don't have that type of savings.
+        {form.alreadyRetired
+          ? "Enter your current savings balances."
+          : "Enter your current balances and how much you're adding each year (if any). Leave blank if you don't have that type of savings."
+        }
       </HelpText>
 
-      <div style={{
-        backgroundColor: '#eff6ff',
-        border: '2px solid #bfdbfe',
-        borderRadius: '8px',
-        padding: '12px 16px',
-        marginBottom: '24px',
-        fontSize: '14px',
-        color: '#1e40af',
-        lineHeight: '1.5',
-      }}>
-        <strong>Note:</strong> We assume you'll continue adding this amount each year until retirement.
-        You can adjust the number of years later using the modeling sliders in the results section if needed.
-      </div>
+      {!form.alreadyRetired && (
+        <div style={{
+          backgroundColor: '#eff6ff',
+          border: '2px solid #bfdbfe',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '24px',
+          fontSize: '14px',
+          color: '#1e40af',
+          lineHeight: '1.5',
+        }}>
+          <strong>Note:</strong> We assume you'll continue adding this amount each year until retirement.
+          You can adjust the number of years later using the modeling sliders in the results section if needed.
+        </div>
+      )}
 
       <div style={{
         border: '2px solid #e5e7eb',
@@ -134,26 +138,28 @@ export default function SavingsWizard({ form, set, onComplete }) {
           </div>
         </InputGroup>
 
-        <InputGroup label="How much will you add to your ISA each year?">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
-            <input
-              type="text"
-              value={form.isaAddPerYear || ''}
-              onChange={(e) => set({ isaAddPerYear: e.target.value })}
-              inputMode="numeric"
-              placeholder="e.g. 5000"
-              style={{
-                padding: '12px 16px',
-                fontSize: '16px',
-                border: '2px solid #d1d5db',
-                borderRadius: '8px',
-                width: '160px',
-              }}
-            />
-            <span style={{ fontSize: '16px', color: '#64748b' }}>per year</span>
-          </div>
-        </InputGroup>
+        {!form.alreadyRetired && (
+          <InputGroup label="How much will you add to your ISA each year?">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
+              <input
+                type="text"
+                value={form.isaAddPerYear || ''}
+                onChange={(e) => set({ isaAddPerYear: e.target.value })}
+                inputMode="numeric"
+                placeholder="e.g. 5000"
+                style={{
+                  padding: '12px 16px',
+                  fontSize: '16px',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  width: '160px',
+                }}
+              />
+              <span style={{ fontSize: '16px', color: '#64748b' }}>per year</span>
+            </div>
+          </InputGroup>
+        )}
       </div>
 
       <div style={{
@@ -187,26 +193,28 @@ export default function SavingsWizard({ form, set, onComplete }) {
           </div>
         </InputGroup>
 
-        <InputGroup label="How much will you add to taxable savings each year?">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
-            <input
-              type="text"
-              value={form.taxableSavingsAddPerYear || ''}
-              onChange={(e) => set({ taxableSavingsAddPerYear: e.target.value })}
-              inputMode="numeric"
-              placeholder="e.g. 2000"
-              style={{
-                padding: '12px 16px',
-                fontSize: '16px',
-                border: '2px solid #d1d5db',
-                borderRadius: '8px',
-                width: '160px',
-              }}
-            />
-            <span style={{ fontSize: '16px', color: '#64748b' }}>per year</span>
-          </div>
-        </InputGroup>
+        {!form.alreadyRetired && (
+          <InputGroup label="How much will you add to taxable savings each year?">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
+              <input
+                type="text"
+                value={form.taxableSavingsAddPerYear || ''}
+                onChange={(e) => set({ taxableSavingsAddPerYear: e.target.value })}
+                inputMode="numeric"
+                placeholder="e.g. 2000"
+                style={{
+                  padding: '12px 16px',
+                  fontSize: '16px',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  width: '160px',
+                }}
+              />
+              <span style={{ fontSize: '16px', color: '#64748b' }}>per year</span>
+            </div>
+          </InputGroup>
+        )}
       </div>
 
       <NavigationButtons
@@ -381,22 +389,26 @@ export default function SavingsWizard({ form, set, onComplete }) {
                 label: 'ISA balance',
                 value: form.isaBalance ? `£${Number(form.isaBalance).toLocaleString()}` : '£0'
               },
-              {
-                label: 'ISA additions per year',
-                value: form.isaAddPerYear ? `£${Number(form.isaAddPerYear).toLocaleString()}` : '£0'
-              },
+              ...(!form.alreadyRetired ? [
+                {
+                  label: 'ISA additions per year',
+                  value: form.isaAddPerYear ? `£${Number(form.isaAddPerYear).toLocaleString()}` : '£0'
+                }
+              ] : []),
               {
                 label: 'Taxable savings balance',
                 value: form.taxableSavingsBalance ? `£${Number(form.taxableSavingsBalance).toLocaleString()}` : '£0'
               },
-              {
-                label: 'Taxable savings additions per year',
-                value: form.taxableSavingsAddPerYear ? `£${Number(form.taxableSavingsAddPerYear).toLocaleString()}` : '£0'
-              },
-              {
-                label: 'Total annual additions',
-                value: `£${totalAnnualAdditions.toLocaleString()}`
-              },
+              ...(!form.alreadyRetired ? [
+                {
+                  label: 'Taxable savings additions per year',
+                  value: form.taxableSavingsAddPerYear ? `£${Number(form.taxableSavingsAddPerYear).toLocaleString()}` : '£0'
+                },
+                {
+                  label: 'Total annual additions',
+                  value: `£${totalAnnualAdditions.toLocaleString()}`
+                }
+              ] : []),
             ] : []),
           ]}
         />
