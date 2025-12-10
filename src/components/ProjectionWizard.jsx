@@ -38,50 +38,68 @@ export default function ProjectionWizard({
   // Calculate correct opening tax based on actual gross income
   // Uses openingValues.dcDrawdownPercent to match at-retirement calculation exactly
   const openingTaxCorrect = useMemo(() => {
-    if (!openingValues) return 0;
+    try {
+      if (!openingValues) {
+        console.log('🔍 No openingValues yet');
+        return 0;
+      }
 
-    // Debug: Log opening values to diagnose NaN issue
-    console.log('🔍 ProjectionWizard openingValues:', {
-      dcPotAfterPCLS: openingValues.dcPotAfterPCLS,
-      dcDrawdownPercent: openingValues.dcDrawdownPercent,
-      dbPension: openingValues.dbPension,
-      annuityIncome: openingValues.annuityIncome,
-      statePension: openingValues.statePension,
-      otherIncome: openingValues.otherIncome,
-      taxRegion: openingValues.taxRegion,
-    });
+      // Debug: Log opening values to diagnose NaN issue
+      console.log('🔍 ProjectionWizard openingValues:', {
+        dcPotAfterPCLS: openingValues.dcPotAfterPCLS,
+        dcDrawdownPercent: openingValues.dcDrawdownPercent,
+        dbPension: openingValues.dbPension,
+        annuityIncome: openingValues.annuityIncome,
+        statePension: openingValues.statePension,
+        otherIncome: openingValues.otherIncome,
+        taxRegion: openingValues.taxRegion,
+      });
 
-    // Defensive check: ensure dcDrawdownPercent is a valid number
-    const drawdownPercent = typeof openingValues.dcDrawdownPercent === 'number'
-      ? openingValues.dcDrawdownPercent
-      : parseFloat(openingValues.dcDrawdownPercent) || 4.0;
+      // Defensive check: ensure dcDrawdownPercent is a valid number
+      const drawdownPercent = typeof openingValues.dcDrawdownPercent === 'number'
+        ? openingValues.dcDrawdownPercent
+        : parseFloat(openingValues.dcDrawdownPercent) || 4.0;
 
-    console.log('🔍 Calculated drawdownPercent:', drawdownPercent);
+      console.log('🔍 Calculated drawdownPercent:', drawdownPercent);
 
-    const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (drawdownPercent / 100);
+      const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (drawdownPercent / 100);
+      console.log('🔍 DC Drawdown Amount:', dcDrawdownAmount);
+
     const statePensionAmount = openingValues.retirementAge >= openingValues.statePensionAge
       ? openingValues.statePension
       : 0;
+    console.log('🔍 State Pension Amount:', statePensionAmount);
 
     // Calculate total pensionable income
     const pensionableIncome =
-      openingValues.dbPension +
-      openingValues.annuityIncome +
+      (openingValues.dbPension || 0) +
+      (openingValues.annuityIncome || 0) +
       statePensionAmount +
-      openingValues.otherIncome +
+      (openingValues.otherIncome || 0) +
       dcDrawdownAmount;
+
+    console.log('🔍 Total Pensionable Income:', pensionableIncome);
 
     // Get the correct tax configuration
     const cfg = openingValues.taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
+    console.log('🔍 Tax Config:', cfg ? 'Valid' : 'INVALID');
 
     // Calculate tax
-    const tax = estimateIncomeTax({
+    const taxResult = estimateIncomeTax({
       pensionableIncome,
       savingsInterest: 0,
       cfg,
     });
 
-    return tax;
+    console.log('🔍 Calculated Tax Result:', taxResult);
+
+    // estimateIncomeTax returns an object {tax, personalAllowanceUsed, psaUsed}
+    return taxResult.tax;
+    } catch (error) {
+      console.error('❌ Error calculating tax:', error);
+      console.error('❌ Error stack:', error.stack);
+      return 0;
+    }
   }, [openingValues]);
 
   // Calculate projection
