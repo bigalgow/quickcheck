@@ -106,15 +106,17 @@ export default function AtRetirementResults({
     <div className="print-page">
       <section>
         <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#1e293b", marginBottom: 16 }}>
-          At-Retirement Summary
+          {form.alreadyRetired ? "Current Position" : "At-Retirement Summary"}
         </h2>
-        <div style={{ marginBottom: 8, fontSize: "16px" }}>
-          Years to retirement: <strong>{yearsToRetirement.toFixed(2)}</strong>
-        </div>
+        {!form.alreadyRetired && (
+          <div style={{ marginBottom: 8, fontSize: "16px" }}>
+            Years to retirement: <strong>{yearsToRetirement.toFixed(2)}</strong>
+          </div>
+        )}
 
         <div className="grid-2">
           {/* Income card */}
-          <Card title="Retirement Income (first year)">
+          <Card title={form.alreadyRetired ? "Current Annual Income" : "Retirement Income (first year)"}>
             {/* Show blended DC income breakdown if using both strategies */}
             {income.dcAnnuityIncome > 0 && income.dcDrawdownIncome > 0 ? (
               <>
@@ -227,9 +229,9 @@ export default function AtRetirementResults({
 
           {/* Assets + Real terms */}
           <div className="grid" style={{ gap: 16 }}>
-            <Card title="Retirement Assets (at retirement)">
+            <Card title={form.alreadyRetired ? "Current Assets" : "Retirement Assets (at retirement)"}>
               <div>
-                DC pot (after PCLS & annuity purchase):{" "}
+                {form.alreadyRetired ? "Current DC pot" : "DC pot (after PCLS & annuity purchase)"}:{" "}
                 <strong>£{fmt(assets.dcPotForDrawdown)}</strong>
                 {assets.dcPotForAnnuity > 0 && (
                   <span style={{ fontSize: "13px", color: "#64748b", marginLeft: 6 }}>
@@ -237,12 +239,12 @@ export default function AtRetirementResults({
                   </span>
                 )}
               </div>
-              {assets.dcPclsCash > 0 && (
+              {!form.alreadyRetired && assets.dcPclsCash > 0 && (
                 <div>
                   DC tax-free cash: <strong>£{fmt(assets.dcPclsCash)}</strong>
                 </div>
               )}
-              {assets.dbPclsCash > 0 && (
+              {!form.alreadyRetired && assets.dbPclsCash > 0 && (
                 <div>
                   DB tax-free cash: <strong>£{fmt(assets.dbPclsCash)}</strong>
                 </div>
@@ -271,10 +273,12 @@ export default function AtRetirementResults({
                 <strong>£{fmt(real.surplusDeficit)}</strong>
               </div>
               <TotalLine label="Assets total (real)" value={real.assetsTotal} fmt={fmt} />
-              <MiniHelp>
-                Deflated {yearsToRetirement.toFixed(2)} year(s) at{" "}
-                {(inputsNum.inflationAssumption * 100).toFixed(1)}% p.a.
-              </MiniHelp>
+              {!form.alreadyRetired && (
+                <MiniHelp>
+                  Deflated {yearsToRetirement.toFixed(2)} year(s) at{" "}
+                  {(inputsNum.inflationAssumption * 100).toFixed(1)}% p.a.
+                </MiniHelp>
+              )}
             </Card>
           </div>
         </div>
@@ -565,30 +569,34 @@ function QuickModellingSection({ form, model, setModel, applyModelToForm, resetM
           </div>
           <div></div>
 
-          {/* Retirement age */}
-          <ModelRow
-            label="Retirement age"
-            fieldKey="retirementAge"
-            currentValue={form.retirementAge}
-            min={55}
-            max={75}
-            step={0.5}
-            model={model}
-            setModel={setModel}
-          />
+          {/* Retirement age - hide if already retired */}
+          {!form.alreadyRetired && (
+            <ModelRow
+              label="Retirement age"
+              fieldKey="retirementAge"
+              currentValue={form.retirementAge}
+              min={55}
+              max={75}
+              step={0.5}
+              model={model}
+              setModel={setModel}
+            />
+          )}
 
-          {/* DC pot */}
-          <ModelRow
-            label="DC pot (now)"
-            fieldKey="dcPotNow"
-            currentValue={form.dcPotNow}
-            min={0}
-            max={500000}
-            step={5000}
-            model={model}
-            setModel={setModel}
-            prefix="£"
-          />
+          {/* DC pot - hide if already retired */}
+          {!form.alreadyRetired && (
+            <ModelRow
+              label="DC pot (now)"
+              fieldKey="dcPotNow"
+              currentValue={form.dcPotNow}
+              min={0}
+              max={500000}
+              step={5000}
+              model={model}
+              setModel={setModel}
+              prefix="£"
+            />
+          )}
 
           {/* Drawdown rate */}
           <ModelRow
@@ -618,19 +626,21 @@ function QuickModellingSection({ form, model, setModel, applyModelToForm, resetM
             displayMultiplier={100}
           />
 
-          {/* Growth */}
-          <ModelRow
-            label="DC growth"
-            fieldKey="growthAssumption"
-            currentValue={form.growthAssumption}
-            min={0}
-            max={0.15}
-            step={0.0025}
-            model={model}
-            setModel={setModel}
-            suffix="%"
-            displayMultiplier={100}
-          />
+          {/* Growth - hide if already retired */}
+          {!form.alreadyRetired && (
+            <ModelRow
+              label="DC growth"
+              fieldKey="growthAssumption"
+              currentValue={form.growthAssumption}
+              min={0}
+              max={0.15}
+              step={0.0025}
+              model={model}
+              setModel={setModel}
+              suffix="%"
+              displayMultiplier={100}
+            />
+          )}
 
           {/* Desired spend */}
           <ModelRow
