@@ -837,6 +837,53 @@ const HelpToggle = ({ text }) => {
         </div>
       )}
 
+      {/* Jump to Section Dropdown */}
+      {wizardMode && currentStep >= 0 && (
+        <div
+          className="no-print"
+          style={{
+            backgroundColor: '#f8fafc',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '16px',
+          }}
+        >
+          <label htmlFor="section-jump" style={{
+            display: 'block',
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#64748b',
+            marginBottom: '8px',
+          }}>
+            Jump to Section:
+          </label>
+          <select
+            id="section-jump"
+            value={currentStep}
+            onChange={(e) => {
+              setCurrentStep(Number(e.target.value));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              fontSize: '16px',
+              border: '2px solid #d1d5db',
+              borderRadius: '6px',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            <option value={0}>1. Core Assumptions</option>
+            <option value={1}>2. DC Pensions</option>
+            <option value={2}>3. DB Pensions</option>
+            <option value={3}>4. Savings & Other Income</option>
+            <option value={4}>5. Results & Modeling</option>
+          </select>
+        </div>
+      )}
+
       {/* Classic Mode - Switch to Wizard Button */}
       {!wizardMode && (
         <div
