@@ -1,7 +1,12 @@
 // src/components/AtRetirementResults.jsx
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, TotalLine, MiniHelp, Section } from "./common";
+import { calculateProjection, extractWarnings } from '../logic/projection';
+import ProjectionTable from './ProjectionTable';
+import ProjectionCharts from './ProjectionCharts';
+import LifeEvents from './LifeEvents';
+import { formatCurrency } from '../utils/money';
 
 /**
  * AtRetirementResults - Displays the calculated at-retirement summary,
@@ -40,6 +45,56 @@ export default function AtRetirementResults({
   loadAutosave,
 }) {
   const navigate = useNavigate();
+
+  // Projection state
+  const [showProjection, setShowProjection] = useState(false);
+  const [isaRecurringAmount, setIsaRecurringAmount] = useState("");
+  const [isaRecurringYears, setIsaRecurringYears] = useState("");
+  const [dcDrawdownPercent, setDcDrawdownPercent] = useState(String(inputsNum.drawdownRate * 100));
+  const [lifeEvents, setLifeEvents] = useState([]);
+  const [helpVisibility, setHelpVisibility] = useState({});
+
+  // Build opening values for projection
+  const openingValues = useMemo(() => ({
+    retirementAge: inputsNum.retirementAge,
+    dcPotAfterPCLS: assets.dcPotForDrawdown,
+    isaSavings: assets.isaAtRet,
+    taxableSavings: assets.taxableAtRet + assets.dcPclsCash + assets.dbPclsCash,
+    dbPension: income.dbIncomeAfter,
+    annuityIncome: income.dcAnnuityIncome,
+    statePension: income.statePensionAtRetNominal,
+    statePensionAge: inputsNum.statePensionAge,
+    propertyIncome: income.propertyIncomeAtRet,
+    dividendIncome: income.dividendIncomeAtRet,
+    anyOtherIncome: income.anyOtherIncomeAtRet,
+    otherIncome: income.otherIncomeAtRet,
+    annualSpend: inputsNum.desiredSpendAnnual,
+    incomeTax: estTax,
+    inflation: inputsNum.inflationAssumption * 100,
+    dcGrowth: inputsNum.growthAssumption * 100,
+    isaGrowth: inputsNum.isaRate * 100,
+    savingsGrowth: inputsNum.taxableSavingsRate * 100,
+    taxRegion: inputsNum.region === 'Scotland' ? 'scotland' : 'england',
+    dcDrawdownPercent: inputsNum.drawdownRate * 100,
+    yearsToRetirement,
+  }), [inputsNum, income, assets, estTax, yearsToRetirement]);
+
+  // Calculate projection when shown
+  const projectionResults = useMemo(() => {
+    if (!showProjection) return null;
+
+    return calculateProjection(openingValues, {
+      isaRecurringAmount: parseFloat(isaRecurringAmount) || 0,
+      isaRecurringYears: parseFloat(isaRecurringYears) || 0,
+      dcDrawdownPercent: parseFloat(dcDrawdownPercent) || 4.0,
+      lifeEvents,
+    });
+  }, [showProjection, openingValues, isaRecurringAmount, isaRecurringYears, dcDrawdownPercent, lifeEvents]);
+
+  const warnings = useMemo(() => {
+    if (!projectionResults) return [];
+    return extractWarnings(projectionResults);
+  }, [projectionResults]);
 
   return (
     <div className="print-page">
@@ -219,71 +274,241 @@ export default function AtRetirementResults({
         </div>
       </section>
 
-      {/* PROJECTION BUTTON */}
-      <div style={{ textAlign: 'center', margin: '24px 0' }} className="no-print">
-        <button
-          onClick={() => {
-            // Save immediately before navigating (don't wait for debounce)
-            saveAutosave({
-              form,
-              dbSchemes,
-              model,
-              atRetirement: {
-                yearsToRetirement,
-                netIncome,
-                incomeGrossTotal,
-                assetsTotal,
-              },
-            });
-
-            // Check sessionStorage for the latest desiredSpendAnnual (may have been updated by lifestyle calculator)
-            const latestData = loadAutosave();
-            const latestSpend = latestData?.form?.desiredSpendAnnual
-              ? N(latestData.form.desiredSpendAnnual)
-              : inputsNum.desiredSpendAnnual;
-
-            navigate('/projection', {
-              state: {
-                openingValues: {
-                  retirementAge: inputsNum.retirementAge,
-                  dcPotAfterPCLS: assets.dcPotForDrawdown, // Only drawdown pot (after annuity purchase)
-                  isaSavings: assets.isaAtRet,
-                  taxableSavings: assets.taxableAtRet + assets.dcPclsCash + assets.dbPclsCash,
-                  dbPension: income.dbIncomeAfter,
-                  annuityIncome: income.dcAnnuityIncome, // Annuity income from annuitized portion
-                  statePension: income.statePensionAtRetNominal,
-                  statePensionAge: inputsNum.statePensionAge,
-                  propertyIncome: income.propertyIncomeAtRet, // Property income (separate for future tax differentiation)
-                  dividendIncome: income.dividendIncomeAtRet, // Dividend income (separate for future tax differentiation)
-                  anyOtherIncome: income.anyOtherIncomeAtRet, // Any other income (separate for future tax differentiation)
-                  otherIncome: income.otherIncomeAtRet, // Total other income (for backward compatibility)
-                  annualSpend: latestSpend, // Use latest value from sessionStorage
-                  incomeTax: estTax,
-                  inflation: inputsNum.inflationAssumption * 100,
-                  dcGrowth: inputsNum.growthAssumption * 100,
-                  isaGrowth: inputsNum.isaRate * 100,
-                  savingsGrowth: inputsNum.taxableSavingsRate * 100,
-                  taxRegion: inputsNum.region === 'Scotland' ? 'scotland' : 'england',
-                  dcDrawdownPercent: inputsNum.drawdownRate * 100,
-                  yearsToRetirement: yearsToRetirement,
-                }
-              }
-            });
-          }}
+      {/* PROJECTION SECTION */}
+      <section className="card" style={{ marginTop: 24, marginBottom: 12 }}>
+        <div
+          className="card-title"
           style={{
-            padding: '12px 32px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            backgroundColor: '#0284c7',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          View 25-Year Projection →
-        </button>
-      </div>
+          <div>25-Year Retirement Projection</div>
+          <button
+            type="button"
+            onClick={() => setShowProjection(!showProjection)}
+            className="no-print"
+          >
+            {showProjection ? "Hide" : "Show"}
+          </button>
+        </div>
+
+        {showProjection && (
+          <div className="card-body">
+            {/* Financial Summary Box */}
+            <div style={{
+              backgroundColor: '#eff6ff',
+              border: '2px solid #bfdbfe',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px',
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1e293b' }}>
+                Opening Position (Age {openingValues.retirementAge})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Total Assets</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a' }}>
+                    {formatCurrency(
+                      openingValues.dcPotAfterPCLS +
+                      openingValues.isaSavings +
+                      openingValues.taxableSavings
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Gross Income</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#0f172a' }}>
+                    {formatCurrency(
+                      openingValues.dbPension +
+                      openingValues.annuityIncome +
+                      (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                      openingValues.otherIncome +
+                      (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100))
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Income Tax</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#dc2626' }}>
+                    {formatCurrency(openingValues.incomeTax)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Net Income</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#16a34a' }}>
+                    {formatCurrency(
+                      openingValues.dbPension +
+                      openingValues.annuityIncome +
+                      (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
+                      openingValues.otherIncome +
+                      (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100)) -
+                      openingValues.incomeTax
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Projection Inputs */}
+            <div style={{
+              border: '2px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px',
+              backgroundColor: '#f9fafb',
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1e293b' }}>
+                Additional Savings During Retirement
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#475569',
+                  marginBottom: '8px',
+                }}>
+                  ISA top-ups per year
+                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '8px' }}>
+                    (optional - if you plan to add to ISA during retirement)
+                  </span>
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
+                  <input
+                    type="text"
+                    value={isaRecurringAmount}
+                    onChange={(e) => setIsaRecurringAmount(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="e.g. 5000"
+                    style={{
+                      padding: '12px 16px',
+                      fontSize: '16px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      width: '160px',
+                    }}
+                  />
+                  <span style={{ fontSize: '16px', color: '#64748b' }}>per year for</span>
+                  <input
+                    type="text"
+                    value={isaRecurringYears}
+                    onChange={(e) => setIsaRecurringYears(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="e.g. 10"
+                    style={{
+                      padding: '12px 16px',
+                      fontSize: '16px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      width: '100px',
+                    }}
+                  />
+                  <span style={{ fontSize: '16px', color: '#64748b' }}>years</span>
+                </div>
+              </div>
+
+              <div style={{
+                fontSize: '12px',
+                color: '#64748b',
+                backgroundColor: '#f0f9ff',
+                padding: '12px',
+                borderRadius: '6px',
+                border: '1px solid #bae6fd',
+              }}>
+                Note: DC drawdown percentage uses the value from Quick Modelling section above. The projection updates automatically when you adjust the slider.
+              </div>
+            </div>
+
+            {/* Lifestyle Events */}
+            <div style={{ marginBottom: '24px' }}>
+              <LifeEvents
+                currentAge={openingValues.retirementAge}
+                retirementAge={openingValues.retirementAge + 25}
+                events={lifeEvents}
+                setEvents={setLifeEvents}
+                helpVisibility={helpVisibility}
+                setHelpVisibility={setHelpVisibility}
+              />
+            </div>
+
+            {/* Warnings */}
+            {warnings.length > 0 && (
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '2px solid #fca5a5',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '24px',
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#991b1b' }}>
+                  Asset Depletion Warnings
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#dc2626' }}>
+                  {warnings.map((w, i) => (
+                    <li key={i} style={{ marginBottom: '8px' }}>
+                      <strong>Age {w.age}:</strong> {w.messages.join(', ')}
+                    </li>
+                  ))}
+                </ul>
+                <div style={{ marginTop: '16px', fontSize: '14px', color: '#991b1b' }}>
+                  Consider: Reducing spending, adjusting drawdown %, or modifying life events
+                </div>
+              </div>
+            )}
+
+            {/* Results Section */}
+            {projectionResults && (
+              <>
+                <div style={{
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px',
+                  backgroundColor: 'white',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '16px',
+                    paddingBottom: '16px',
+                    borderBottom: '1px solid #e5e7eb',
+                  }}>
+                    <div style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                      Projection Charts
+                    </div>
+                    <button
+                      onClick={() => window.print()}
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: 'white',
+                        backgroundColor: '#0284c7',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Print / Save PDF
+                    </button>
+                  </div>
+                  <ProjectionCharts data={projectionResults} />
+                </div>
+
+                <div style={{ marginBottom: '24px' }}>
+                  <ProjectionTable data={projectionResults} />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* QUICK MODELLING (live sliders) - Content moved from AtRetirement.jsx */}
       <QuickModellingSection
