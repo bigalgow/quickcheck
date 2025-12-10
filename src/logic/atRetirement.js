@@ -208,10 +208,6 @@ export function atRetirement(inputs, taxFns) {
       ? taxFns.taxScot({ pensionableIncome, savingsInterest: taxableInterest })
       : taxFns.taxEWNI({ pensionableIncome, savingsInterest: taxableInterest });
 
-  const grossIncome = pensionableIncome + taxableInterest;
-  const netIncome = grossIncome - taxRes.tax;
-  const surplusDeficit = netIncome - inputs.desiredSpendAnnual;
-
   // ---- Group outputs
   const assets = {
     dcAtRetAfterPCLS, // Total pot after PCLS (for reference)
