@@ -182,23 +182,23 @@ export default function PostRetirementProjection() {
       ? openingValues.statePension
       : 0;
 
-    const grossIncome =
+    // Calculate total pensionable income (pensions + other income + DC drawdown)
+    const pensionableIncome =
       openingValues.dbPension +
       openingValues.annuityIncome +
       statePensionAmount +
       openingValues.otherIncome +
       dcDrawdownAmount;
 
-    // Get the correct tax bands based on region
-    const taxBands = openingValues.taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
+    // Get the correct tax configuration based on region
+    const cfg = openingValues.taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
 
     // Calculate tax using the same function as At Retirement
+    // Note: savingsInterest is 0 for opening position (interest accrues during projection)
     const tax = estimateIncomeTax({
-      grossIncome,
-      totalSavings: openingValues.isaSavings + openingValues.taxableSavings,
-      propertyIncome: openingValues.propertyIncome || 0,
-      dividendIncome: openingValues.dividendIncome || 0,
-      taxBands,
+      pensionableIncome,
+      savingsInterest: 0,
+      cfg,
     });
 
     return tax;
