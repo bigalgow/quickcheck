@@ -8,7 +8,6 @@ import LifeEvents from './LifeEvents';
 import ProjectionTable from './ProjectionTable';
 import ProjectionCharts from './ProjectionCharts';
 import { formatCurrency } from '../utils/money';
-import { estimateIncomeTax, TAX_2025_EWNI, TAX_2025_SCOTLAND } from '../utils/tax';
 import {
   ConversationalContainer,
   ProgressIndicator,
@@ -35,72 +34,8 @@ export default function ProjectionWizard({
   onBack,
   navigate,
 }) {
-  // Calculate correct opening tax based on actual gross income
-  // Uses openingValues.dcDrawdownPercent to match at-retirement calculation exactly
-  const openingTaxCorrect = useMemo(() => {
-    try {
-      if (!openingValues) {
-        console.log('🔍 No openingValues yet');
-        return 0;
-      }
-
-      // Debug: Log opening values to diagnose NaN issue
-      console.log('🔍 ProjectionWizard openingValues:', {
-        dcPotAfterPCLS: openingValues.dcPotAfterPCLS,
-        dcDrawdownPercent: openingValues.dcDrawdownPercent,
-        dbPension: openingValues.dbPension,
-        annuityIncome: openingValues.annuityIncome,
-        statePension: openingValues.statePension,
-        otherIncome: openingValues.otherIncome,
-        taxRegion: openingValues.taxRegion,
-      });
-
-      // Defensive check: ensure dcDrawdownPercent is a valid number
-      const drawdownPercent = typeof openingValues.dcDrawdownPercent === 'number'
-        ? openingValues.dcDrawdownPercent
-        : parseFloat(openingValues.dcDrawdownPercent) || 4.0;
-
-      console.log('🔍 Calculated drawdownPercent:', drawdownPercent);
-
-      const dcDrawdownAmount = openingValues.dcPotAfterPCLS * (drawdownPercent / 100);
-      console.log('🔍 DC Drawdown Amount:', dcDrawdownAmount);
-
-    const statePensionAmount = openingValues.retirementAge >= openingValues.statePensionAge
-      ? openingValues.statePension
-      : 0;
-    console.log('🔍 State Pension Amount:', statePensionAmount);
-
-    // Calculate total pensionable income
-    const pensionableIncome =
-      (openingValues.dbPension || 0) +
-      (openingValues.annuityIncome || 0) +
-      statePensionAmount +
-      (openingValues.otherIncome || 0) +
-      dcDrawdownAmount;
-
-    console.log('🔍 Total Pensionable Income:', pensionableIncome);
-
-    // Get the correct tax configuration
-    const cfg = openingValues.taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
-    console.log('🔍 Tax Config:', cfg ? 'Valid' : 'INVALID');
-
-    // Calculate tax
-    const taxResult = estimateIncomeTax({
-      pensionableIncome,
-      savingsInterest: 0,
-      cfg,
-    });
-
-    console.log('🔍 Calculated Tax Result:', taxResult);
-
-    // estimateIncomeTax returns an object {tax, personalAllowanceUsed, psaUsed}
-    return taxResult.tax;
-    } catch (error) {
-      console.error('❌ Error calculating tax:', error);
-      console.error('❌ Error stack:', error.stack);
-      return 0;
-    }
-  }, [openingValues]);
+  // Use the tax value already calculated at retirement (no need to recalculate)
+  const openingTax = openingValues?.incomeTax || 0;
 
   // Calculate projection
   const projectionResults = useMemo(() => {
@@ -168,14 +103,14 @@ export default function ProjectionWizard({
                 openingValues.annuityIncome +
                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                 openingValues.otherIncome +
-                (openingValues.dcPotAfterPCLS * ((typeof openingValues.dcDrawdownPercent === 'number' ? openingValues.dcDrawdownPercent : parseFloat(openingValues.dcDrawdownPercent) || 4.0) / 100))
+                (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100))
               )}
             </div>
           </div>
           <div>
             <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Income Tax</div>
             <div style={{ fontSize: '24px', fontWeight: '700', color: '#dc2626' }}>
-              {formatCurrency(openingTaxCorrect)}
+              {formatCurrency(openingTax)}
             </div>
           </div>
           <div>
@@ -186,8 +121,8 @@ export default function ProjectionWizard({
                 openingValues.annuityIncome +
                 (openingValues.retirementAge >= openingValues.statePensionAge ? openingValues.statePension : 0) +
                 openingValues.otherIncome +
-                (openingValues.dcPotAfterPCLS * ((typeof openingValues.dcDrawdownPercent === 'number' ? openingValues.dcDrawdownPercent : parseFloat(openingValues.dcDrawdownPercent) || 4.0) / 100)) -
-                openingTaxCorrect
+                (openingValues.dcPotAfterPCLS * (openingValues.dcDrawdownPercent / 100)) -
+                openingTax
               )}
             </div>
           </div>
