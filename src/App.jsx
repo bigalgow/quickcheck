@@ -6,7 +6,6 @@ import "./print.css";
 import "./responsive.css";
 import Dashboard from "./components/Dashboard.jsx";
 import AtRetirement from "./components/AtRetirement.jsx";
-import PostRetirementProjection from "./components/PostRetirementProjection.jsx";
 import LifestyleCalculator from "./components/LifestyleCalculator.jsx";
 
 export default function App() {
@@ -21,7 +20,6 @@ export default function App() {
           </>
         } />
         <Route path="/lifestyle" element={<LifestyleCalculator />} />
-        <Route path="/projection" element={<PostRetirementProjection />} />
       </Routes>
     </div>
   );
