@@ -124,19 +124,30 @@ export function atRetirement(inputs, taxFns) {
   const retirementAgeYears = inputs.retirementAge;
   const years = Math.max(0, retirementAgeYears - currentAgeYears);
 
+  // Check if already retired (explicit flag or years = 0)
+  const alreadyRetired = inputs.alreadyRetired || years === 0;
+
   // ---- DC pot projection
-  let dcProjected = inputs.dcPotNow * Math.pow(1 + inputs.growthAssumption, years);
+  // If already retired, no growth projection needed - use current value as-is
+  let dcProjected = alreadyRetired
+    ? inputs.dcPotNow
+    : inputs.dcPotNow * Math.pow(1 + inputs.growthAssumption, years);
 
   // DC contributions (employer / personal), both start-of-year timing
-  dcProjected += fvEmployerContrib(inputs, Math.floor(years));
-  dcProjected += fvPersonalContrib(inputs, Math.floor(years));
+  // No contributions if already retired
+  if (!alreadyRetired) {
+    dcProjected += fvEmployerContrib(inputs, Math.floor(years));
+    dcProjected += fvPersonalContrib(inputs, Math.floor(years));
+  }
 
   // ---- DC PCLS request (capped later)
-  const desiredDcPcls = inputs.takeDCTaxFree25 ? 0.25 * dcProjected : 0;
+  // If already retired, PCLS already taken (assume 0 or already reflected in pot value)
+  const desiredDcPcls = (alreadyRetired || !inputs.takeDCTaxFree25) ? 0 : 0.25 * dcProjected;
 
   // ---- DB annual (before any commutation), then desired DB PCLS (25% of capital)
+  // If already retired, only process deferred schemes (no active schemes, no PCLS)
   const dbBeforePcls = computeDbTotalAtRet(inputs.dbSchemes || [], years, inputs.inflationAssumption);
-  const desiredDbPcls = inputs.takeDBTaxFree25 ? 0.25 * dbCapitalFromIncome(dbBeforePcls) : 0;
+  const desiredDbPcls = (alreadyRetired || !inputs.takeDBTaxFree25) ? 0 : 0.25 * dbCapitalFromIncome(dbBeforePcls);
 
   // ---- Enforce global PCLS cap across DC + DB
   const PCLS_CAP = 268275;
@@ -185,15 +196,16 @@ export function atRetirement(inputs, taxFns) {
   const otherIncomeAtRet = propertyIncomeAtRet + dividendIncomeAtRet + anyOtherIncomeAtRet;
 
   // ---- Savings to retirement
+  // If already retired, no additional contributions
   const isaAtRet = projectWithContrib(
     inputs.isaBalance,
-    inputs.isaAddPerYear,
+    alreadyRetired ? 0 : inputs.isaAddPerYear,
     years,
     inputs.isaRate
   );
   const taxableAtRet = projectWithContrib(
     inputs.taxableSavingsBalance,
-    inputs.taxableSavingsAddPerYear,
+    alreadyRetired ? 0 : inputs.taxableSavingsAddPerYear,
     years,
     inputs.taxableSavingsRate
   );
