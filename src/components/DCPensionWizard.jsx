@@ -47,7 +47,10 @@ export default function DCPensionWizard({ form, set, onComplete }) {
   const renderStep1 = () => (
     <>
       <Question>
-        What's the current value of your pension pots (just total them if you have several)?
+        {form.alreadyRetired
+          ? "What's the current value of your pension pot?"
+          : "What's the current value of your pension pots (just total them if you have several)?"
+        }
       </Question>
 
       <HelpText>
@@ -74,9 +77,15 @@ export default function DCPensionWizard({ form, set, onComplete }) {
         </div>
       </InputGroup>
 
+      {form.alreadyRetired && (
+        <HelpText>
+          Since you're already retired, we'll skip questions about contributions and tax-free cash (those decisions have already been made).
+        </HelpText>
+      )}
+
       <NavigationButtons
         onBack={() => {}}
-        onNext={() => setStep(2)}
+        onNext={() => setStep(form.alreadyRetired ? 6 : 2)}
         showBack={false}
       />
     </>
@@ -414,8 +423,11 @@ export default function DCPensionWizard({ form, set, onComplete }) {
 
       <NavigationButtons
         onBack={() => {
-          // Go back to contributions step if contributing, otherwise step 3
-          if (form.dcIsContributing) {
+          // If already retired, go back to step 1
+          if (form.alreadyRetired) {
+            setStep(1);
+          // Otherwise, go back to contributions step if contributing
+          } else if (form.dcIsContributing) {
             setStep(5);
           } else {
             setStep(3);
@@ -453,17 +465,21 @@ export default function DCPensionWizard({ form, set, onComplete }) {
           title="Current Pension"
           items={[
             { label: 'Current pot value', value: `£${Number(form.dcPotNow || 0).toLocaleString()}` },
-            { label: 'Take 25% tax-free cash', value: form.takeDCTaxFree25 ? 'Yes' : 'No' },
+            ...(!form.alreadyRetired ? [
+              { label: 'Take 25% tax-free cash', value: form.takeDCTaxFree25 ? 'Yes' : 'No' }
+            ] : []),
           ]}
         />
 
-        <SummaryCard
-          title="Contributions"
-          items={[
-            { label: 'Contributing', value: form.dcIsContributing ? 'Yes' : 'No' },
-            ...(form.dcIsContributing ? [{ label: 'Details', value: contributionSummary }] : []),
-          ]}
-        />
+        {!form.alreadyRetired && (
+          <SummaryCard
+            title="Contributions"
+            items={[
+              { label: 'Contributing', value: form.dcIsContributing ? 'Yes' : 'No' },
+              ...(form.dcIsContributing ? [{ label: 'Details', value: contributionSummary }] : []),
+            ]}
+          />
+        )}
 
         <SummaryCard
           title="Withdrawal Strategy"
