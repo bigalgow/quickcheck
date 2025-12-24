@@ -5,28 +5,39 @@ import { useNavigate, useLocation } from 'react-router-dom';
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Only show bottom nav on mobile-specific routes
-  const showOnRoutes = ['/mobile-home', '/profile'];
-  const shouldShow = showOnRoutes.includes(location.pathname);
-  
-  if (!shouldShow) {
-    return null; // Don't show on desktop routes
+
+  // Check if viewing on mobile device
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Only show on mobile devices
+  if (!isMobile) {
+    return null;
   }
   
   const tabs = [
-    { 
-      id: 'home', 
-      icon: '🏠', 
-      label: 'Home', 
-      path: '/mobile-home',
+    {
+      id: 'home',
+      icon: '🏠',
+      label: 'Home',
+      path: '/',
       type: 'internal'
     },
-    { 
-      id: 'calculator', 
-      icon: '🧮', 
-      label: 'Calculate', 
-      path: '/lifestyle',
+    {
+      id: 'calculator',
+      icon: '🧮',
+      label: 'Calculate',
+      path: '/calculator',
       type: 'internal'
     },
     {
@@ -36,10 +47,10 @@ export default function BottomNav() {
       action: () => window.open('https://www.retireplan.co.uk/development/ascent-magazine', '_blank'),
       type: 'external'
     },
-    { 
-      id: 'profile', 
-      icon: '👤', 
-      label: 'Profile', 
+    {
+      id: 'profile',
+      icon: '👤',
+      label: 'Profile',
       path: '/profile',
       type: 'internal'
     },
