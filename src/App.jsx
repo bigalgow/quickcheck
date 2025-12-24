@@ -7,6 +7,7 @@ import "./responsive.css";
 import Dashboard from "./components/Dashboard.jsx";
 import AtRetirement from "./components/AtRetirement.jsx";
 import LifestyleCalculator from "./components/LifestyleCalculator.jsx";
+import PWAInstallBanner from "./components/PWAInstallBanner.jsx";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         } />
         <Route path="/lifestyle" element={<LifestyleCalculator />} />
       </Routes>
+      <PWAInstallBanner />
     </div>
   );
 }
