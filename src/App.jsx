@@ -7,18 +7,6 @@ import "./responsive.css";
 import Dashboard from "./components/Dashboard.jsx";
 import AtRetirement from "./components/AtRetirement.jsx";
 import LifestyleCalculator from "./components/LifestyleCalculator.jsx";
-import PWAInstallBanner from './components/PWAInstallBanner';
-
-function App() {
-  return (
-    <div className="App">
-      {/* Your existing content */}
-      
-      {/* Add banner at bottom, before closing div */}
-      <PWAInstallBanner />
-    </div>
-  );
-}
 
 export default function App() {
   return (
