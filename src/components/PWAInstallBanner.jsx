@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 export default function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // Check if already installed
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
                        window.navigator.standalone === true;
-    
+
     if (isInstalled) {
       return; // Don't show banner if already installed
     }
@@ -19,11 +20,25 @@ export default function PWAInstallBanner() {
       return;
     }
 
-    // Listen for the install prompt event
+    // Detect iOS/Safari
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/chrome|crios|fxios/.test(userAgent);
+
+    if (isIOSDevice || isSafari) {
+      setIsIOS(true);
+      // Show iOS banner after 3 seconds
+      setTimeout(() => {
+        setShowBanner(true);
+      }, 3000);
+      return;
+    }
+
+    // Listen for the install prompt event (Chrome/Edge/Android)
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      
+
       // Show banner after 3 seconds (let user browse first)
       setTimeout(() => {
         setShowBanner(true);
@@ -71,7 +86,12 @@ export default function PWAInstallBanner() {
     sessionStorage.setItem('pwa-banner-dismissed', 'true');
   };
 
-  if (!showBanner || !deferredPrompt) {
+  if (!showBanner) {
+    return null;
+  }
+
+  // Don't show on Chrome/Android if no install prompt available
+  if (!isIOS && !deferredPrompt) {
     return null;
   }
 
@@ -81,16 +101,24 @@ export default function PWAInstallBanner() {
         <div style={styles.icon}>📱</div>
         <div style={styles.content}>
           <h3 style={styles.title}>Install RetirePlan</h3>
-          <p style={styles.description}>
-            Get quick access to your retirement planning tools
-          </p>
+          {isIOS ? (
+            <p style={styles.description}>
+              Tap <span style={styles.shareIcon}>⬆️</span> Share, then "Add to Home Screen"
+            </p>
+          ) : (
+            <p style={styles.description}>
+              Get quick access to your retirement planning tools
+            </p>
+          )}
         </div>
         <div style={styles.actions}>
-          <button onClick={handleInstallClick} style={styles.installButton}>
-            Install
-          </button>
+          {!isIOS && (
+            <button onClick={handleInstallClick} style={styles.installButton}>
+              Install
+            </button>
+          )}
           <button onClick={handleDismiss} style={styles.dismissButton}>
-            Not now
+            {isIOS ? 'Got it' : 'Not now'}
           </button>
         </div>
       </div>
@@ -144,6 +172,11 @@ const styles = {
     fontSize: '14px',
     color: '#64748b',
     lineHeight: '1.4',
+  },
+  shareIcon: {
+    display: 'inline-block',
+    padding: '0 2px',
+    fontSize: '16px',
   },
   actions: {
     display: 'flex',
