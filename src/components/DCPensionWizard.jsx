@@ -14,6 +14,7 @@ import {
   SummaryCard,
   HelpPopup,
 } from "./ConversationalComponents.jsx";
+import DCPotWizard from "./DCPotWizard.jsx";
 
 /**
  * DCPensionWizard - Conversational flow for DC pension details
@@ -76,6 +77,12 @@ export default function DCPensionWizard({ form, set, onComplete }) {
           />
         </div>
       </InputGroup>
+
+      {/* DC Pot Wizard - track individual pots */}
+      <DCPotWizard
+        totalValue={form.dcPotNow}
+        onTotalChange={(total) => set({ dcPotNow: total.toString() })}
+      />
 
       {form.alreadyRetired && (
         <HelpText>

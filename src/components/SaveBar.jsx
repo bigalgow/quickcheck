@@ -1,13 +1,16 @@
 // src/components/SaveBar.jsx
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
 export default function SaveBar({ inputs, outputs, projection, onImportJson, onClearLocal, hasUnsavedChanges, onSaveSuccess, onCloudLoadStart, onCloudLoadComplete }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
+  const navigate = useNavigate();
   const [msg, setMsg] = useState(null);
 
   const login = () => signIn();
   const doSignOut = () => signOut();
+  const goToProfile = () => navigate('/profile');
 
   const handleResetData = () => {
     if (window.confirm('⚠️ Reset All Data?\n\nThis will clear all calculator data from this browser. This action cannot be undone.\n\nTip: Save your scenario first in Account > Scenario Management if you want to keep it.')) {
@@ -224,6 +227,24 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
           </button>
         </>
       )}
+
+      {/* Account button - access to scenario management */}
+      <button
+        onClick={goToProfile}
+        style={{
+          padding: "8px 16px",
+          fontSize: "14px",
+          color: "#0ea5e9",
+          backgroundColor: "white",
+          border: "1px solid #0ea5e9",
+          borderRadius: "6px",
+          cursor: "pointer",
+          fontWeight: "500",
+        }}
+        title="Manage scenarios and account settings"
+      >
+        👤 Account
+      </button>
 
       <button
         onClick={window.print}
