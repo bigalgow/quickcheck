@@ -6,22 +6,28 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if viewing on mobile device
-  const [isMobile, setIsMobile] = React.useState(false);
+  // Check if viewing on mobile/tablet device (including iPad)
+  const [isMobileOrTablet, setIsMobileOrTablet] = React.useState(false);
 
   React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+    const checkMobileOrTablet = () => {
+      // Show on screens up to 1024px (includes phones and tablets/iPads)
+      const isSmallScreen = window.innerWidth <= 1024;
+
+      // Also detect touch capability for better tablet detection
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+      setIsMobileOrTablet(isSmallScreen || isTouchDevice);
     };
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    checkMobileOrTablet();
+    window.addEventListener('resize', checkMobileOrTablet);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobileOrTablet);
   }, []);
 
-  // Only show on mobile devices
-  if (!isMobile) {
+  // Only show on mobile/tablet devices
+  if (!isMobileOrTablet) {
     return null;
   }
   
