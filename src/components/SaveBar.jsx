@@ -5,41 +5,16 @@ import { useAuth } from "../auth/AuthProvider";
 export default function SaveBar({ inputs, outputs, projection, onImportJson, onClearLocal, hasUnsavedChanges, onSaveSuccess, onCloudLoadStart, onCloudLoadComplete }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const login = () => signIn();
   const doSignOut = () => signOut();
 
-  const exportJson = () => {
-    const dataToExport = { inputs, outputs };
-    // Include projection data if available (from Projection page)
-    if (projection) {
-      dataToExport.projection = projection;
+  const handleResetData = () => {
+    if (window.confirm('⚠️ Reset All Data?\n\nThis will clear all calculator data from this browser. This action cannot be undone.\n\nTip: Save your scenario first in Account > Scenario Management if you want to keep it.')) {
+      onClearLocal();
+      setMsg('✅ Data reset');
+      setTimeout(() => setMsg(null), 3000);
     }
-    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const filename = projection ? "retireplan-full.json" : "retireplan-at-retirement.json";
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importJson = async (evt) => {
-    const file = evt.target.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    try {
-      const data = JSON.parse(text);
-      onImportJson?.(data);
-      setMsg("Imported JSON.");
-    } catch {
-      setMsg("Invalid JSON file.");
-    }
-    evt.target.value = "";
   };
 
   // ---- load saved data from backend
@@ -266,71 +241,20 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
       </button>
 
       <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
+        onClick={handleResetData}
         style={{
           padding: "8px 16px",
           fontSize: "14px",
-          color: "#64748b",
+          color: "#dc2626",
           backgroundColor: "white",
-          border: "1px solid #cbd5e1",
+          border: "1px solid #fca5a5",
           borderRadius: "6px",
           cursor: "pointer",
         }}
+        title="Clear all calculator data from this browser"
       >
-        {showAdvanced ? "⊖ Hide advanced" : "⊕ Advanced"}
+        🗑️ Reset Data
       </button>
-
-      {showAdvanced && (
-        <>
-          <button
-            onClick={exportJson}
-            style={{
-              padding: "8px 16px",
-              fontSize: "14px",
-              color: "#475569",
-              backgroundColor: "white",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Export JSON
-          </button>
-
-          <label
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 16px",
-              fontSize: "14px",
-              color: "#475569",
-              backgroundColor: "white",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            <input type="file" accept="application/json" onChange={importJson} style={{ display: "none" }} />
-            Import JSON
-          </label>
-
-          <button
-            onClick={onClearLocal}
-            style={{
-              padding: "8px 16px",
-              fontSize: "14px",
-              color: "#64748b",
-              backgroundColor: "white",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Clear local
-          </button>
-        </>
-      )}
 
       {msg && (
         <span
