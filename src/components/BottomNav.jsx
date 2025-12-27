@@ -33,30 +33,37 @@ export default function BottomNav() {
   
   const tabs = [
     {
-      id: 'home',
-      icon: '🏠',
-      label: 'Home',
+      id: 'calculator',
+      icon: '🧮',
+      label: 'Calculator',
       path: '/',
       type: 'internal'
     },
     {
-      id: 'calculator',
-      icon: '🧮',
-      label: 'Calculate',
-      path: '/calculator',
-      type: 'internal'
-    },
-    {
-      id: 'magazine',
-      icon: '📖',
-      label: 'Magazine',
-      action: () => window.open('https://www.retireplan.co.uk/development/ascent-magazine', '_blank'),
+      id: 'media',
+      icon: '📺',
+      label: 'Media',
+      action: () => window.open('https://www.retireplan.co.uk/development/help-page', '_blank'),
       type: 'external'
     },
     {
-      id: 'profile',
+      id: 'goal-planner',
+      icon: '🎯',
+      label: 'Goal Planner',
+      action: () => window.open('https://www.retireplan.co.uk/development/goal-planner', '_blank'),
+      type: 'external'
+    },
+    {
+      id: 'knowledge',
+      icon: '📚',
+      label: 'Knowledge Base',
+      action: () => window.open('https://www.retireplan.co.uk/development/library-search-1-column-wip', '_blank'),
+      type: 'external'
+    },
+    {
+      id: 'account',
       icon: '👤',
-      label: 'Profile',
+      label: 'Account',
       path: '/profile',
       type: 'internal'
     },

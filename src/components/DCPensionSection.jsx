@@ -1,6 +1,7 @@
 // src/components/DCPensionSection.jsx
 import React from "react";
 import { MiniHelp } from "./common.jsx";
+import DCPotWizard from "./DCPotWizard.jsx";
 
 /**
  * DCPensionSection - DC pension inputs section
@@ -45,6 +46,12 @@ export default function DCPensionSection({
               </label>
             </FieldRow>
           }
+        />
+
+        {/* DC Pot Wizard - collapsible table to track individual pots */}
+        <DCPotWizard
+          totalValue={form.dcPotNow}
+          onTotalChange={(total) => set({ dcPotNow: total.toString() })}
         />
       </SectionBox>
 
