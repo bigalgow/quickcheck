@@ -8,6 +8,9 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
                   window.navigator.standalone === true;
 
+    // Detect if mobile device (iOS, Android)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     // Check if there are unsaved changes
     if (hasUnsavedChanges) {
       const confirmed = window.confirm(
@@ -23,12 +26,12 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
       }
     }
 
-    // Proceed with exit
-    if (isPWA) {
-      // In PWA mode (iOS/Android) - navigate away (closes app, opens Safari/Chrome)
+    // Proceed with exit - different behavior for mobile PWA vs desktop
+    if (isPWA && isMobile) {
+      // Mobile PWA (iOS/Android) - navigate away (closes app, opens Safari/Chrome)
       window.location.href = 'https://www.retireplan.co.uk';
     } else {
-      // Regular browser - open new tab (keeps calculator open)
+      // Desktop PWA or regular browser - open in external browser/new tab
       window.open('https://www.retireplan.co.uk', '_blank', 'noopener,noreferrer');
     }
   };
