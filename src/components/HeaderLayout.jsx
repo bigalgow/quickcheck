@@ -31,8 +31,8 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
       // Mobile PWA (iOS/Android) - navigate away (closes app, opens Safari/Chrome)
       window.location.href = 'https://www.retireplan.co.uk';
     } else {
-      // Desktop PWA or regular browser - open in external browser/new tab
-      window.open('https://www.retireplan.co.uk', '_blank', 'noopener,noreferrer');
+      // Desktop PWA or regular browser - open in external browser (reuses same tab if already open)
+      window.open('https://www.retireplan.co.uk', 'retireplan-main');
     }
   };
   return (
