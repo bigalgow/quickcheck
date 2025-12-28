@@ -43,9 +43,11 @@ export default function HeaderLayout({ children }) {
           {children}
         </div>
 
-        {/* Return to Main Site button */}
+        {/* Return to Browser button - opens main site in external browser */}
         <a
           href="https://www.retireplan.co.uk"
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
             padding: "8px 16px",
             fontSize: "14px",
@@ -58,7 +60,7 @@ export default function HeaderLayout({ children }) {
             whiteSpace: "nowrap",
           }}
         >
-          Return to Main Site
+          ↗ Return to Browser
         </a>
       </div>
     </div>
