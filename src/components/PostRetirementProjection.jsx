@@ -257,7 +257,7 @@ export default function PostRetirementProjection() {
       </div>
 
       {/* Save / Print / Export */}
-      <HeaderLayout>
+      <HeaderLayout hasUnsavedChanges={hasUnsavedChanges}>
         <SaveBar
           inputs={exportData.inputs}
           outputs={exportData.outputs}

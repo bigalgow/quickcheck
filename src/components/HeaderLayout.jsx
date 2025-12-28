@@ -1,7 +1,37 @@
 // src/components/HeaderLayout.jsx
 import React from "react";
 
-export default function HeaderLayout({ children }) {
+export default function HeaderLayout({ children, hasUnsavedChanges }) {
+  const handleReturnToBrowser = (e) => {
+    e.preventDefault();
+
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true;
+
+    // Check if there are unsaved changes
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm(
+        '⚠️ You have unsaved changes!\n\n' +
+        'Save your scenario first:\n' +
+        '1. Click "👤 Account" button\n' +
+        '2. Save Current Scenario to Device\n\n' +
+        'Continue to browser anyway?'
+      );
+
+      if (!confirmed) {
+        return; // User cancelled
+      }
+    }
+
+    // Proceed with exit
+    if (isPWA) {
+      // In PWA mode (iOS/Android) - navigate away (closes app, opens Safari/Chrome)
+      window.location.href = 'https://www.retireplan.co.uk';
+    } else {
+      // Regular browser - open new tab (keeps calculator open)
+      window.open('https://www.retireplan.co.uk', '_blank', 'noopener,noreferrer');
+    }
+  };
   return (
     <div
       className="no-print"
@@ -44,10 +74,8 @@ export default function HeaderLayout({ children }) {
         </div>
 
         {/* Return to Browser button - opens main site in external browser */}
-        <a
-          href="https://www.retireplan.co.uk"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={handleReturnToBrowser}
           style={{
             padding: "8px 16px",
             fontSize: "14px",
@@ -58,10 +86,12 @@ export default function HeaderLayout({ children }) {
             border: "none",
             borderRadius: "6px",
             whiteSpace: "nowrap",
+            cursor: "pointer",
           }}
+          title="Opens RetirePlan.co.uk in your browser"
         >
           ↗ Return to Browser
-        </a>
+        </button>
       </div>
     </div>
   );

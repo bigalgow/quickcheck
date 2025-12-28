@@ -960,7 +960,7 @@ const HelpToggle = ({ text }) => {
       )}
 
       {/* Save / Print / Export */}
-      <HeaderLayout>
+      <HeaderLayout hasUnsavedChanges={hasUnsavedChanges}>
         <SaveBar
           inputs={inputsNum}
           outputs={out}
