@@ -36,7 +36,7 @@ export default function BottomNav() {
       id: 'magazine',
       icon: '📰',
       label: 'Ascent Magazine',
-      action: () => window.open('https://www.retireplan.co.uk/ascent-magazine', '_blank'),
+      action: () => window.open('https://www.retireplan.co.uk/development/ascent-magazine', '_blank'),
       type: 'external'
     },
     {
