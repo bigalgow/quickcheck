@@ -14,7 +14,7 @@ import Profile from "./pages/Profile.jsx";
 
 export default function App() {
   return (
-    <div className="App" style={{ paddingTop: "80px", padding: "80px 16px 24px", maxWidth: "100%" }}>
+    <div className="App" style={{ paddingTop: "80px", padding: "80px 16px 100px", maxWidth: "100%" }}>
       <Routes>
         {/* Your existing routes */}
         <Route path="/" element={<Dashboard />} />

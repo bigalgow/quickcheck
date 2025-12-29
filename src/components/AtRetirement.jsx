@@ -779,7 +779,7 @@ const HelpToggle = ({ text }) => {
   );
 
   return (
-    <div className="grid" style={{ gap: 8 }}>
+    <div className="grid" style={{ gap: 8, paddingBottom: '100px' }}>
 
       {/* Wizard Start Screen */}
       {wizardMode && currentStep === -1 && (

@@ -57,7 +57,7 @@ export default function Dashboard() {
   return (
     <>
       <HeaderLayout></HeaderLayout>
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 pb-24">
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-xl sm:text-2xl font-bold text-slate-800 max-w-2xl mx-auto">
