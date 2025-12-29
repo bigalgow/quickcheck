@@ -187,18 +187,21 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
         </button>
       ) : (
         <>
-          <span style={{ marginRight: 6, fontSize: "14px" }}>
-            Welcome
-            {userInfo?.name
-              ? `, ${userInfo.name}`
-              : userInfo?.given_name
-              ? `, ${userInfo.given_name}`
-              : userInfo?.username
-              ? `, ${userInfo.username}`
-              : userInfo?.email
-              ? `, ${userInfo.email.split('@')[0]}`
-              : "!"}
-          </span>
+          {/* Welcome message - only show on desktop */}
+          {isDesktop && (
+            <span style={{ marginRight: 6, fontSize: "14px" }}>
+              Welcome
+              {userInfo?.name
+                ? `, ${userInfo.name}`
+                : userInfo?.given_name
+                ? `, ${userInfo.given_name}`
+                : userInfo?.username
+                ? `, ${userInfo.username}`
+                : userInfo?.email
+                ? `, ${userInfo.email.split('@')[0]}`
+                : "!"}
+            </span>
+          )}
           <button
             onClick={saveProfile}
             disabled={loading}
@@ -216,21 +219,24 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
           >
             {hasUnsavedChanges ? "💾 Save All Data" : "✓ Data Saved"}
           </button>
-          <button
-            onClick={doSignOut}
-            disabled={loading}
-            style={{
-              padding: "8px 16px",
-              fontSize: "14px",
-              color: "#64748b",
-              backgroundColor: "white",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Sign out
-          </button>
+          {/* Sign out button - only show on desktop (mobile users sign out from Profile page) */}
+          {isDesktop && (
+            <button
+              onClick={doSignOut}
+              disabled={loading}
+              style={{
+                padding: "8px 16px",
+                fontSize: "14px",
+                color: "#64748b",
+                backgroundColor: "white",
+                border: "1px solid #cbd5e1",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Sign out
+            </button>
+          )}
         </>
       )}
 
@@ -254,11 +260,12 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
         </button>
       )}
 
-      {msg && (
+      {/* Only show error/warning messages (success already shown in button status) */}
+      {msg && (msg.includes("fail") || msg.includes("error") || msg.includes("⚠️") || msg.includes("Save failed")) && (
         <span
           style={{
             marginLeft: 8,
-            color: msg.includes("fail") || msg.includes("error") ? "#dc2626" : "#059669",
+            color: "#dc2626",
             fontWeight: "500",
             fontSize: "14px",
           }}
