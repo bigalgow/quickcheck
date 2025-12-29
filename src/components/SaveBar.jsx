@@ -7,18 +7,24 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const navigate = useNavigate();
   const [msg, setMsg] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(true);
 
   const login = () => signIn();
   const doSignOut = () => signOut();
   const goToProfile = () => navigate('/profile');
 
-  const handleResetData = () => {
-    if (window.confirm('⚠️ Reset All Data?\n\nThis will clear all calculator data from this browser. This action cannot be undone.\n\nTip: Save your scenario first in Account > Scenario Management if you want to keep it.')) {
-      onClearLocal();
-      setMsg('✅ Data reset');
-      setTimeout(() => setMsg(null), 3000);
-    }
-  };
+  // Detect if desktop (hide Account button on mobile/tablet where bottom nav exists)
+  useEffect(() => {
+    const checkDesktop = () => {
+      const isLargeScreen = window.innerWidth > 1024;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsDesktop(isLargeScreen && !isTouchDevice);
+    };
+
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // ---- load saved data from backend
   const loadProfile = async () => {
@@ -228,54 +234,25 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
         </>
       )}
 
-      {/* Account button - access to scenario management */}
-      <button
-        onClick={goToProfile}
-        style={{
-          padding: "8px 16px",
-          fontSize: "14px",
-          color: "#0ea5e9",
-          backgroundColor: "white",
-          border: "1px solid #0ea5e9",
-          borderRadius: "6px",
-          cursor: "pointer",
-          fontWeight: "500",
-        }}
-        title="Manage scenarios and account settings"
-      >
-        👤 Account
-      </button>
-
-      <button
-        onClick={window.print}
-        style={{
-          padding: "8px 16px",
-          fontSize: "14px",
-          color: "#475569",
-          backgroundColor: "white",
-          border: "1px solid #cbd5e1",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
-      >
-        Print summary
-      </button>
-
-      <button
-        onClick={handleResetData}
-        style={{
-          padding: "8px 16px",
-          fontSize: "14px",
-          color: "#dc2626",
-          backgroundColor: "white",
-          border: "1px solid #fca5a5",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
-        title="Clear all calculator data from this browser"
-      >
-        🗑️ Reset Data
-      </button>
+      {/* Account button - only show on desktop (mobile/tablet have bottom nav) */}
+      {isDesktop && (
+        <button
+          onClick={goToProfile}
+          style={{
+            padding: "8px 16px",
+            fontSize: "14px",
+            color: "#0ea5e9",
+            backgroundColor: "white",
+            border: "1px solid #0ea5e9",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: "500",
+          }}
+          title="Manage scenarios and account settings"
+        >
+          👤 Account
+        </button>
+      )}
 
       {msg && (
         <span

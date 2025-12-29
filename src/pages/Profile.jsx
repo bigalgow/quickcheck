@@ -81,6 +81,30 @@ export default function Profile() {
     event.target.value = '';
   };
 
+  const handleResetData = () => {
+    const confirmed = window.confirm(
+      '⚠️ Reset All Data?\n\n' +
+      'This will clear all calculator data from this browser. This action cannot be undone.\n\n' +
+      'Tip: Save your scenario first using "Save Current Scenario" above if you want to keep it.\n\n' +
+      'Continue with reset?'
+    );
+
+    if (!confirmed) return;
+
+    // Clear all localStorage keys
+    localStorage.removeItem('retireplan-data');
+    localStorage.removeItem('retireplan-projection');
+    localStorage.removeItem('retireplan-lifestyle');
+    localStorage.removeItem('retireplan-dc-pots');
+
+    setMessage('✅ All data has been reset');
+
+    // Navigate to calculator after a brief delay
+    setTimeout(() => {
+      navigate('/calculator');
+    }, 1500);
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -155,6 +179,17 @@ export default function Profile() {
                 {message}
               </div>
             )}
+          </div>
+
+          {/* Reset Data Section */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>Data Management</h3>
+            <p style={styles.sectionDescription}>
+              Clear all calculator data from this browser. This is useful if you want to start fresh or troubleshoot issues.
+            </p>
+            <button onClick={handleResetData} style={styles.resetButton}>
+              🗑️ Reset All Data
+            </button>
           </div>
 
           <div style={styles.section}>
@@ -349,6 +384,17 @@ const styles = {
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  resetButton: {
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
   },

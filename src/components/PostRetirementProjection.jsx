@@ -564,6 +564,26 @@ export default function PostRetirementProjection() {
           <div className="mb-6">
             <ProjectionTable data={projectionResults} />
           </div>
+
+          {/* Print Summary Button at End */}
+          <div style={{ marginTop: "24px", marginBottom: "24px", textAlign: "center" }} className="no-print">
+            <button
+              onClick={window.print}
+              style={{
+                padding: "12px 32px",
+                fontSize: "16px",
+                fontWeight: "600",
+                backgroundColor: "#0ea5e9",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              🖨️ Print Summary
+            </button>
+          </div>
         </>
       )}
     </div>
