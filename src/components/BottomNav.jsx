@@ -33,17 +33,17 @@ export default function BottomNav() {
   
   const tabs = [
     {
-      id: 'calculator',
-      icon: '🧮',
-      label: 'Calculator',
-      path: '/',
-      type: 'internal'
+      id: 'magazine',
+      icon: '📰',
+      label: 'Ascent Magazine',
+      action: () => window.open('https://www.retireplan.co.uk/ascent-magazine', '_blank'),
+      type: 'external'
     },
     {
-      id: 'media',
-      icon: '📺',
-      label: 'Media',
-      action: () => window.open('https://www.retireplan.co.uk/development/help-page', '_blank'),
+      id: 'library',
+      icon: '📚',
+      label: 'Library',
+      action: () => window.open('https://www.retireplan.co.uk/development/library-search-1-column-wip', '_blank'),
       type: 'external'
     },
     {
@@ -54,10 +54,10 @@ export default function BottomNav() {
       type: 'external'
     },
     {
-      id: 'knowledge',
-      icon: '📚',
-      label: 'Knowledge Base',
-      action: () => window.open('https://www.retireplan.co.uk/development/library-search-1-column-wip', '_blank'),
+      id: 'help',
+      icon: '❓',
+      label: 'Help',
+      action: () => window.open('https://www.retireplan.co.uk/development/help-page', '_blank'),
       type: 'external'
     },
     {

@@ -84,6 +84,9 @@ export default function Profile() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
+        <button onClick={() => navigate(-1)} style={styles.backButton}>
+          ← Back
+        </button>
         <h1 style={styles.title}>Profile</h1>
       </div>
 
@@ -187,12 +190,28 @@ const styles = {
     backgroundColor: 'white',
     borderBottom: '1px solid #e2e8f0',
     padding: '20px 16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  backButton: {
+    padding: '8px 16px',
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
   },
   title: {
     margin: 0,
     fontSize: '24px',
     fontWeight: '600',
     color: '#1e293b',
+    flex: 1,
   },
   content: {
     padding: '16px',
