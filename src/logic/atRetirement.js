@@ -10,6 +10,7 @@ function toDate(val) {
 
 function yearsBetween(a, b) {
   // precise years with decimals
+  if (!a || !b || isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
   const ms = b.getTime() - a.getTime();
   return ms / (365.2425 * 24 * 3600 * 1000);
 }
@@ -120,7 +121,7 @@ export function atRetirement(inputs, taxFns) {
   // Compute years-to-retirement using DOB (decimal years)
   const today = new Date();
   const dob = toDate(inputs.dateOfBirth);
-  const currentAgeYears = isNaN(dob) ? inputs.currentAge : yearsBetween(dob, today);
+  const currentAgeYears = isNaN(dob.getTime()) ? inputs.currentAge : yearsBetween(dob, today);
   const retirementAgeYears = inputs.retirementAge;
   const years = Math.max(0, retirementAgeYears - currentAgeYears);
 
