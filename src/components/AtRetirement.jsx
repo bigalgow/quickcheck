@@ -448,7 +448,7 @@ export default function AtRetirement() {
     // Automatically restore saved data
     if (savedForm && typeof savedForm === "object") {
       console.log('✅ At Retirement: Auto-restoring form data');
-      setForm(savedForm);
+      setForm(prevForm => ({ ...prevForm, ...savedForm }));
     }
     if (Array.isArray(savedSchemes)) {
       console.log('✅ At Retirement: Auto-restoring DB schemes');
