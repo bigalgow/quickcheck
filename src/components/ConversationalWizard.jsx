@@ -31,7 +31,7 @@ export default function ConversationalWizard({ form, set, onComplete }) {
     const ageText = formatStatePensionAge(spa);
 
     // Calculate approximate date (simplified)
-    const [year, month, day] = form.dateOfBirth.split('-');
+    const [year, month, day] = (form.dateOfBirth || '1965-01-01').split('-');
     const birthDate = new Date(year, month - 1, day);
     const spaDate = new Date(birthDate);
     spaDate.setFullYear(spaDate.getFullYear() + Math.floor(spa));
@@ -297,7 +297,7 @@ export default function ConversationalWizard({ form, set, onComplete }) {
     const pensionAmount = form.statePensionAnnual || defaultPension;
 
     // Format date for display
-    const [year, month, day] = form.dateOfBirth.split('-');
+    const [year, month, day] = (form.dateOfBirth || '1965-01-01').split('-');
     const dobFormatted = `${day}/${month}/${year}`;
 
     return (

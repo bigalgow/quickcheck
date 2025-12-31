@@ -44,9 +44,9 @@ export default function CoreAssumptions({
           >
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <Txt
-                value={form.dateOfBirth.split('-')[2] || '01'}
+                value={form.dateOfBirth?.split('-')[2] || '01'}
                 onCommit={(v) => {
-                  const [y, m] = form.dateOfBirth.split('-');
+                  const [y, m] = (form.dateOfBirth || '1965-01-01').split('-');
                   const day = String(Math.max(1, Math.min(31, Number(v) || 1))).padStart(2, '0');
                   set({ dateOfBirth: `${y}-${m}-${day}` });
                 }}
@@ -56,9 +56,9 @@ export default function CoreAssumptions({
               />
               <span>/</span>
               <Txt
-                value={form.dateOfBirth.split('-')[1] || '01'}
+                value={form.dateOfBirth?.split('-')[1] || '01'}
                 onCommit={(v) => {
-                  const [y, , d] = form.dateOfBirth.split('-');
+                  const [y, , d] = (form.dateOfBirth || '1965-01-01').split('-');
                   const month = String(Math.max(1, Math.min(12, Number(v) || 1))).padStart(2, '0');
                   set({ dateOfBirth: `${y}-${month}-${d}` });
                 }}
@@ -68,9 +68,9 @@ export default function CoreAssumptions({
               />
               <span>/</span>
               <Txt
-                value={form.dateOfBirth.split('-')[0] || '1965'}
+                value={form.dateOfBirth?.split('-')[0] || '1965'}
                 onCommit={(v) => {
-                  const [, m, d] = form.dateOfBirth.split('-');
+                  const [, m, d] = (form.dateOfBirth || '1965-01-01').split('-');
                   const year = Math.max(1900, Math.min(2100, Number(v) || 1965));
                   set({ dateOfBirth: `${year}-${m}-${d}` });
                 }}
