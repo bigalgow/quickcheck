@@ -383,6 +383,7 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
         onSignIn={signIn}
         onBack={goBack}
         onEdit={() => goToStep(1)}
+        onContinue={continueWithoutSaving}
       />}
       </div>
     </>
@@ -924,7 +925,8 @@ function Step4Results({
   onSave,
   onSignIn,
   onBack,
-  onEdit
+  onEdit,
+  onContinue
 }) {
   const tierLabels = {
     minimum: 'Essential Comfort (PLSA)',
@@ -1035,7 +1037,7 @@ function Step4Results({
           Edit Profile
         </button>
         <button
-          onClick={continueWithoutSaving}
+          onClick={onContinue}
           disabled={saving}
           className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 disabled:opacity-50"
         >
