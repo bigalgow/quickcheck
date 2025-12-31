@@ -272,7 +272,7 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
       <HelpText>
         {form.alreadyRetired
           ? "Enter the annual amount you receive from each DB pension."
-          : "For each deferred pension, you can either enter the preserved pension amount directly, or let us calculate it from your accrual details."
+          : "If you have left a previous employer Defined Benefit scheme you will be entitled to a Deferred DB pension - enter the 'projected income' figure from your Annual Benefit Statement (ABS)."
         }
       </HelpText>
 
@@ -317,8 +317,9 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
           <InputGroup
             label={form.alreadyRetired
               ? "Annual DB pension income"
-              : "Preserved pension (annual amount payable at retirement)"
+              : "Projected pension income (annual amount payable at retirement)"
             }
+            help={!form.alreadyRetired ? "You should receive an Annual Benefit Statement (ABS), showing the 'projected income'. This is calculated based on the rules of your scheme at the time you left. The figure you should enter here is the 'Projected Income' (before any lump sum deduction). This assumes inflation protection up to the normal pension age - typically age 60 - note this may be different from your own planned retirement age. Contact the scheme administrator or former employer HR department if you don't have these figures, or to keep address details up to date." : ""}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '16px', color: '#64748b' }}>£</span>
@@ -339,31 +340,6 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
               <span style={{ fontSize: '16px', color: '#64748b' }}>per year</span>
             </div>
           </InputGroup>
-
-          {!form.alreadyRetired && (
-            <InputGroup
-              label="Revaluation rate (how much it increases each year before you retire)"
-              help="Common rates: 0% (fixed), 2.5% (inflation), 5% (salary growth)"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="text"
-                  value={scheme.revaluationAssumption || ''}
-                  onChange={(e) => updateScheme(scheme.id, { revaluationAssumption: e.target.value })}
-                  inputMode="decimal"
-                  placeholder="e.g. 2.5"
-                  style={{
-                    padding: '12px 16px',
-                    fontSize: '16px',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '8px',
-                    width: '100px',
-                  }}
-                />
-                <span style={{ fontSize: '16px', color: '#64748b' }}>% per year</span>
-              </div>
-            </InputGroup>
-          )}
         </div>
       ))}
 
@@ -461,9 +437,7 @@ export default function DBPensionWizard({ dbSchemes, updateScheme, addDeferred, 
             { label: 'Count', value: deferredSummary },
             ...deferredSchemes.map((s, i) => ({
               label: `Pension ${i + 1}`,
-              value: form.alreadyRetired
-                ? `£${Number(s.preservedPensionNow || 0).toLocaleString()}/year`
-                : `£${Number(s.preservedPensionNow || 0).toLocaleString()}/year, ${s.revaluationAssumption || 0}% revaluation`
+              value: `£${Number(s.preservedPensionNow || 0).toLocaleString()}/year`
             })),
           ]}
         />
