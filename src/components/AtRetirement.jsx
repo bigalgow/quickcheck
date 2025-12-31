@@ -261,9 +261,10 @@ export default function AtRetirement() {
   // Lock retirement age if already retired (using DOB)
   useEffect(() => {
     setForm((f) => {
-      if (!f.alreadyRetired) return f;
+      if (!f.alreadyRetired || !f.dateOfBirth) return f;
       // Compute integer age now from DOB
       const dob = new Date(f.dateOfBirth);
+      if (isNaN(dob.getTime())) return f; // Invalid date
       const now = new Date();
       const ms = now.getTime() - dob.getTime();
       const ageYears = Math.floor(ms / (1000 * 60 * 60 * 24 * 365.2425));
@@ -285,10 +286,12 @@ export default function AtRetirement() {
     const effAnnu = form.useAnnuity ? effRate : baseAnnu;
     const effSpend = model.desiredSpendAnnual ?? N(form.desiredSpendAnnual);
 
-    const dob = new Date(form.dateOfBirth);
+    const dob = new Date(form.dateOfBirth || '1965-01-01');
     const now = new Date();
-    const yearsBetween = (d1, d2) =>
-      (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24 * 365.2425);
+    const yearsBetween = (d1, d2) => {
+      if (!d1 || !d2 || isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+      return (d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24 * 365.2425);
+    };
     const currentAgeYears = yearsBetween(dob, now);
     const yearsToRet = Math.max(0, effRetAge - currentAgeYears);
 

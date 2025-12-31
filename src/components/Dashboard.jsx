@@ -93,7 +93,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow-lg border-2 border-slate-200 p-6 hover:border-sky-300 transition-all">
           <div className="text-4xl mb-4">💭</div>
           <h2 className="text-2xl font-bold text-slate-800 mb-3">
-            Discover Your Lifestyle First
+            Estimate What Your Lifestyle Will Cost
           </h2>
           <p className="text-slate-600 mb-4">
             Not sure what retirement will cost? Take 5 minutes to explore your ideal retirement lifestyle.
