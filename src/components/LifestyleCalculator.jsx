@@ -147,6 +147,47 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
   };
 
   // Save profile
+  // Continue to calculator without saving (for non-authenticated users)
+  const continueWithoutSaving = () => {
+    // Update sessionStorage with the baseline amount even if not saving to cloud
+    try {
+      const unifiedData = loadUnifiedData();
+      const existingAtRetirement = unifiedData?.atRetirement || {};
+      const existingForm = existingAtRetirement.form || {};
+
+      // Update or create the desiredSpendAnnual field
+      const updatedAtRetirement = {
+        ...existingAtRetirement,
+        form: {
+          ...existingForm,
+          desiredSpendAnnual: String(baselineAmount)
+        }
+      };
+
+      saveAtRetirement(updatedAtRetirement);
+      console.log('✅ Updated desiredSpendAnnual in sessionStorage to:', baselineAmount);
+    } catch (storageError) {
+      console.warn('Failed to update sessionStorage:', storageError);
+    }
+
+    // Navigate to calculator
+    if (onComplete) {
+      onComplete({
+        ageRange,
+        householdType,
+        baselineTier,
+        baselineAmount,
+        baselineSource,
+        profileName,
+        exceptionalItems,
+        totalAnnualIncome: totalAnnual,
+        totalOneOffCosts: totalOneOff,
+      });
+    } else {
+      navigate('/calculator');
+    }
+  };
+
   const saveProfile = async () => {
     // Check authentication first
     if (!isAuthenticated) {
@@ -993,13 +1034,24 @@ function Step4Results({
         >
           Edit Profile
         </button>
-        <button
-          onClick={onSave}
-          disabled={saving || !isAuthenticated}
-          className="flex-1 px-6 py-3 bg-sky-600 text-white rounded-md font-medium hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {saving ? 'Saving...' : isAuthenticated ? 'Save Profile & Start Planning' : 'Sign In to Save & Continue'}
-        </button>
+        {!isAuthenticated && (
+          <button
+            onClick={continueWithoutSaving}
+            disabled={saving}
+            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 disabled:opacity-50"
+          >
+            Continue to Calculator →
+          </button>
+        )}
+        {isAuthenticated && (
+          <button
+            onClick={onSave}
+            disabled={saving}
+            className="flex-1 px-6 py-3 bg-sky-600 text-white rounded-md font-medium hover:bg-sky-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Profile & Start Planning'}
+          </button>
+        )}
       </div>
     </div>
   );
