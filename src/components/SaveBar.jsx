@@ -198,7 +198,7 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
                 : userInfo?.username
                 ? `, ${userInfo.username}`
                 : userInfo?.email
-                ? `, ${userInfo.email.split('@')[0]}`
+                ? `, ${userInfo.email?.split('@')[0] || userInfo.email}`
                 : "!"}
             </span>
           )}
