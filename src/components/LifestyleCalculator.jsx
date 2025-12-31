@@ -1034,15 +1034,13 @@ function Step4Results({
         >
           Edit Profile
         </button>
-        {!isAuthenticated && (
-          <button
-            onClick={continueWithoutSaving}
-            disabled={saving}
-            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 disabled:opacity-50"
-          >
-            Continue to Calculator →
-          </button>
-        )}
+        <button
+          onClick={continueWithoutSaving}
+          disabled={saving}
+          className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 disabled:opacity-50"
+        >
+          Continue to Calculator →
+        </button>
         {isAuthenticated && (
           <button
             onClick={onSave}
