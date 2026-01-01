@@ -7,12 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 RetirePlan QuickCheck is a React-based retirement planning application with routing, multiple calculators, and cloud data persistence.
 
 **Current Status:**
-- **Phase 1 (Complete)**: "At Retirement" calculator - gathers user input for current savings and pensions, projects to retirement age, produces comprehensive summary of income, expenditure, and assets
+- **Phase 1 (Complete)**: "At Retirement" calculator - gathers user input for current savings and pensions (including multiple DC pots), projects to retirement age, produces comprehensive summary of income, expenditure, and assets
 - **Phase 2 (Complete)**: Post-retirement projection - 25-year projection forward with life events, ISA investments, tax calculations, and depletion warnings
-- **Lifestyle Calculator (Complete)**: Multi-step wizard using PLSA benchmarks to help users discover retirement lifestyle needs, pre-fills calculator data
-- **Dashboard (Complete)**: Landing page offering two user journeys - "Jump to Calculator" or "Discover Lifestyle First"
-- **Data Persistence**: All data saved to Logto custom_data via Management API. LocalStorage autosave provides offline backup
-- **Authentication**: Logto integration with token-based API access for secure data operations
+- **Lifestyle Calculator (Complete)**: Multi-step wizard using PLSA benchmarks to help users discover retirement lifestyle needs, pre-fills calculator data. Users can continue without signing in.
+- **Dashboard (Complete)**: Landing page with authentication (SaveBar) offering two user journeys - "Discover Lifestyle First" (recommended) or "Jump to Calculator"
+- **Data Persistence**: All data saved to Logto custom_data via Management API. SessionStorage autosave provides offline backup (clears on tab close for security)
+- **Authentication**: Logto integration with token-based API access for secure data operations. Available on Dashboard, Calculator, Lifestyle Planner, and Projection pages.
 
 ## Development Commands
 
@@ -96,39 +96,47 @@ Both endpoints:
 
 ### Data Flow
 
-#### User Journey 1: Direct to Calculator
+#### User Journey 1: Lifestyle First (Recommended)
+1. User lands on Dashboard (`/`) → can sign in via SaveBar or continue as guest
+2. User clicks "Start Discovery" → navigates to `/lifestyle` (LifestyleCalculator wizard)
+3. Step 1: Select age range and household type (solo/couple)
+4. Step 2: Choose baseline tier (PLSA: minimum/moderate/comfortable) or estimate from current income
+5. Step 3: Add exceptional items (travel, purchases, family support) - one-off or recurring
+6. Profile generated with name (e.g., "The Comfortable Explorer"), total annual spend, one-off costs
+7. User can either:
+   - Sign in and save profile to cloud (`/api/me/lifestyle` endpoint)
+   - Click "Continue to Calculator" without signing in
+8. Navigates to `/calculator` - form pre-filled with lifestyle profile data (`desiredSpendAnnual`)
+9. Continues through calculator workflow (Journey 2 below)
+
+#### User Journey 2: Direct to Calculator
 1. User lands on Dashboard (`/`) → clicks "Start Calculating"
 2. Navigates to `/calculator` (AtRetirement component)
-3. User enters financial data (DC/DB pensions, savings, income, expenditure)
+3. User enters financial data:
+   - Multiple DC pension pots (can add multiple pots, each tracked separately)
+   - DB pensions: Active schemes and Deferred schemes (simplified - uses ABS "projected income" directly)
+   - Savings, income, expenditure
 4. `atRetirement()` calculates retirement position (nominal + real terms)
 5. Results displayed with summary, detailed breakdown, and adjustable sliders
 6. User clicks "View 25-Year Projection" → navigates to `/projection` with `openingValues` in route state
 7. `calculateProjection()` generates 25 years of projections with life events, ISA investments, tax
 8. Results shown in table and charts
 
-#### User Journey 2: Lifestyle First
-1. User lands on Dashboard → clicks "Start Discovery"
-2. Navigates to `/lifestyle` (LifestyleCalculator wizard)
-3. Step 1: Select age range and household type (solo/couple)
-4. Step 2: Choose baseline tier (PLSA: minimum/moderate/comfortable) or estimate from current income
-5. Step 3: Add exceptional items (travel, purchases, family support) - one-off or recurring
-6. Profile generated with name (e.g., "The Comfortable Explorer"), total annual spend, one-off costs
-7. Saved to `/api/me/lifestyle` endpoint (cloud) + localStorage
-8. User navigates to `/calculator` - form pre-filled with lifestyle profile data
-9. Continues through Journey 1 flow
-
 #### Data Persistence
-- **LocalStorage** (via `persist.js`):
+- **SessionStorage** (via `persist.js`):
   - Auto-saves on every input change (debounced)
-  - Separate keys: `retireplan-data`, `retireplan-projection`, `retireplan-lifestyle`
-  - Provides offline access and instant restore on page reload
+  - Unified key: `retireplan.unified.v1` containing both At-Retirement and Projection data
+  - Provides instant restore on page reload within same browser tab
+  - **Security feature**: Data clears when browser tab closes (prevents sensitive financial data from persisting)
+  - **Form State Merging**: Saved data is merged with default form values (not replaced) to prevent missing fields
 
 - **Cloud Save** (via Logto Management API):
-  - Manual save via "Save data" button in SaveBar (when authenticated)
+  - Manual save via "Save All Data" button in SaveBar (when authenticated)
   - Two separate fields in Logto `customData`:
     - `customData.retirePlan.latest` - At-Retirement + Projection data
     - `customData.lifestyleProfile` - Lifestyle wizard data
   - Persists across devices and browsers
+  - Auto-loads when user signs in
 
 ### Authentication Flow
 
@@ -165,8 +173,14 @@ MGMT_RESOURCE=https://auth.retireplan.co.uk/api
 The `atRetirement()` function handles:
 
 - **Years to retirement**: Calculated from date of birth (using precise decimal years via `yearsBetween()`)
-- **DC projections**: Pot growth + employer/personal contributions (start-of-year timing)
-- **DB projections**: Active schemes (accrual on final salary) and deferred schemes (preserved pension with revaluation)
+- **DC projections**:
+  - Multiple DC pots supported (user can add multiple pots, each tracked separately)
+  - Pot growth + employer/personal contributions (start-of-year timing)
+  - All pots combined for total DC value at retirement
+- **DB projections**:
+  - Active schemes: Accrual on final salary with service years calculation
+  - Deferred schemes: **Simplified** - user enters "projected income" from Annual Benefit Statement (ABS) directly
+  - No complex revaluation calculations needed - uses the figure providers quote on ABS
 - **PCLS (Pension Commencement Lump Sum)**: 25% tax-free cash from DC/DB (capped at £268,275 total)
 - **Income streams**: DC drawdown/annuity, DB pension, state pension, other income, savings interest
 - **Tax**: UK income tax calculation (Personal Allowance taper, PSA) using `tax.js`
@@ -294,6 +308,12 @@ When updating calculation logic in `src/logic/projection.js`:
 - **Route State**: At-Retirement passes `openingValues` to Projection via React Router `location.state`
 - **Smart Event Merging**: Projection smart-merges lifestyle profile events with user-edited projection events (preserves user edits)
 - **Unsaved Changes Tracking**: Both calculators track unsaved changes and warn before cloud load would overwrite local edits
+- **Form State Merging** (Critical): When loading saved data, `setForm(prevForm => ({ ...prevForm, ...savedForm }))` merges saved values with defaults rather than replacing entire state. This prevents undefined values (like missing `dateOfBirth`) from causing crashes.
+- **Date Validation**: All date calculations use defensive checks (`isNaN(date.getTime())`) before calling `.getTime()` to prevent crashes with invalid dates
+- **Multiple DC Pots**: DC pension section supports multiple pots via array state, each pot tracked independently and summed for total value
+- **Simplified DB Deferred**: Deferred DB pensions use "projected income" field from ABS directly - no revaluation rate calculations needed
+- **Dashboard Authentication**: Dashboard includes SaveBar for users who bookmark the web app directly (bypass main website login)
+- **Guest User Flow**: Lifestyle calculator allows users to continue without signing in - saves `desiredSpendAnnual` to sessionStorage only
 
 ## Troubleshooting
 
@@ -321,10 +341,11 @@ If authentication succeeds but API calls fail:
 
 ### Data Not Loading from Cloud
 
-1. Check `localStorage` keys exist: `retireplan-data`, `retireplan-projection`, `retireplan-lifestyle`
+1. Check `sessionStorage` key exists: `retireplan.unified.v1` (contains both At-Retirement and Projection data)
 2. Verify authenticated: `isAuthenticated` should be `true` in SaveBar
-3. Check browser console for API errors when clicking "Load from cloud"
+3. Check browser console for API errors - cloud data auto-loads on sign-in
 4. Verify backend logs in Vercel for Management API errors
+5. Note: If you close the browser tab, sessionStorage is cleared (by design for security)
 
 ### Projection Not Working
 
