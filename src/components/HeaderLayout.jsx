@@ -2,9 +2,27 @@
 import React from "react";
 
 export default function HeaderLayout({ children, hasUnsavedChanges }) {
+  // Get main site URL from environment variable with fallback to production
+  const getMainSiteUrl = () => {
+    // Check for explicit environment variable first
+    const envUrl = import.meta.env.VITE_MAIN_SITE_URL;
+    if (envUrl) return envUrl;
+
+    // Auto-detect based on current domain
+    const hostname = window.location.hostname;
+    if (hostname.includes('staging') || hostname.includes('dev')) {
+      // Staging/dev environment - you can customize this URL
+      return 'https://staging.retireplan.co.uk'; // Update this to your actual staging URL
+    }
+
+    // Production default
+    return 'https://retireplan.co.uk';
+  };
+
   const handleReturnToBrowser = (e) => {
     e.preventDefault();
 
+    const mainSiteUrl = getMainSiteUrl();
     const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
                   window.navigator.standalone === true;
 
@@ -29,10 +47,10 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
     // Proceed with exit - different behavior for mobile PWA vs desktop
     if (isPWA && isMobile) {
       // Mobile PWA (iOS/Android) - navigate away (closes app, opens Safari/Chrome)
-      window.location.href = 'https://www.retireplan.co.uk';
+      window.location.href = mainSiteUrl;
     } else {
       // Desktop PWA or regular browser - open in external browser (reuses same tab if already open)
-      window.open('https://www.retireplan.co.uk', 'retireplan-main');
+      window.open(mainSiteUrl, 'retireplan-main');
     }
   };
   return (
