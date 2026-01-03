@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## RetirePlan Platform Architecture
+
+**Two Distinct Components:**
+
+1. **RetirePlan Website** (retireplan.co.uk)
+   - Main content site with articles, resources, guides
+   - Authentication system (details TBD)
+   - [Additional features to be documented]
+
+2. **RetirePlan QuickCheck** (Web App)
+   - React-based calculator application
+   - Launched from the RetirePlan website
+   - Can be saved to device home screen as PWA (Progressive Web App)
+   - Runs standalone once installed as PWA
+   - This is what CLAUDE.md primarily documents
+
+**Authentication:**
+- Seamlessly shared between website and web app
+- User signs in once, authentication persists across both
+- SaveBar in web app: "Login to save" button
+- Website authentication: [to be documented]
+
+**User Access Patterns:**
+- Via website: User visits retireplan.co.uk → launches QuickCheck app
+- As PWA: User taps app icon on device → opens directly to QuickCheck
+- Both routes: Same functionality, same authentication state
+
 ## Project Overview
 
 RetirePlan QuickCheck is a React-based retirement planning application with routing, multiple calculators, and cloud data persistence.
