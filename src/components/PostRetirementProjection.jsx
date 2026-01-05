@@ -90,9 +90,14 @@ export default function PostRetirementProjection() {
 
   // Load lifestyle profile and smart-merge events
   useEffect(() => {
+    console.log('🎬 Lifestyle profile useEffect triggered!');
+    console.log('  isAuthenticated:', isAuthenticated);
+    console.log('  openingValues:', openingValues);
+
     const loadProfile = async () => {
       try {
         if (!openingValues) {
+          console.log('⚠️ No openingValues, skipping profile load');
           setLoadingProfile(false);
           return;
         }
