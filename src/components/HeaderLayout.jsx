@@ -24,6 +24,9 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
 
     const mainSiteUrl = getMainSiteUrl();
 
+    // Detect if mobile device (iOS, Android)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     // Check if there are unsaved changes
     if (hasUnsavedChanges) {
       const confirmed = window.confirm(
@@ -39,10 +42,15 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
       }
     }
 
-    // Proceed with exit - navigate current tab/window to prevent multiple instances
-    // All contexts (mobile PWA, desktop PWA, regular browser) now navigate current window
-    // This prevents multiple app instances with conflicting sessionStorage data
-    window.location.href = mainSiteUrl;
+    // Different behavior for mobile vs desktop to prevent multiple instances
+    if (isMobile) {
+      // Mobile: Open in external browser (prevents getting stuck in PWA)
+      // Using window.open forces opening in device's default browser
+      window.open(mainSiteUrl, '_blank');
+    } else {
+      // Desktop: Navigate current tab/window (closes app, prevents multiple instances)
+      window.location.href = mainSiteUrl;
+    }
   };
   return (
     <div
