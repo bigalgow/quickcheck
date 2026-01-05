@@ -44,9 +44,31 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
 
     // Different behavior for mobile vs desktop to prevent multiple instances
     if (isMobile) {
-      // Mobile: Open in external browser (prevents getting stuck in PWA)
-      // Using window.open forces opening in device's default browser
+      // Mobile: Open in external browser, then navigate PWA to goodbye page
+      // This prevents getting stuck in PWA while discouraging multiple instances
       window.open(mainSiteUrl, '_blank');
+
+      // Navigate PWA to a goodbye page after a short delay (to ensure browser opens)
+      setTimeout(() => {
+        // Create a simple goodbye page content
+        document.body.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f1f5f9; padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
+            <div style="text-align: center; max-width: 400px;">
+              <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
+              <h1 style="font-size: 24px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">
+                Opened in Browser
+              </h1>
+              <p style="color: #64748b; margin-bottom: 24px;">
+                The main site is now open in your browser. You can close this app window.
+              </p>
+              <a href="https://app.retireplan.co.uk"
+                 style="display: inline-block; padding: 12px 24px; background: #0284c7; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
+                Return to App
+              </a>
+            </div>
+          </div>
+        `;
+      }, 500);
     } else {
       // Desktop: Navigate current tab/window (closes app, prevents multiple instances)
       window.location.href = mainSiteUrl;
