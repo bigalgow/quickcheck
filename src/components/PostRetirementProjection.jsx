@@ -24,6 +24,7 @@ export default function PostRetirementProjection() {
   const [lifestyleProfile, setLifestyleProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const profileEventsLoadedRef = useRef(false); // Track if we've loaded profile events
+  const [triggerProfileLoad, setTriggerProfileLoad] = useState(0); // Increment to trigger profile load
 
   // Load saved projection inputs from localStorage
   const savedInputs = loadProjectionInputs();
@@ -60,6 +61,12 @@ export default function PostRetirementProjection() {
     if (!savedInputs) {
       console.log('📊 Projection: No saved data found');
       isInitialLoadRef.current = false;
+
+      // For unauthenticated users, trigger lifestyle profile load immediately
+      if (!isAuthenticated) {
+        console.log('📊 Projection: Not authenticated - triggering lifestyle profile load immediately');
+        setTriggerProfileLoad(prev => prev + 1);
+      }
       return;
     }
 
@@ -74,6 +81,12 @@ export default function PostRetirementProjection() {
       isInitialLoadRef.current = false;
       console.log('✅ Projection: Initial load complete');
 
+      // For unauthenticated users, trigger lifestyle profile load now
+      if (!isAuthenticated) {
+        console.log('📊 Projection: Not authenticated - triggering lifestyle profile load after initial load');
+        setTriggerProfileLoad(prev => prev + 1);
+      }
+
       // Check if data was recently saved to cloud (e.g., from At-Retirement page)
       const lastCloudSave = getLastCloudSave();
       if (lastCloudSave) {
@@ -86,11 +99,17 @@ export default function PostRetirementProjection() {
         }
       }
     }, 500);
-  }, []);
+  }, [isAuthenticated]);
 
   // Load lifestyle profile and smart-merge events
   useEffect(() => {
-    console.log('🎬 Lifestyle profile useEffect triggered!');
+    // Only load if triggered (prevents loading before cloud data import completes)
+    if (triggerProfileLoad === 0) {
+      console.log('🎬 Lifestyle profile useEffect - waiting for trigger...');
+      return;
+    }
+
+    console.log('🎬 Lifestyle profile useEffect triggered!', triggerProfileLoad);
     console.log('  isAuthenticated:', isAuthenticated);
     console.log('  openingValues:', openingValues);
 
@@ -191,7 +210,7 @@ export default function PostRetirementProjection() {
     };
 
     loadProfile();
-  }, [isAuthenticated, getAccessToken, openingValues]); // Re-run if auth or openingValues change
+  }, [triggerProfileLoad, isAuthenticated, getAccessToken, openingValues]); // Re-run when triggered
 
   // Auto-save projection inputs to localStorage whenever they change
   useEffect(() => {
@@ -317,6 +336,10 @@ export default function PostRetirementProjection() {
             // Mark initial load as complete now that cloud data has loaded
             isInitialLoadRef.current = false;
             setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
+
+            // Now that cloud data is loaded, trigger lifestyle profile load
+            console.log('☁️ Projection: Triggering lifestyle profile load after cloud import');
+            setTriggerProfileLoad(prev => prev + 1);
           }}
           onImportJson={(data) => {
             // Temporarily mark as loading to prevent unsaved changes flag
