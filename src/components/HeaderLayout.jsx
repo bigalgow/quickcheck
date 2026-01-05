@@ -44,13 +44,16 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
       }
     }
 
-    // Proceed with exit - different behavior for mobile PWA vs desktop
+    // Proceed with exit - different behavior for mobile PWA, desktop PWA, and regular browser
     if (isPWA && isMobile) {
-      // Mobile PWA (iOS/Android) - navigate away (closes app, opens Safari/Chrome)
+      // Mobile PWA (iOS/Android) - navigate away (exits PWA, opens in Safari/Chrome)
       window.location.href = mainSiteUrl;
+    } else if (isPWA && !isMobile) {
+      // Desktop PWA - open in external browser, keep PWA window open
+      window.open(mainSiteUrl, '_blank');
     } else {
-      // Desktop PWA or regular browser - open in external browser (reuses same tab if already open)
-      window.open(mainSiteUrl, 'retireplan-main');
+      // Regular browser - navigate current tab (no new tab created)
+      window.location.href = mainSiteUrl;
     }
   };
   return (
