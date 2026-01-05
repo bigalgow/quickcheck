@@ -23,11 +23,6 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
     e.preventDefault();
 
     const mainSiteUrl = getMainSiteUrl();
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  window.navigator.standalone === true;
-
-    // Detect if mobile device (iOS, Android)
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     // Check if there are unsaved changes
     if (hasUnsavedChanges) {
