@@ -44,17 +44,10 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
       }
     }
 
-    // Proceed with exit - different behavior for mobile PWA, desktop PWA, and regular browser
-    if (isPWA && isMobile) {
-      // Mobile PWA (iOS/Android) - navigate away (exits PWA, opens in Safari/Chrome)
-      window.location.href = mainSiteUrl;
-    } else if (isPWA && !isMobile) {
-      // Desktop PWA - open in external browser, keep PWA window open
-      window.open(mainSiteUrl, '_blank');
-    } else {
-      // Regular browser - navigate current tab (no new tab created)
-      window.location.href = mainSiteUrl;
-    }
+    // Proceed with exit - navigate current tab/window to prevent multiple instances
+    // All contexts (mobile PWA, desktop PWA, regular browser) now navigate current window
+    // This prevents multiple app instances with conflicting sessionStorage data
+    window.location.href = mainSiteUrl;
   };
   return (
     <div
