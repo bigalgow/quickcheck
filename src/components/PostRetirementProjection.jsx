@@ -101,23 +101,34 @@ export default function PostRetirementProjection() {
 
         // Try to load from cloud if authenticated
         if (isAuthenticated) {
+          console.log('🔍 User is authenticated, attempting cloud load...');
           const audience = import.meta.env.VITE_API_AUDIENCE;
           if (audience) {
             try {
               const token = await getAccessToken(audience);
+              console.log('🔑 Got access token, fetching /api/me/lifestyle...');
               const res = await fetch('/api/me/lifestyle', {
                 method: 'GET',
                 headers: { Authorization: `Bearer ${token}` }
               });
 
+              console.log('📡 API response status:', res.status);
+
               if (res.ok) {
                 profile = await res.json();
                 console.log('✅ Loaded lifestyle profile from cloud:', profile);
+                console.log('📋 Exceptional items:', profile?.exceptionalItems);
+              } else {
+                console.warn('❌ API returned error:', res.status, await res.text());
               }
             } catch (e) {
-              console.warn('Failed to load from cloud, will try sessionStorage:', e);
+              console.warn('❌ Failed to load from cloud, will try sessionStorage:', e);
             }
+          } else {
+            console.log('⚠️ No API audience configured');
           }
+        } else {
+          console.log('🔍 User not authenticated, will try sessionStorage');
         }
 
         // If not authenticated or cloud load failed, try sessionStorage
@@ -135,13 +146,17 @@ export default function PostRetirementProjection() {
 
         // If we have a profile with exceptional items, merge them into life events
         if (profile && profile.exceptionalItems && profile.exceptionalItems.length > 0) {
+          console.log('🎯 Profile has exceptional items, transforming to life events...');
           setLifestyleProfile(profile);
 
           const retirementAge = openingValues.retirementAge;
+          console.log('📅 Retirement age:', retirementAge);
+
           const newProfileEvents = transformToProjectionEvents(
             profile.exceptionalItems,
             retirementAge
           );
+          console.log('🔄 Transformed events:', newProfileEvents);
 
           // Smart merge: Remove old profile-sourced events, keep manual events, add new profile events
           setLifeEvents(currentEvents => {
@@ -157,6 +172,11 @@ export default function PostRetirementProjection() {
           });
 
           profileEventsLoadedRef.current = true;
+        } else {
+          console.log('⚠️ No profile or no exceptional items found');
+          console.log('Profile:', profile);
+          console.log('Has exceptionalItems?:', profile?.exceptionalItems);
+          console.log('exceptionalItems length:', profile?.exceptionalItems?.length);
         }
       } catch (e) {
         console.warn('Failed to load lifestyle profile:', e);
