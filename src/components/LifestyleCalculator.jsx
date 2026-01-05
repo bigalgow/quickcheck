@@ -149,7 +149,7 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
   // Save profile
   // Continue to calculator without saving (for non-authenticated users)
   const continueWithoutSaving = () => {
-    // Update sessionStorage with the baseline amount even if not saving to cloud
+    // Update sessionStorage with the baseline amount AND lifestyle profile even if not saving to cloud
     try {
       const unifiedData = loadUnifiedData();
       const existingAtRetirement = unifiedData?.atRetirement || {};
@@ -166,6 +166,23 @@ export default function LifestyleCalculator({ existingProfile = null, onComplete
 
       saveAtRetirement(updatedAtRetirement);
       console.log('✅ Updated desiredSpendAnnual in sessionStorage to:', baselineAmount);
+
+      // Also save lifestyle profile to sessionStorage for projection to use
+      const profile = {
+        ageRange,
+        householdType,
+        baselineTier,
+        baselineAmount,
+        baselineSource,
+        profileName,
+        exceptionalItems,
+        totalAnnual,
+        totalOneOff,
+        savedAt: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('retireplan.lifestyleProfile', JSON.stringify(profile));
+      console.log('✅ Saved lifestyle profile to sessionStorage (not cloud):', profile);
     } catch (storageError) {
       console.warn('Failed to update sessionStorage:', storageError);
     }

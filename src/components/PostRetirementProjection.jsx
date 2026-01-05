@@ -92,56 +92,71 @@ export default function PostRetirementProjection() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        if (!isAuthenticated) {
-          setLoadingProfile(false);
-          return;
-        }
-
         if (!openingValues) {
           setLoadingProfile(false);
           return;
         }
 
-        const audience = import.meta.env.VITE_API_AUDIENCE;
-        if (!audience) {
-          console.log('No API audience - skipping profile load');
-          setLoadingProfile(false);
-          return;
+        let profile = null;
+
+        // Try to load from cloud if authenticated
+        if (isAuthenticated) {
+          const audience = import.meta.env.VITE_API_AUDIENCE;
+          if (audience) {
+            try {
+              const token = await getAccessToken(audience);
+              const res = await fetch('/api/me/lifestyle', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+              });
+
+              if (res.ok) {
+                profile = await res.json();
+                console.log('✅ Loaded lifestyle profile from cloud:', profile);
+              }
+            } catch (e) {
+              console.warn('Failed to load from cloud, will try sessionStorage:', e);
+            }
+          }
         }
 
-        const token = await getAccessToken(audience);
-        const res = await fetch('/api/me/lifestyle', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-          const profile = await res.json();
-          if (profile && profile.exceptionalItems && profile.exceptionalItems.length > 0) {
-            console.log('✅ Loaded lifestyle profile:', profile);
-            setLifestyleProfile(profile);
-
-            const retirementAge = openingValues.retirementAge;
-            const newProfileEvents = transformToProjectionEvents(
-              profile.exceptionalItems,
-              retirementAge
-            );
-
-            // Smart merge: Remove old profile-sourced events, keep manual events, add new profile events
-            setLifeEvents(currentEvents => {
-              // Keep only manual events (no source field or source !== 'lifestyleProfile')
-              const manualEvents = currentEvents.filter(e => e.source !== 'lifestyleProfile');
-
-              // Combine with new profile events
-              const mergedEvents = [...manualEvents, ...newProfileEvents];
-
-              console.log(`✅ Smart merge: ${manualEvents.length} manual + ${newProfileEvents.length} profile = ${mergedEvents.length} total events`);
-
-              return mergedEvents;
-            });
-
-            profileEventsLoadedRef.current = true;
+        // If not authenticated or cloud load failed, try sessionStorage
+        if (!profile) {
+          try {
+            const stored = sessionStorage.getItem('retireplan.lifestyleProfile');
+            if (stored) {
+              profile = JSON.parse(stored);
+              console.log('✅ Loaded lifestyle profile from sessionStorage:', profile);
+            }
+          } catch (e) {
+            console.warn('Failed to load from sessionStorage:', e);
           }
+        }
+
+        // If we have a profile with exceptional items, merge them into life events
+        if (profile && profile.exceptionalItems && profile.exceptionalItems.length > 0) {
+          setLifestyleProfile(profile);
+
+          const retirementAge = openingValues.retirementAge;
+          const newProfileEvents = transformToProjectionEvents(
+            profile.exceptionalItems,
+            retirementAge
+          );
+
+          // Smart merge: Remove old profile-sourced events, keep manual events, add new profile events
+          setLifeEvents(currentEvents => {
+            // Keep only manual events (no source field or source !== 'lifestyleProfile')
+            const manualEvents = currentEvents.filter(e => e.source !== 'lifestyleProfile');
+
+            // Combine with new profile events
+            const mergedEvents = [...manualEvents, ...newProfileEvents];
+
+            console.log(`✅ Smart merge: ${manualEvents.length} manual + ${newProfileEvents.length} profile = ${mergedEvents.length} total events`);
+
+            return mergedEvents;
+          });
+
+          profileEventsLoadedRef.current = true;
         }
       } catch (e) {
         console.warn('Failed to load lifestyle profile:', e);
