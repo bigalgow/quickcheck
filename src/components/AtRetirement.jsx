@@ -1045,9 +1045,11 @@ const HelpToggle = ({ text }) => {
             // Temporarily mark as loading to prevent unsaved changes flag
             isInitialLoadRef.current = true;
 
+            // Declare formData outside if block to avoid scope issues
+            let formData = {};
+
             // Handle numeric inputs from exported JSON - convert to strings for form
             if (data?.inputs) {
-              const formData = {};
               Object.entries(data.inputs).forEach(([key, value]) => {
                 // Skip dbSchemes - handled separately
                 if (key === 'dbSchemes') return;
