@@ -51,6 +51,7 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
       // Navigate PWA to a goodbye page after a short delay (to ensure browser opens)
       setTimeout(() => {
         // Create a simple goodbye page content
+        const appUrl = window.location.origin; // Current QuickCheck app URL
         document.body.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f1f5f9; padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
             <div style="text-align: center; max-width: 400px;">
@@ -59,11 +60,11 @@ export default function HeaderLayout({ children, hasUnsavedChanges }) {
                 Opened in Browser
               </h1>
               <p style="color: #64748b; margin-bottom: 24px;">
-                The main site is now open in your browser. You can close this app window.
+                RetirePlan.co.uk is now open in your browser. You can close this app window or continue using the app.
               </p>
-              <a href="https://app.retireplan.co.uk"
+              <a href="${appUrl}"
                  style="display: inline-block; padding: 12px 24px; background: #0284c7; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
-                Return to App
+                ← Back to QuickCheck
               </a>
             </div>
           </div>
