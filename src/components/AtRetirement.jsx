@@ -554,13 +554,17 @@ export default function AtRetirement() {
         if (profile) {
           setLifestyleProfile(profile);
 
-          // Auto-populate spend field if empty
-          if (!form.desiredSpendAnnual && profile.baselineAmount) {
+          // CRITICAL FIX: Always use lifestyle profile baseline if it exists
+          // This should override any old calculator values from cloud data
+          if (profile.baselineAmount) {
+            console.log('🔄 Overwriting desiredSpendAnnual with lifestyle profile baseline');
+            console.log('  Old value:', form.desiredSpendAnnual);
+            console.log('  New value (from profile):', profile.baselineAmount);
             setForm(f => ({
               ...f,
               desiredSpendAnnual: String(profile.baselineAmount)
             }));
-            console.log('✅ Auto-populated baseline expenditure from profile');
+            console.log('✅ Set baseline expenditure from lifestyle profile');
           }
 
           // CRITICAL FIX: Transform exceptional items into life events for ProjectionWizard
