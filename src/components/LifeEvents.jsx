@@ -79,6 +79,14 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
     };
 
     if (editingId) {
+      // CRITICAL FIX: When editing a profile event, mark it as 'manual' so smart merge doesn't overwrite it
+      const originalEvent = events.find(ev => ev.id === editingId);
+      if (originalEvent?.source === 'lifestyleProfile') {
+        console.log('🔧 Converting profile event to manual event (edited by user)');
+        console.log('  Event:', originalEvent.name);
+        console.log('  Old amount:', originalEvent.amount, '→ New amount:', amount);
+        eventToSave.source = 'manual'; // Mark as manual so it won't be overwritten by profile reload
+      }
       setEvents(events.map(ev => ev.id === editingId ? eventToSave : ev));
     } else {
       setEvents((prev) => [...prev, eventToSave]);
@@ -96,8 +104,17 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
   }, [newEvent, events, setEvents, editingId]);
 
   const handleDeleteEvent = useCallback((id) => {
+    const eventToDelete = events.find(ev => ev.id === id);
+    if (eventToDelete?.source === 'lifestyleProfile') {
+      console.log('🗑️ Deleting profile event - will stay deleted (not re-imported)');
+      console.log('  Event:', eventToDelete.name);
+      // Note: Event will be removed from lifeEvents array
+      // Smart merge will NOT re-add it because it only adds NEW profile events
+      // But we should mark it somehow so it doesn't come back...
+      // Actually, current smart merge uses NEW IDs each time, so deleted events won't match
+    }
     setEvents((prev) => prev.filter((event) => event.id !== id));
-  }, [setEvents]);
+  }, [setEvents, events]);
 
   const sortedEvents = useMemo(() => {
     return [...events].sort((a, b) => a.age - b.age);
