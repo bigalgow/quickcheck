@@ -502,33 +502,52 @@ export default function AtRetirement() {
 
   // ---- Load lifestyle profile ----
   useEffect(() => {
+    console.log('🎬 At Retirement: Lifestyle profile useEffect triggered!');
+    console.log('  isAuthenticated:', isAuthenticated);
+
     const loadProfile = async () => {
       try {
         let profile = null;
 
         // Try cloud if authenticated
         if (isAuthenticated) {
+          console.log('🔍 At Retirement: User authenticated, attempting cloud load...');
           const audience = import.meta.env.VITE_API_AUDIENCE;
+          console.log('  audience:', audience);
           if (audience) {
+            console.log('🔑 At Retirement: Getting access token...');
             const token = await getAccessToken(audience);
+            console.log('📡 At Retirement: Fetching /api/me/lifestyle...');
             const res = await fetch('/api/me/lifestyle', {
               method: 'GET',
               headers: { Authorization: `Bearer ${token}` }
             });
 
+            console.log('📡 At Retirement: API response status:', res.status);
             if (res.ok) {
               profile = await res.json();
               console.log('✅ Loaded lifestyle profile from cloud:', profile);
+              console.log('📋 Exceptional items:', profile?.exceptionalItems);
+            } else {
+              console.warn('❌ Cloud load failed:', res.status);
             }
+          } else {
+            console.log('⚠️ No API audience configured');
           }
+        } else {
+          console.log('🔍 At Retirement: User not authenticated, trying sessionStorage...');
         }
 
         // Fallback to sessionStorage if not authenticated or cloud failed
         if (!profile) {
+          console.log('💾 At Retirement: Checking sessionStorage...');
           const stored = sessionStorage.getItem('retireplan.lifestyleProfile');
+          console.log('  stored:', stored ? 'found' : 'not found');
           if (stored) {
             profile = JSON.parse(stored);
             console.log('✅ Loaded lifestyle profile from sessionStorage:', profile);
+          } else {
+            console.log('⚠️ No lifestyle profile in sessionStorage');
           }
         }
 
@@ -566,8 +585,10 @@ export default function AtRetirement() {
           }
         }
       } catch (e) {
-        console.warn('Failed to load lifestyle profile:', e);
+        console.error('❌ Failed to load lifestyle profile:', e);
+        console.error('  Error details:', e.message, e.stack);
       } finally {
+        console.log('🏁 At Retirement: Lifestyle profile loading complete');
         setLoadingProfile(false);
       }
     };
