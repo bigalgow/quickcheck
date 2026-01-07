@@ -24,6 +24,7 @@ import SavingsWizard from "./SavingsWizard.jsx";
 import ResultsWizard from "./ResultsWizard.jsx";
 import ProjectionWizard from "./ProjectionWizard.jsx";
 import { loadAutosave, saveAutosave, clearAutosave, getLastCloudSave, setLastCloudSave } from "../utils/persist.js";
+import { transformToProjectionEvents } from "../utils/lifestyleProfile.js";
 import { useAuth } from "../auth/AuthProvider";
 
 const fmt = (n) =>
@@ -503,38 +504,65 @@ export default function AtRetirement() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        if (!isAuthenticated) {
-          setLoadingProfile(false);
-          return;
-        }
+        let profile = null;
 
-        const audience = import.meta.env.VITE_API_AUDIENCE;
-        if (!audience) {
-          console.log('No API audience - skipping profile load');
-          setLoadingProfile(false);
-          return;
-        }
+        // Try cloud if authenticated
+        if (isAuthenticated) {
+          const audience = import.meta.env.VITE_API_AUDIENCE;
+          if (audience) {
+            const token = await getAccessToken(audience);
+            const res = await fetch('/api/me/lifestyle', {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${token}` }
+            });
 
-        const token = await getAccessToken(audience);
-        const res = await fetch('/api/me/lifestyle', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-          const profile = await res.json();
-          if (profile) {
-            console.log('✅ Loaded lifestyle profile:', profile);
-            setLifestyleProfile(profile);
-
-            // Auto-populate spend field if empty
-            if (!form.desiredSpendAnnual && profile.baselineAmount) {
-              setForm(f => ({
-                ...f,
-                desiredSpendAnnual: String(profile.baselineAmount)
-              }));
-              console.log('✅ Auto-populated baseline expenditure from profile');
+            if (res.ok) {
+              profile = await res.json();
+              console.log('✅ Loaded lifestyle profile from cloud:', profile);
             }
+          }
+        }
+
+        // Fallback to sessionStorage if not authenticated or cloud failed
+        if (!profile) {
+          const stored = sessionStorage.getItem('retireplan.lifestyleProfile');
+          if (stored) {
+            profile = JSON.parse(stored);
+            console.log('✅ Loaded lifestyle profile from sessionStorage:', profile);
+          }
+        }
+
+        if (profile) {
+          setLifestyleProfile(profile);
+
+          // Auto-populate spend field if empty
+          if (!form.desiredSpendAnnual && profile.baselineAmount) {
+            setForm(f => ({
+              ...f,
+              desiredSpendAnnual: String(profile.baselineAmount)
+            }));
+            console.log('✅ Auto-populated baseline expenditure from profile');
+          }
+
+          // CRITICAL FIX: Transform exceptional items into life events for ProjectionWizard
+          if (profile.exceptionalItems && profile.exceptionalItems.length > 0) {
+            console.log('🎯 Profile has exceptional items, transforming to life events...');
+            const retirementAge = Number(form.retirementAge) || 65;
+            console.log('📅 Retirement age:', retirementAge);
+
+            const newProfileEvents = transformToProjectionEvents(
+              profile.exceptionalItems,
+              retirementAge
+            );
+            console.log('🔄 Transformed events:', newProfileEvents);
+
+            // Smart merge: Remove old profile-sourced events, keep manual events, add new profile events
+            setLifeEvents(currentEvents => {
+              const manualEvents = currentEvents.filter(e => e.source !== 'lifestyleProfile');
+              const mergedEvents = [...manualEvents, ...newProfileEvents];
+              console.log(`✅ Smart merge: ${manualEvents.length} manual + ${newProfileEvents.length} profile = ${mergedEvents.length} total events`);
+              return mergedEvents;
+            });
           }
         }
       } catch (e) {
