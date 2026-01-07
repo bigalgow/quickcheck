@@ -579,12 +579,26 @@ export default function AtRetirement() {
             );
             console.log('🔄 Transformed events:', newProfileEvents);
 
-            // Smart merge: Remove old profile-sourced events, keep manual events, add new profile events
+            // CLEANER APPROACH: Only import if NO profile events exist yet (one-time import)
+            // This prevents re-importing and overwriting user's projection edits/deletions
             setLifeEvents(currentEvents => {
-              const manualEvents = currentEvents.filter(e => e.source !== 'lifestyleProfile');
-              const mergedEvents = [...manualEvents, ...newProfileEvents];
-              console.log(`✅ Smart merge: ${manualEvents.length} manual + ${newProfileEvents.length} profile = ${mergedEvents.length} total events`);
-              return mergedEvents;
+              // Check if we've already imported from this profile before
+              const hasAnyProfileEvents = currentEvents.some(e => e.source === 'lifestyleProfile' || e.source === 'manual');
+              const hasAnyEvents = currentEvents.length > 0;
+
+              // If user already has events in projection, DON'T re-import from lifestyle profile
+              // This preserves edits, deletions, and manual additions
+              if (hasAnyEvents) {
+                console.log('⏭️ Skipping lifestyle profile import - projection already has events');
+                console.log(`  Current events: ${currentEvents.length} (user has made changes)`);
+                console.log(`  Lifestyle profile events would overwrite user changes - skipping`);
+                console.log(`  To re-import: delete all events in projection first`);
+                return currentEvents; // Keep existing events unchanged
+              }
+
+              // First time: Import all profile events
+              console.log(`✅ Initial import: Adding ${newProfileEvents.length} events from lifestyle profile`);
+              return newProfileEvents;
             });
           }
         }
