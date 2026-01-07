@@ -57,16 +57,15 @@ export default function PostRetirementProjection() {
 
   // Mark initial load complete after component mounts and initial data is set
   useEffect(() => {
-    // If no saved data, mark load complete immediately
+    // BAND-AID FIX: Removed "not authenticated" check - profile should load for ALL users
+    // If no saved data, mark load complete immediately and trigger profile load
     if (!savedInputs) {
       console.log('📊 Projection: No saved data found');
       isInitialLoadRef.current = false;
 
-      // For unauthenticated users, trigger lifestyle profile load immediately
-      if (!isAuthenticated) {
-        console.log('📊 Projection: Not authenticated - triggering lifestyle profile load immediately');
-        setTriggerProfileLoad(prev => prev + 1);
-      }
+      // Trigger lifestyle profile load for all users (not just unauthenticated)
+      console.log('📊 Projection: Triggering lifestyle profile load immediately');
+      setTriggerProfileLoad(prev => prev + 1);
       return;
     }
 
@@ -81,11 +80,9 @@ export default function PostRetirementProjection() {
       isInitialLoadRef.current = false;
       console.log('✅ Projection: Initial load complete');
 
-      // For unauthenticated users, trigger lifestyle profile load now
-      if (!isAuthenticated) {
-        console.log('📊 Projection: Not authenticated - triggering lifestyle profile load after initial load');
-        setTriggerProfileLoad(prev => prev + 1);
-      }
+      // Trigger lifestyle profile load for all users (not just unauthenticated)
+      console.log('📊 Projection: Triggering lifestyle profile load after initial load');
+      setTriggerProfileLoad(prev => prev + 1);
 
       // Check if data was recently saved to cloud (e.g., from At-Retirement page)
       const lastCloudSave = getLastCloudSave();
@@ -331,14 +328,15 @@ export default function PostRetirementProjection() {
             cloudLoadPendingRef.current = true;
           }}
           onCloudLoadComplete={() => {
-            console.log('☁️ Projection: Cloud load complete');
+            // BAND-AID FIX: This is now only called for error cases or when no data found
+            // (onImportJson handles the normal success case)
+            console.log('☁️ Projection: Cloud load complete (no data or error)');
             cloudLoadPendingRef.current = false;
-            // Mark initial load as complete now that cloud data has loaded
             isInitialLoadRef.current = false;
-            setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
+            setHasUnsavedChanges(false);
 
-            // Now that cloud data is loaded, trigger lifestyle profile load
-            console.log('☁️ Projection: Triggering lifestyle profile load after cloud import');
+            // Still trigger lifestyle profile load even if cloud had no data
+            console.log('☁️ Projection: Triggering lifestyle profile load');
             setTriggerProfileLoad(prev => prev + 1);
           }}
           onImportJson={(data) => {
@@ -350,15 +348,35 @@ export default function PostRetirementProjection() {
               setIsaRecurringAmount(data.projection.isaRecurringAmount ?? "");
               setIsaRecurringYears(data.projection.isaRecurringYears ?? "");
               setDcDrawdownPercent(data.projection.dcDrawdownPercent ?? 4.0);
-              setLifeEvents(data.projection.lifeEvents ?? []);
+
+              // BAND-AID FIX: Preserve lifecycle profile events when importing cloud data
+              // Only import manual events from cloud, not profile events (which will load separately)
+              setLifeEvents(currentEvents => {
+                const cloudEvents = data.projection.lifeEvents ?? [];
+                const profileEvents = currentEvents.filter(e => e.source === 'lifestyleProfile');
+
+                // Keep profile events from current state, add cloud events that aren't profile-sourced
+                const manualCloudEvents = cloudEvents.filter(e => e.source !== 'lifestyleProfile');
+                const merged = [...profileEvents, ...manualCloudEvents];
+
+                console.log(`🔄 Import: ${profileEvents.length} profile events preserved + ${manualCloudEvents.length} cloud manual events = ${merged.length} total`);
+                return merged;
+              });
             }
             // Note: At Retirement data is handled by sessionStorage auto-load
 
-            // Reset loading flag and clear unsaved changes after data loads (generous timeout)
+            // BAND-AID FIX: Complete the cloud load sequence AFTER state updates finish
+            // This triggers lifestyle profile loading at the right time
             setTimeout(() => {
+              console.log('☁️ Projection: Cloud load complete (called from onImportJson)');
+              cloudLoadPendingRef.current = false;
               isInitialLoadRef.current = false;
               setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
               console.log('✅ Projection: Import complete - no unsaved changes');
+
+              // Now that cloud data is imported and state is stable, trigger lifestyle profile load
+              console.log('☁️ Projection: Triggering lifestyle profile load after cloud import');
+              setTriggerProfileLoad(prev => prev + 1);
             }, 500);
           }}
           onClearLocal={() => {

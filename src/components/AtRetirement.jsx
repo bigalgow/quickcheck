@@ -983,11 +983,12 @@ const HelpToggle = ({ text }) => {
             cloudLoadPendingRef.current = true;
           }}
           onCloudLoadComplete={() => {
+            // BAND-AID FIX: This is now called from within onImportJson after state updates complete
+            // (Only called by SaveBar for error cases or when no data found)
             console.log('☁️ At Retirement: Cloud load complete');
             cloudLoadPendingRef.current = false;
-            // Mark initial load as complete now that cloud data has loaded
             isInitialLoadRef.current = false;
-            setHasUnsavedChanges(false); // Cloud data just loaded, so no unsaved changes
+            setHasUnsavedChanges(false);
           }}
           onImportJson={(data) => {
             console.log('📥 Importing JSON data:', data);
@@ -1010,7 +1011,22 @@ const HelpToggle = ({ text }) => {
                   formData[key] = value;
                 }
               });
-              setForm((f) => ({ ...f, ...formData }));
+
+              // BAND-AID FIX: Preserve lifestyle profile baseline if cloud data is empty
+              // This prevents cloud import from overwriting lifestyle profile data
+              setForm((f) => {
+                const merged = { ...f, ...formData };
+
+                // If cloud data has no desiredSpendAnnual but we have one from lifestyle profile, keep it
+                if ((!formData.desiredSpendAnnual || formData.desiredSpendAnnual === '') &&
+                    f.desiredSpendAnnual &&
+                    lifestyleProfile?.baselineAmount) {
+                  console.log('🔒 Preserving lifestyle profile baseline:', f.desiredSpendAnnual);
+                  merged.desiredSpendAnnual = f.desiredSpendAnnual;
+                }
+
+                return merged;
+              });
 
               // Handle dbSchemes separately - convert numeric values to strings
               if (Array.isArray(data.inputs.dbSchemes)) {
@@ -1038,8 +1054,11 @@ const HelpToggle = ({ text }) => {
               dbSchemes: data.inputs?.dbSchemes ?? data.dbSchemes ?? dbSchemes,
             });
 
-            // Reset loading flag and clear unsaved changes after data loads (longer than auto-save debounce)
+            // BAND-AID FIX: Complete the cloud load sequence AFTER state updates finish
+            // This ensures proper timing for any downstream operations
             setTimeout(() => {
+              console.log('☁️ At Retirement: Cloud load complete (called from onImportJson)');
+              cloudLoadPendingRef.current = false;
               isInitialLoadRef.current = false;
               setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
               console.log('✅ Import complete - no unsaved changes');

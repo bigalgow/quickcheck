@@ -61,10 +61,12 @@ export default function SaveBar({ inputs, outputs, projection, onImportJson, onC
         onImportJson?.(data);
         console.log("✅ Loaded saved data from account");
         setMsg("Loaded saved data");
+        // BAND-AID FIX: Don't call onCloudLoadComplete here - let onImportJson call it
+        // when it's finished processing (after state updates and timeouts)
       } else {
         console.log("ℹ️ No saved data found in cloud");
+        onCloudLoadComplete?.(); // No data to import, so load is complete
       }
-      onCloudLoadComplete?.(); // Load complete
     } catch (e) {
       if (e.name === 'SyntaxError' || e.message?.includes('JSON')) {
         console.info("ℹ️ API endpoint not available (OK in local dev)");
