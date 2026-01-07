@@ -37,7 +37,11 @@ async function getManagementToken() {
 
 async function getUser(userId, mgmtToken) {
   const r = await fetch(`${ISSUER}/api/users/${encodeURIComponent(userId)}`, {
-    headers: { Authorization: `Bearer ${mgmtToken}` },
+    headers: {
+      Authorization: `Bearer ${mgmtToken}`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    },
     cache: 'no-store',
   });
   if (!r.ok) throw new Error(`Get user failed: ${r.status}`);
