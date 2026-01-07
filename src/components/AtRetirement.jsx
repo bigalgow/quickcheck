@@ -1067,17 +1067,17 @@ const HelpToggle = ({ text }) => {
                 }
               });
 
-              // BAND-AID FIX: Preserve lifestyle profile baseline if cloud data is empty
-              // This prevents cloud import from overwriting lifestyle profile data
+              // CRITICAL FIX: ALWAYS preserve lifestyle profile baseline when it exists
+              // Lifestyle profile is source of truth - overrides old cloud calculator data
               setForm((f) => {
                 const merged = { ...f, ...formData };
 
-                // If cloud data has no desiredSpendAnnual but we have one from lifestyle profile, keep it
-                if ((!formData.desiredSpendAnnual || formData.desiredSpendAnnual === '') &&
-                    f.desiredSpendAnnual &&
-                    lifestyleProfile?.baselineAmount) {
-                  console.log('🔒 Preserving lifestyle profile baseline:', f.desiredSpendAnnual);
-                  merged.desiredSpendAnnual = f.desiredSpendAnnual;
+                // If lifestyle profile has a baseline, it ALWAYS wins (regardless of cloud data)
+                if (lifestyleProfile?.baselineAmount) {
+                  console.log('🔒 Preserving lifestyle profile baseline over cloud data');
+                  console.log('  Cloud value:', formData.desiredSpendAnnual);
+                  console.log('  Profile value (keeping this):', String(lifestyleProfile.baselineAmount));
+                  merged.desiredSpendAnnual = String(lifestyleProfile.baselineAmount);
                 }
 
                 return merged;
@@ -1117,6 +1117,17 @@ const HelpToggle = ({ text }) => {
               isInitialLoadRef.current = false;
               setHasUnsavedChanges(false); // Data just loaded from cloud, so no unsaved changes
               console.log('✅ Import complete - no unsaved changes');
+
+              // FINAL CHECK: Re-apply lifestyle profile baseline if it exists
+              // This ensures lifestyle profile wins even if it loaded after cloud import
+              if (lifestyleProfile?.baselineAmount) {
+                console.log('🔄 Final override: Ensuring lifestyle profile baseline is applied');
+                console.log('  Profile baseline:', lifestyleProfile.baselineAmount);
+                setForm(f => ({
+                  ...f,
+                  desiredSpendAnnual: String(lifestyleProfile.baselineAmount)
+                }));
+              }
             }, 1000);
           }}
           onClearLocal={() => {
