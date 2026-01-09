@@ -80,8 +80,8 @@ export function calculateProjection(openingValues, projectionInputs) {
     const age = retirementAge + year;
     const yearData = { age, year: year + 1 };
 
-    // Inflation factor for this year
-    const inflationFactor = Math.pow(1 + inflation / 100, year);
+    // Inflation factor for this year (inflation is already a decimal, e.g., 0.025 for 2.5%)
+    const inflationFactor = Math.pow(1 + inflation, year);
 
     // === OPENING ASSETS ===
     yearData.openingDC = year === 0
@@ -100,9 +100,9 @@ export function calculateProjection(openingValues, projectionInputs) {
       dcDrawdownCash = yearData.openingDC * (dcDrawdownPercent / 100);
       taxableDrawdownCash = 0; // Taxable is a buffer, not actively drawn
     } else {
-      // Years 2+: Inflate the cash amount
-      dcDrawdownCash = dcDrawdownCash * (1 + inflation / 100);
-      taxableDrawdownCash = taxableDrawdownCash * (1 + inflation / 100);
+      // Years 2+: Inflate the cash amount (inflation is already a decimal)
+      dcDrawdownCash = dcDrawdownCash * (1 + inflation);
+      taxableDrawdownCash = taxableDrawdownCash * (1 + inflation);
     }
 
     yearData.dcDrawdown = dcDrawdownCash;
@@ -131,17 +131,17 @@ export function calculateProjection(openingValues, projectionInputs) {
     // Apply growth to balance AFTER drawdown (simplified: assume drawdown at start of year)
     const dcBalanceAfterDrawdown = yearData.openingDC - yearData.dcDrawdown;
     yearData.dcGrowth = dcBalanceAfterDrawdown > 0
-      ? dcBalanceAfterDrawdown * (dcGrowth / 100)
+      ? dcBalanceAfterDrawdown * dcGrowth
       : 0;
 
     const isaBalanceAfterDrawdown = yearData.openingISA - yearData.isaDrawdown;
     yearData.isaGrowth = isaBalanceAfterDrawdown > 0
-      ? isaBalanceAfterDrawdown * (isaGrowth / 100)
+      ? isaBalanceAfterDrawdown * isaGrowth
       : 0;
 
     // Taxable: apply growth before net flow adjustment (simplified timing)
     yearData.taxableGrowth = yearData.openingTaxable > 0
-      ? yearData.openingTaxable * (savingsGrowth / 100)
+      ? yearData.openingTaxable * savingsGrowth
       : 0;
 
     // === LIFE EVENTS ===
@@ -212,7 +212,7 @@ export function calculateProjection(openingValues, projectionInputs) {
     yearData.totalNominal = yearData.closingDC + yearData.closingISA + yearData.closingTaxable;
     // Deflate to TODAY'S money (not retirement date)
     const yearsFromToday = yearsToRetirement + year;
-    const totalInflationFromToday = Math.pow(1 + inflation / 100, yearsFromToday);
+    const totalInflationFromToday = Math.pow(1 + inflation, yearsFromToday);
     yearData.totalReal = yearData.totalNominal / totalInflationFromToday;
 
     // === WARNINGS ===

@@ -29,7 +29,7 @@ export default function DCPotWizard({ totalValue, onTotalChange }) {
       // Clear localStorage if all pots deleted
       localStorage.removeItem('retireplan-dc-pots');
     }
-  }, [pots, onTotalChange]);
+  }, [pots]); // Removed onTotalChange from dependencies to prevent infinite loop
 
   const addPot = () => {
     const newPot = {

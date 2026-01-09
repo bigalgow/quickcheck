@@ -1,14 +1,14 @@
 // src/logic/atRetirement.js
 
 // ---------- Date helpers ----------
-function toDate(val) {
+export function toDate(val) {
   // Accepts "YYYY-MM-DD" or Date
   if (val instanceof Date) return val;
   if (typeof val === "string") return new Date(val + "T00:00:00");
   return new Date(NaN);
 }
 
-function yearsBetween(a, b) {
+export function yearsBetween(a, b) {
   // precise years with decimals
   if (!a || !b || isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
   const ms = b.getTime() - a.getTime();
@@ -116,6 +116,18 @@ function computeDbTotalAtRet(schemes, yearsToRet, inflationDefault) {
   return total;
 }
 
+// Compute active and deferred DB separately for breakdown
+function computeDbBreakdown(schemes, yearsToRet, inflationDefault) {
+  if (!Array.isArray(schemes) || schemes.length === 0) return { active: 0, deferred: 0 };
+  let active = 0;
+  let deferred = 0;
+  for (const s of schemes) {
+    if (s.kind === "active") active += computeActiveDbAtRet(s, yearsToRet, inflationDefault);
+    else deferred += computeDeferredDbAtRet(s, yearsToRet, inflationDefault);
+  }
+  return { active, deferred };
+}
+
 // ---------- Main ----------
 export function atRetirement(inputs, taxFns) {
   // Compute years-to-retirement using DOB (decimal years)
@@ -148,6 +160,7 @@ export function atRetirement(inputs, taxFns) {
   // ---- DB annual (before any commutation), then desired DB PCLS (25% of capital)
   // If already retired, only process deferred schemes (no active schemes, no PCLS)
   const dbBeforePcls = computeDbTotalAtRet(inputs.dbSchemes || [], years, inputs.inflationAssumption);
+  const dbBreakdown = computeDbBreakdown(inputs.dbSchemes || [], years, inputs.inflationAssumption);
   const desiredDbPcls = (alreadyRetired || !inputs.takeDBTaxFree25) ? 0 : 0.25 * dbCapitalFromIncome(dbBeforePcls);
 
   // ---- Enforce global PCLS cap across DC + DB
@@ -246,6 +259,8 @@ export function atRetirement(inputs, taxFns) {
     dcPotForAnnuity, // NEW: Pot used for annuity
     dcPotForDrawdown, // NEW: Pot used for drawdown
     dbIncomeAfter: dbAfter,
+    dbActiveIncome: dbBreakdown.active, // NEW: Active DB income (before PCLS)
+    dbDeferredIncome: dbBreakdown.deferred, // NEW: Deferred DB income (before PCLS)
     propertyIncomeAtRet, // NEW: Property income category
     dividendIncomeAtRet, // NEW: Dividend income category
     anyOtherIncomeAtRet, // NEW: Any other income category
@@ -285,6 +300,8 @@ export function atRetirement(inputs, taxFns) {
       dcPotForAnnuity: deflate(income.dcPotForAnnuity),
       dcPotForDrawdown: deflate(income.dcPotForDrawdown),
       dbIncomeAfter: deflate(income.dbIncomeAfter),
+      dbActiveIncome: deflate(income.dbActiveIncome),
+      dbDeferredIncome: deflate(income.dbDeferredIncome),
       propertyIncomeAtRet: deflate(income.propertyIncomeAtRet),
       dividendIncomeAtRet: deflate(income.dividendIncomeAtRet),
       anyOtherIncomeAtRet: deflate(income.anyOtherIncomeAtRet),
