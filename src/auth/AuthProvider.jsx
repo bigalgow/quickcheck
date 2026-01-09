@@ -60,10 +60,17 @@ export default function AuthProvider({ children }) {
 
       try {
         const authed = await client.isAuthenticated();
+        const ssoAttempted = sessionStorage.getItem(SSO_ATTEMPTED_KEY);
+
+        console.log('[logto] Auth status check:', {
+          isAuthenticated: authed,
+          ssoAlreadyAttempted: !!ssoAttempted,
+          willAttemptSSO: !authed && !ssoAttempted
+        });
 
         // SSO: If not authenticated locally, attempt silent sign-in to check for active Logto session
         // Only try once per session to avoid infinite loops
-        if (!authed && !sessionStorage.getItem(SSO_ATTEMPTED_KEY)) {
+        if (!authed && !ssoAttempted) {
           try {
             const redirectUri = window.location.origin;
             console.log('[logto] Attempting silent SSO sign-in with redirectUri:', redirectUri);

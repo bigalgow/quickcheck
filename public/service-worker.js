@@ -1,7 +1,7 @@
 // service-worker.js
 // Service Worker for RetirePlan PWA
 
-const CACHE_NAME = 'retireplan-v2-wizard';
+const CACHE_NAME = 'retireplan-v3-sso-debug';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
@@ -48,6 +48,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
+
+  // Skip chrome-extension:// and other non-HTTP(S) schemes
+  const url = new URL(event.request.url);
+  if (!url.protocol.startsWith('http')) return;
 
   event.respondWith(
     fetch(event.request)
