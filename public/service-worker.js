@@ -1,7 +1,7 @@
 // service-worker.js
 // Service Worker for RetirePlan PWA
 
-const CACHE_NAME = 'retireplan-v1';
+const CACHE_NAME = 'retireplan-v2-wizard';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
