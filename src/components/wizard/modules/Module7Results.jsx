@@ -550,6 +550,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
 
 /**
  * ModelRow - Single row in the quick modelling slider section
+ * Mobile-friendly with +/- buttons and responsive layout
  */
 function ModelRow({
   label,
@@ -576,35 +577,108 @@ function ModelRow({
     return prefix + num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + suffix;
   };
 
+  const handleIncrement = () => {
+    const newValue = Math.min(parseFloat(modelValue) + parseFloat(step), parseFloat(max));
+    setModel((prev) => ({ ...prev, [fieldKey]: newValue.toString() }));
+  };
+
+  const handleDecrement = () => {
+    const newValue = Math.max(parseFloat(modelValue) - parseFloat(step), parseFloat(min));
+    setModel((prev) => ({ ...prev, [fieldKey]: newValue.toString() }));
+  };
+
+  const handleReset = () => {
+    setModel((prev) => {
+      const next = { ...prev };
+      delete next[fieldKey];
+      return next;
+    });
+  };
+
   return (
-    <div className="grid grid-cols-[200px_120px_1fr_120px_100px] gap-4 items-center">
-      <div className="font-medium text-slate-700">{label}</div>
-      <div className="text-slate-600">{formatValue(currentValue)}</div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={modelValue}
-        onChange={(e) =>
-          setModel((prev) => ({ ...prev, [fieldKey]: e.target.value }))
-        }
-        className="w-full"
-      />
-      <div className="font-medium text-sky-700">{formatValue(modelValue)}</div>
-      <button
-        type="button"
-        onClick={() => {
-          setModel((prev) => {
-            const next = { ...prev };
-            delete next[fieldKey];
-            return next;
-          });
-        }}
-        className="px-3 py-1 text-sm rounded-md border border-slate-400 text-slate-700 hover:bg-slate-100 transition-colors"
-      >
-        Reset
-      </button>
+    <div className="border-b border-slate-200 pb-4 mb-4 last:border-b-0">
+      {/* Header: Label and values */}
+      <div className="flex justify-between items-baseline mb-2">
+        <div className="font-medium text-slate-700">{label}</div>
+        <div className="text-sm text-slate-600">
+          Current: <span className="font-medium">{formatValue(currentValue)}</span>
+        </div>
+      </div>
+
+      {/* Desktop: Slider with +/- buttons */}
+      <div className="hidden md:flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleDecrement}
+          disabled={modelValue <= min}
+          className="px-3 py-2 text-lg font-bold rounded-md border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          aria-label="Decrease"
+        >
+          −
+        </button>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={modelValue}
+          onChange={(e) =>
+            setModel((prev) => ({ ...prev, [fieldKey]: e.target.value }))
+          }
+          className="flex-1"
+        />
+        <button
+          type="button"
+          onClick={handleIncrement}
+          disabled={modelValue >= max}
+          className="px-3 py-2 text-lg font-bold rounded-md border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          aria-label="Increase"
+        >
+          +
+        </button>
+        <div className="font-medium text-sky-700 w-32 text-right">{formatValue(modelValue)}</div>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-3 py-1 text-sm rounded-md border border-slate-400 text-slate-700 hover:bg-slate-100 transition-colors"
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Mobile: Large +/- buttons without slider */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <button
+            type="button"
+            onClick={handleDecrement}
+            disabled={modelValue <= min}
+            className="flex-1 px-4 py-3 text-2xl font-bold rounded-md border-2 border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            aria-label="Decrease"
+          >
+            −
+          </button>
+          <div className="flex-1 text-center">
+            <div className="font-bold text-xl text-sky-700">{formatValue(modelValue)}</div>
+          </div>
+          <button
+            type="button"
+            onClick={handleIncrement}
+            disabled={modelValue >= max}
+            className="flex-1 px-4 py-3 text-2xl font-bold rounded-md border-2 border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            aria-label="Increase"
+          >
+            +
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="w-full px-3 py-2 text-sm rounded-md border border-slate-400 text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+        >
+          Reset to {formatValue(currentValue)}
+        </button>
+      </div>
     </div>
   );
 }
