@@ -65,10 +65,11 @@ export default function AuthProvider({ children }) {
         // Only try once per session to avoid infinite loops
         if (!authed && !sessionStorage.getItem(SSO_ATTEMPTED_KEY)) {
           try {
-            console.log('[logto] Attempting silent SSO sign-in...');
+            const redirectUri = window.location.origin;
+            console.log('[logto] Attempting silent SSO sign-in with redirectUri:', redirectUri);
             sessionStorage.setItem(SSO_ATTEMPTED_KEY, 'true');
             await client.signIn({
-              redirectUri: window.location.origin,
+              redirectUri,
               prompt: 'none', // Silent authentication - won't show login UI if session exists
             });
             // If we get here, silent sign-in succeeded - status will be checked on redirect
@@ -91,7 +92,11 @@ export default function AuthProvider({ children }) {
     })();
   }, [client]);
 
-  const signIn = () => client.signIn(window.location.origin);
+  const signIn = () => {
+    const redirectUri = window.location.origin;
+    console.log('[logto] Sign in with redirectUri:', redirectUri);
+    return client.signIn(redirectUri);
+  };
   const signOut = () => client.signOut(window.location.origin);
 
   // flexible getter:
