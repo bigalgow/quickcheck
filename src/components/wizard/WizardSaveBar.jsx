@@ -93,7 +93,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
   };
 
   // Load from cloud
-  const loadFromCloud = async () => {
+  const loadFromCloud = async (skipConfirm = false) => {
     try {
       setMsg('Loading...');
       setShowAccountMenu(false);
@@ -105,9 +105,9 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
         return;
       }
 
-      // Confirm before overwriting local data
+      // Confirm before overwriting local data (unless skipConfirm is true)
       const hasLocalData = data?.metadata?.completedModules?.length > 0;
-      if (hasLocalData) {
+      if (hasLocalData && !skipConfirm) {
         const confirmed = window.confirm(
           'Loading from cloud will overwrite your current local data. Continue?'
         );
@@ -225,11 +225,36 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
     signOut();
   };
 
-  // Auto-load from cloud when user logs in
+  // Smart sync on login: load from cloud or offer choice if local data exists
   useEffect(() => {
     if (isAuthenticated && userInfo) {
-      console.log('✅ Signed in. Auto-loading cloud data...');
-      loadFromCloud();
+      console.log('✅ Signed in. Initiating smart sync...');
+
+      const hasLocalData = data?.metadata?.completedModules?.length > 0;
+
+      if (!hasLocalData) {
+        // No local data - safe to auto-load from cloud
+        console.log('📥 No local data found. Auto-loading from cloud...');
+        loadFromCloud(true); // Skip confirmation
+      } else {
+        // Has local data - give user choice
+        console.log('⚠️ Local data detected. Asking user for preference...');
+
+        const userChoice = window.confirm(
+          '💾 You have local work in progress.\n\n' +
+          'Click OK to LOAD from cloud (your local work will be overwritten)\n' +
+          'Click Cancel to KEEP your local work (you can save it to cloud)'
+        );
+
+        if (userChoice) {
+          // User chose to load from cloud
+          loadFromCloud(true); // Skip second confirmation
+        } else {
+          // User chose to keep local work
+          console.log('✅ Keeping local data. Cloud save enabled.');
+          setMsg('💾 Keeping your local work. Ready to save to cloud.');
+        }
+      }
     }
   }, [isAuthenticated, userInfo]);
 
@@ -255,7 +280,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
             disabled={loading}
             className="px-4 py-2 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 disabled:opacity-50"
           >
-            {loading ? 'Loading…' : 'Login to save'}
+            {loading ? 'Loading…' : 'Login to sync'}
           </button>
         ) : (
           <>
