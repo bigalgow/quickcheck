@@ -1,7 +1,7 @@
 // service-worker.js
 // Service Worker for RetirePlan PWA
 
-const CACHE_NAME = 'retireplan-v6-mobile-sliders';
+const CACHE_NAME = 'retireplan-v7-pwa-nav';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use

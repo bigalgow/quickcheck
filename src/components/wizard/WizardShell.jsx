@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { defaultRetirePlanData, getModuleInfo, getModuleCompletionStatus, markModuleCompleted, getAllModuleIds } from '../../utils/dataSchema';
 import { MODULE_COMPONENTS } from './moduleRegistry.jsx';
 import WizardSaveBar from './WizardSaveBar.jsx';
+import BottomNav from '../BottomNav.jsx';
+import PWAInstallBanner from '../PWAInstallBanner.jsx';
 
 /**
  * WizardShell - Main wizard container with navigation and progress tracking
@@ -211,7 +213,7 @@ export default function WizardShell() {
       </div>
 
       {/* Main content area */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 pb-24">
         {/* Module title and description */}
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-slate-800 mb-2">
@@ -278,6 +280,12 @@ export default function WizardShell() {
 
       {/* Quick Navigation Menu (future enhancement) */}
       {/* TODO: Add dropdown for quick navigation to any module */}
+
+      {/* Mobile Navigation */}
+      <BottomNav />
+
+      {/* PWA Install Banner */}
+      <PWAInstallBanner />
     </div>
   );
 }
