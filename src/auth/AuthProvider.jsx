@@ -76,7 +76,11 @@ export default function AuthProvider({ children }) {
             return;
           } catch (ssoError) {
             // Silent sign-in failed - no active SSO session, continue as guest
-            console.log('[logto] No active SSO session found');
+            console.log('[logto] No active SSO session found:', ssoError?.message || ssoError);
+            // If error is about cookies/third-party, log it prominently
+            if (ssoError?.message?.includes('cookie') || ssoError?.message?.includes('third-party')) {
+              console.warn('[logto] SSO may be blocked by browser cookie settings');
+            }
           }
         }
 
