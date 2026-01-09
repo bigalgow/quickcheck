@@ -12,8 +12,6 @@ function clearLogtoStorage() {
     keys.forEach((k) => {
       if (k.startsWith('logto:')) localStorage.removeItem(k);
     });
-    // Also clear SSO attempt tracking
-    sessionStorage.removeItem('logto:sso_attempted');
   } catch {}
 }
 
@@ -41,8 +39,6 @@ export default function AuthProvider({ children }) {
   });
 
   useEffect(() => {
-    const SSO_ATTEMPTED_KEY = 'logto:sso_attempted';
-
     (async () => {
       try {
         // finish callback if needed
@@ -50,8 +46,6 @@ export default function AuthProvider({ children }) {
         if (qs.has('code') && qs.has('state')) {
           await client.handleSignInCallback(window.location.href);
           window.history.replaceState({}, document.title, window.location.origin);
-          // Mark that we've completed SSO attempt (successful or not)
-          sessionStorage.setItem(SSO_ATTEMPTED_KEY, 'true');
         }
       } catch (e) {
         console.error('[logto] handleSignInCallback failed:', e);
@@ -60,36 +54,12 @@ export default function AuthProvider({ children }) {
 
       try {
         const authed = await client.isAuthenticated();
-        const ssoAttempted = sessionStorage.getItem(SSO_ATTEMPTED_KEY);
+        console.log('[logto] Auth status:', { isAuthenticated: authed });
 
-        console.log('[logto] Auth status check:', {
-          isAuthenticated: authed,
-          ssoAlreadyAttempted: !!ssoAttempted,
-          willAttemptSSO: !authed && !ssoAttempted
-        });
-
-        // SSO: If not authenticated locally, attempt silent sign-in to check for active Logto session
-        // Only try once per session to avoid infinite loops
-        if (!authed && !ssoAttempted) {
-          try {
-            const redirectUri = window.location.origin;
-            console.log('[logto] Attempting silent SSO sign-in with redirectUri:', redirectUri);
-            sessionStorage.setItem(SSO_ATTEMPTED_KEY, 'true');
-            await client.signIn({
-              redirectUri,
-              prompt: 'none', // Silent authentication - won't show login UI if session exists
-            });
-            // If we get here, silent sign-in succeeded - status will be checked on redirect
-            return;
-          } catch (ssoError) {
-            // Silent sign-in failed - no active SSO session, continue as guest
-            console.log('[logto] No active SSO session found:', ssoError?.message || ssoError);
-            // If error is about cookies/third-party, log it prominently
-            if (ssoError?.message?.includes('cookie') || ssoError?.message?.includes('third-party')) {
-              console.warn('[logto] SSO may be blocked by browser cookie settings');
-            }
-          }
-        }
+        // Note: We don't attempt automatic silent SSO (prompt=none) because:
+        // 1. It can fail due to cookie/session sharing issues across subdomains
+        // 2. Per Logto docs, regular sign-in flow handles SSO automatically if session exists
+        // 3. Users clicking "Login to save" will get instant SSO if they're already logged in elsewhere
 
         const profile = authed ? await client.fetchUserInfo() : null;
         setState({ isAuthenticated: authed, userInfo: profile, loading: false });

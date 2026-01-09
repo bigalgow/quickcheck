@@ -1,7 +1,7 @@
 // service-worker.js
 // Service Worker for RetirePlan PWA
 
-const CACHE_NAME = 'retireplan-v3-sso-debug';
+const CACHE_NAME = 'retireplan-v4-sso-fixed';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
