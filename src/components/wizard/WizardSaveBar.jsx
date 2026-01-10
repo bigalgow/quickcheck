@@ -259,7 +259,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
   }, [isAuthenticated, userInfo]);
 
   return (
-    <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+    <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-wrap gap-3 no-print">
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs text-slate-500">💾 Auto-saved locally</span>
 
