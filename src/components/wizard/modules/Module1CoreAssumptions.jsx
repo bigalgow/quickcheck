@@ -16,9 +16,13 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
     });
   };
 
-  const currentAge = data.inputs.dateOfBirth
-    ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
-    : null;
+  const currentAge = (() => {
+    if (!data.inputs.dateOfBirth) return null;
+    const dob = new Date(data.inputs.dateOfBirth);
+    if (isNaN(dob.getTime())) return null; // Invalid date
+    const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
+    return isNaN(age) ? null : age;
+  })();
 
   const isValid = data.inputs.dateOfBirth && data.inputs.retirementAge;
 
