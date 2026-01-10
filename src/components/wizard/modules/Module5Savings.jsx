@@ -62,7 +62,7 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
               label="Growth Rate (% per year)"
               name="isa-growthRate"
               type="number"
-              value={data.savings.isa?.growthRate || '3'}
+              value={data.savings.isa?.growthRate || ''}
               onChange={(e) => handleChange('isa', 'growthRate', e.target.value)}
               min="0"
               max="20"
@@ -100,7 +100,7 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
               label="Growth Rate (% per year)"
               name="taxableSavings-growthRate"
               type="number"
-              value={data.savings.taxableSavings?.growthRate || '3'}
+              value={data.savings.taxableSavings?.growthRate || ''}
               onChange={(e) => handleChange('taxableSavings', 'growthRate', e.target.value)}
               min="0"
               max="20"

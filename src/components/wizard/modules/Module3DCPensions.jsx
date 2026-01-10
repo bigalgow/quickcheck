@@ -247,7 +247,7 @@ export default function Module3DCPensions({ data, onDataChange, onNext }) {
               </label>
               <input
                 type="number"
-                value={data.dc?.annuityPct || '0'}
+                value={data.dc?.annuityPct || ''}
                 onChange={(e) => handleChange('annuityPct', e.target.value)}
                 min="0"
                 max="100"

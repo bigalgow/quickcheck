@@ -423,7 +423,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
               currentValue={parseFloat(data.inputs?.retirementAge || 65)}
               min={55}
               max={75}
-              step={0.5}
+              step={1}
               model={model}
               setModel={setModel}
             />
