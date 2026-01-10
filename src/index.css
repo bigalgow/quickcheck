@@ -49,15 +49,27 @@ body {
     size: A4 portrait;
   }
 
+  /* Reset body and html for consistent print scaling */
+  html, body {
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    background: white;
+    font-size: 12pt; /* Fixed font size for print */
+    -webkit-text-size-adjust: 100%; /* Prevent iOS text size adjustment */
+    text-size-adjust: 100%;
+  }
+
   /* Avoid page breaks inside these elements */
   .print-avoid-break {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  /* Remove background colors to save ink (but keep borders and text colors) */
-  body {
-    background: white;
+  /* Force consistent scaling - prevent mobile zoom */
+  * {
+    max-width: 100% !important;
   }
 
   /* Ensure charts stay in color */
@@ -65,6 +77,65 @@ body {
     color-adjust: exact;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Reset margins and padding on main containers */
+  .p-6 {
+    padding: 1rem !important;
+  }
+
+  /* Ensure no blank first page */
+  body::before {
+    content: none !important;
+  }
+
+  /* Force single column layout for print */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    width: 100% !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Compact spacing for print */
+  .mb-6 {
+    margin-bottom: 1rem !important;
+  }
+
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  /* Smaller headings for better fit */
+  h1 {
+    font-size: 18pt !important;
+  }
+
+  h2 {
+    font-size: 16pt !important;
+  }
+
+  h3 {
+    font-size: 14pt !important;
+  }
+
+  /* Smaller body text */
+  .text-lg {
+    font-size: 12pt !important;
+  }
+
+  .text-base, p, div {
+    font-size: 11pt !important;
+  }
+
+  .text-sm {
+    font-size: 10pt !important;
+  }
+
+  .text-xs {
+    font-size: 9pt !important;
   }
 }
 
