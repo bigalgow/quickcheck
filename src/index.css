@@ -30,3 +30,47 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* Print Styles */
+@media print {
+  /* Hide elements marked with no-print class */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show elements marked with print-only class (hidden on screen) */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 15mm 20mm;
+    size: A4 portrait;
+  }
+
+  /* Avoid page breaks inside these elements */
+  .print-avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Remove background colors to save ink (but keep borders and text colors) */
+  body {
+    background: white;
+  }
+
+  /* Ensure charts stay in color */
+  svg, canvas {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Screen-only: hide print-only elements */
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}

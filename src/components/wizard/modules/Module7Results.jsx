@@ -3,9 +3,11 @@ import React from 'react';
 import { atRetirement } from '../../../logic/atRetirement';
 import { estimateIncomeTax, TAX_2025_EWNI, TAX_2025_SCOTLAND } from '../../../utils/tax';
 import { calculateStatePensionAge } from '../../../utils/statePensionAge';
+import { useAuth } from '../../../auth/AuthProvider';
 import HelpText from '../../ui/HelpText';
 
 export default function Module7Results({ data, onDataChange, onNext }) {
+  const { userInfo } = useAuth();
   const [showHelp, setShowHelp] = React.useState(false);
   const [model, setModel] = React.useState({});
 
@@ -153,8 +155,32 @@ export default function Module7Results({ data, onDataChange, onNext }) {
     });
   }, [JSON.stringify(results)]);
 
+  // Format date for print
+  const printDate = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
     <div className="p-6">
+      {/* Print Header (hidden on screen, visible in print) */}
+      <div className="print-only mb-6 border-b-2 border-slate-300 pb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <img src="/logo.png" alt="RetirePlan" className="h-16" />
+          <h1 className="text-2xl font-bold text-slate-800">Retirement Planner</h1>
+        </div>
+        <div className="text-sm text-slate-600 space-y-1">
+          <div><strong>Printed:</strong> {printDate}</div>
+          {userInfo && (
+            <div>
+              <strong>Account:</strong> {userInfo.name || userInfo.given_name || 'User'}
+              {userInfo.email && <span className="text-slate-500"> ({userInfo.email})</span>}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Help text */}
       <div className="mb-6 no-print">
         <button
@@ -171,7 +197,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
       </div>
 
       {/* Results Summary */}
-      <div className="mb-6">
+      <div className="mb-6 print-avoid-break">
         <h2 className="text-2xl font-bold text-slate-800 mb-4">At-Retirement Summary - Illustration</h2>
         <div className="mb-4 text-lg space-y-1">
           <div>
@@ -186,7 +212,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Income Card */}
-          <div className="bg-white border-2 border-slate-200 rounded-lg p-6">
+          <div className="bg-white border-2 border-slate-200 rounded-lg p-6 print-avoid-break">
             <h3 className="text-xl font-semibold text-slate-800 mb-4">
               Retirement Income (first year)
             </h3>
@@ -314,7 +340,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
           {/* Assets + Real Terms */}
           <div className="space-y-6">
             {/* Assets Card */}
-            <div className="bg-white border-2 border-slate-200 rounded-lg p-6">
+            <div className="bg-white border-2 border-slate-200 rounded-lg p-6 print-avoid-break">
               <h3 className="text-xl font-semibold text-slate-800 mb-4">
                 Retirement Assets
               </h3>
@@ -359,7 +385,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
             </div>
 
             {/* Real Terms Card */}
-            <div className="bg-slate-50 border-2 border-slate-300 rounded-lg p-6">
+            <div className="bg-slate-50 border-2 border-slate-300 rounded-lg p-6 print-avoid-break">
               <h3 className="text-xl font-semibold text-slate-800 mb-4">
                 Real Terms (today's prices)
               </h3>
@@ -403,7 +429,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
           className="px-6 py-3 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <span>🖨️</span>
-          <span>Print / Download PDF</span>
+          <span>Print Summary Report</span>
         </button>
       </div>
 
@@ -524,7 +550,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
       </div>
 
       {/* Disclaimer */}
-      <div className="mt-6 bg-slate-50 border border-slate-300 rounded-lg p-4">
+      <div className="mt-6 bg-slate-50 border border-slate-300 rounded-lg p-4 print-avoid-break">
         <p className="text-xs text-slate-600">
           <strong>Important Disclaimer:</strong> These projections are estimates based on the assumptions
           you have provided, including inflation rates, investment growth, pension values, and life expectancy.
