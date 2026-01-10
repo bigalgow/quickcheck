@@ -1,7 +1,7 @@
 // service-worker.js
 // Service Worker for RetirePlan PWA
 
-const CACHE_NAME = 'retireplan-v8-input-fixes';
+const CACHE_NAME = 'retireplan-v9-life-events-suggestions';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
