@@ -157,7 +157,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
     }
   };
 
-  // Export to JSON file
+  // Backup to device (download JSON file)
   const exportToJSON = () => {
     setShowAccountMenu(false);
     const dataStr = JSON.stringify(data, null, 2);
@@ -165,13 +165,13 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `retireplan-wizard-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `retireplan-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setMsg('✅ Exported to JSON');
+    setMsg('✅ Backup saved to device');
   };
 
-  // Import from JSON file
+  // Restore from device (import JSON file)
   const importFromJSON = () => {
     setShowAccountMenu(false);
     const input = document.createElement('input');
@@ -188,15 +188,15 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
 
           // Confirm before overwriting
           const confirmed = window.confirm(
-            'Importing will overwrite your current data. Continue?'
+            '⚠️ Restoring from backup will overwrite your current data.\n\nTip: Consider creating a backup of your current data first.\n\nContinue with restore?'
           );
           if (!confirmed) return;
 
           onImportData?.(importedData);
-          setMsg('✅ Imported from JSON');
+          setMsg('✅ Restored from backup');
         } catch (err) {
-          console.error('Import error:', err);
-          setMsg('❌ Invalid JSON file');
+          console.error('Restore error:', err);
+          setMsg('❌ Invalid backup file');
         }
       };
       reader.readAsText(file);
@@ -333,16 +333,16 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
                       onClick={exportToJSON}
                       className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                     >
-                      <span>📥</span>
-                      <span>Export JSON</span>
+                      <span>💾</span>
+                      <span>Backup (to device)</span>
                     </button>
 
                     <button
                       onClick={importFromJSON}
                       className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                     >
-                      <span>📤</span>
-                      <span>Import JSON</span>
+                      <span>📁</span>
+                      <span>Restore (from device)</span>
                     </button>
 
                     <div className="border-t border-slate-200 my-1"></div>
