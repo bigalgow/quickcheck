@@ -43,7 +43,7 @@ export default function ProjectionCharts({ data }) {
   return (
     <div className="space-y-6">
       {/* Asset Evolution Chart */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 print-avoid-break">
         <h2 className="text-xl font-semibold text-slate-800 mb-4">Asset Evolution (25 Years)</h2>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData}>
@@ -98,7 +98,7 @@ export default function ProjectionCharts({ data }) {
       </div>
 
       {/* Income vs Expenditure Chart */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 print-avoid-break">
         <h2 className="text-xl font-semibold text-slate-800 mb-4">Income vs Expenditure (25 Years)</h2>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData}>
