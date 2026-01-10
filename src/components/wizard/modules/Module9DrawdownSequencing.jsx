@@ -199,7 +199,7 @@ export default function Module9DrawdownSequencing({ data, onDataChange, onNext }
         </p>
         <p className="text-sm text-blue-800">
           🚀 <strong>Coming soon:</strong> Year-by-year strategy adjustments, multiple retirement
-          phases, tax optimization suggestions, and pension-to-ISA transfer strategies.
+          phases, and tax optimization suggestions.
         </p>
       </div>
 

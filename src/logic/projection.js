@@ -51,13 +51,16 @@ export function calculateProjection(openingValues, projectionInputs) {
     statePension,         // Annual state pension (nominal at SPA)
     statePensionAge,      // Age when state pension starts
     otherIncome,          // Other annual income
-    annualSpend,          // Target annual spending
+    annualSpend,          // Target annual spending (includes housing costs if applicable)
     inflation,            // % inflation assumption
     dcGrowth,             // % DC growth assumption
     isaGrowth,            // % ISA growth assumption
     savingsGrowth,        // % Taxable savings growth assumption
     taxRegion,            // 'england' or 'scotland'
     yearsToRetirement = 0, // Years from today to retirement (for real-terms calculation)
+    housingType,          // 'none', 'rent', or 'mortgage'
+    housingCostAnnual,    // Annual housing cost (if applicable)
+    ageMortgagePaidOff,   // Age when mortgage ends (if applicable)
   } = openingValues;
 
   const {
@@ -148,7 +151,51 @@ export function calculateProjection(openingValues, projectionInputs) {
     yearData.lifeEvents = calculateLifeEventsForAge(age, lifeEvents);
 
     // === ANNUAL SPEND ===
-    yearData.annualSpend = annualSpend * inflationFactor;
+    // Calculate baseline spend with multiple adjustments
+    let baselineSpend = annualSpend;
+
+    // 1. Mortgage payoff adjustment
+    if (housingType === 'mortgage' && housingCostAnnual && ageMortgagePaidOff) {
+      const mortgagePayoffAge = parseFloat(ageMortgagePaidOff);
+      const mortgageAmount = parseFloat(housingCostAnnual);
+
+      if (age >= mortgagePayoffAge) {
+        // Mortgage is paid off - reduce baseline spending
+        baselineSpend = annualSpend - mortgageAmount;
+      }
+    }
+
+    // 2. Age-based spending reduction (lifestyle changes)
+    // Research shows discretionary spending typically declines with age
+    // Ages 75-84: "Slow-go years" - reduced travel and activities (-15%)
+    // Ages 85+: "No-go years" - minimal discretionary spending (-25%)
+    let ageAdjustmentFactor = 1.0;
+    let agePhaseNote = null;
+
+    if (age >= 85) {
+      ageAdjustmentFactor = 0.75; // -25%
+      if (age === 85) {
+        agePhaseNote = 'Age 85+: Spending adjusted for lifestyle changes (-25%)';
+      }
+    } else if (age >= 75) {
+      ageAdjustmentFactor = 0.85; // -15%
+      if (age === 75) {
+        agePhaseNote = 'Age 75: Spending adjusted for lifestyle changes (-15%)';
+      }
+    }
+
+    baselineSpend = baselineSpend * ageAdjustmentFactor;
+
+    // Apply inflation to the adjusted baseline
+    yearData.annualSpend = baselineSpend * inflationFactor;
+
+    // Track special events this year for display purposes
+    if (housingType === 'mortgage' && ageMortgagePaidOff && age === parseFloat(ageMortgagePaidOff)) {
+      yearData.mortgagePaidOff = true;
+    }
+    if (agePhaseNote) {
+      yearData.agePhaseNote = agePhaseNote;
+    }
 
     // === TAXABLE INCOME ===
     // DC drawdown + DB + State + Other + Annuity + Taxable savings interest

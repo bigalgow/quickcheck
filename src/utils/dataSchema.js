@@ -20,6 +20,9 @@ export const defaultRetirePlanData = {
     householdType: "solo", // or "couple"
     plsaTier: "comfortable", // "minimum", "moderate", "comfortable"
     baselineAmount: 0, // Annual spend target (from PLSA or custom)
+    housingType: "none", // "none", "rent", or "mortgage"
+    housingCostAnnual: "", // Annual housing cost (rent or mortgage payment)
+    ageMortgagePaidOff: "", // Age when mortgage is paid off (for mortgage only)
   },
 
   // Module 3: DC Pensions (matches atRetirement.js structure)
@@ -153,7 +156,7 @@ export const MODULES = {
   },
   10: {
     id: 10,
-    title: "25-Year Projection",
+    title: "25-Year Projection - Illustration",
     description: "View your detailed retirement projection",
     requiredFields: [], // Calculated module
   },
@@ -222,7 +225,9 @@ export function getModuleCompletionStatus(moduleId, data) {
       hasData = isValidValue(data.inputs?.dateOfBirth) || isValidValue(data.inputs?.retirementAge);
       break;
     case 2: // Lifestyle
-      hasData = data.lifestyle?.baselineAmount > 0;
+      hasData = data.lifestyle?.baselineAmount > 0 ||
+                isValidValue(data.lifestyle?.housingType) ||
+                isValidValue(data.lifestyle?.housingCostAnnual);
       break;
     case 3: // DC Pensions
       hasData = data.dcPensions?.length > 0;

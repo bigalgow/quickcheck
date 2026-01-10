@@ -3,13 +3,14 @@
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * PLSA (Pension and Lifetime Savings Association) benchmark values for 2024
+ * PLSA (Pension and Lifetime Savings Association) benchmark values for 2025/26
  * Source: https://www.plsa.co.uk/retirement-living-standards
+ * Note: These figures assume home ownership (no rent/mortgage costs)
  */
 export const PLSA_VALUES = {
-  minimum: { solo: 14400, couple: 22400 },
-  moderate: { solo: 31300, couple: 43100 },
-  comfortable: { solo: 43100, couple: 59000 }
+  minimum: { solo: 13400, couple: 21600 },
+  moderate: { solo: 31700, couple: 43900 },
+  comfortable: { solo: 43900, couple: 60600 }
 };
 
 /**

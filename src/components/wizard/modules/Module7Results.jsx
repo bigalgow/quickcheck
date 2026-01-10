@@ -172,7 +172,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
 
       {/* Results Summary */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 mb-4">At-Retirement Summary</h2>
+        <h2 className="text-2xl font-bold text-slate-800 mb-4">At-Retirement Summary - Illustration</h2>
         <div className="mb-4 text-lg space-y-1">
           <div>
             Age at retirement: <strong>{Math.round(inputs.retirementAge)}</strong>
@@ -409,7 +409,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
 
       {/* Quick Modelling Sliders */}
       <div className="bg-white border-2 border-sky-200 rounded-lg p-6 mb-6 no-print">
-        <h3 className="text-xl font-semibold text-slate-800 mb-4">Quick Modelling</h3>
+        <h3 className="text-xl font-semibold text-slate-800 mb-4">Quick Modelling - Illustration</h3>
         <p className="text-sm text-slate-600 mb-4">
           Adjust the sliders below to preview how changes affect your results. Click "Apply to inputs"
           to save changes, or "Reset" to undo.

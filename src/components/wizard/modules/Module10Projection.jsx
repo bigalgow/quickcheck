@@ -32,6 +32,9 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       savingsGrowth: parseFloat(data.savings?.taxableSavings?.growthRate || 3) / 100,
       taxRegion: data.inputs?.taxRegion === 'scotland' ? 'scotland' : 'england',
       yearsToRetirement: atRetResults.yearsToRetirement || 0,
+      housingType: data.lifestyle?.housingType || 'none',
+      housingCostAnnual: parseFloat(data.lifestyle?.housingCostAnnual || 0),
+      ageMortgagePaidOff: data.lifestyle?.ageMortgagePaidOff ? parseFloat(data.lifestyle.ageMortgagePaidOff) : null,
     };
   }, [data]);
 
@@ -109,6 +112,11 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
           balances. Red highlighting indicates potential issues (negative balances, depletion
           warnings). Use the charts below for visual analysis. You can export the full table to CSV
           for deeper analysis in Excel.
+          <br /><br />
+          <strong>Automatic adjustments:</strong> Your baseline spending automatically adjusts for typical
+          lifestyle changes: full spending until age 75, then -15% reduction (ages 75-84), and -25%
+          reduction (ages 85+). These evidence-based adjustments reflect reduced discretionary spending
+          as people age. If you have specific plans at later ages, add them as Life Events in Module 8.
         </HelpText>
       </div>
 
