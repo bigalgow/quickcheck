@@ -204,7 +204,18 @@ export function calculateProjection(openingValues, projectionInputs) {
     if (yearData.closingTaxable < 0) {
       const deficit = Math.abs(yearData.closingTaxable);
       yearData.isaDrawdown = Math.min(deficit, yearData.closingISA); // Can't draw more than ISA has
-      yearData.closingISA -= yearData.isaDrawdown;
+
+      // BUG FIX: Recalculate ISA growth accounting for the drawdown
+      // Growth should only apply to balance after drawdown (start-of-year timing)
+      const isaBalanceAfterDrawdown = yearData.openingISA - yearData.isaDrawdown;
+      const correctedIsaGrowth = isaBalanceAfterDrawdown > 0
+        ? isaBalanceAfterDrawdown * isaGrowth
+        : 0;
+
+      // Adjust closing ISA: remove old growth, subtract drawdown, add corrected growth
+      yearData.closingISA = yearData.openingISA + yearData.isaInvestments + correctedIsaGrowth - yearData.isaDrawdown;
+      yearData.isaGrowth = correctedIsaGrowth; // Update for reporting
+
       yearData.closingTaxable += yearData.isaDrawdown; // May still be negative if ISA insufficient
     }
 
