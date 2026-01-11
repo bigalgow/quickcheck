@@ -45,7 +45,8 @@ export default function ProjectionCharts({ data }) {
       {/* Asset Evolution Chart */}
       <div className="bg-white rounded-lg shadow-md p-6 print-avoid-break">
         <h2 className="text-xl font-semibold text-slate-800 mb-4">Asset Evolution (25 Years)</h2>
-        <ResponsiveContainer width="100%" height={400}>
+        <div style={{ width: '100%', height: '400px' }}>
+          <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="age" label={{ value: 'Age', position: 'insideBottom', offset: -5 }} />
@@ -95,12 +96,14 @@ export default function ProjectionCharts({ data }) {
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Income vs Expenditure Chart */}
       <div className="bg-white rounded-lg shadow-md p-6 print-avoid-break">
         <h2 className="text-xl font-semibold text-slate-800 mb-4">Income vs Expenditure (25 Years)</h2>
-        <ResponsiveContainer width="100%" height={400}>
+        <div style={{ width: '100%', height: '400px' }}>
+          <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="age" label={{ value: 'Age', position: 'insideBottom', offset: -5 }} />
@@ -112,6 +115,7 @@ export default function ProjectionCharts({ data }) {
             <Bar dataKey="NetFlow" fill="#3b82f6" name="Net Flow" />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

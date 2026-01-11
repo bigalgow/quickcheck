@@ -1,5 +1,6 @@
 // src/components/wizard/modules/Module10Projection.jsx
 import React, { useMemo } from 'react';
+import html2canvas from 'html2canvas';
 import { calculateProjection, extractWarnings } from '../../../logic/projection';
 import ProjectionTable from '../../ProjectionTable';
 import ProjectionCharts from '../../ProjectionCharts';
@@ -9,6 +10,58 @@ import { useAuth } from '../../../auth/AuthProvider';
 export default function Module10Projection({ data, onDataChange, onNext }) {
   const { userInfo } = useAuth();
   const [showHelp, setShowHelp] = React.useState(false);
+
+  // Handle print with chart capture
+  const handlePrint = async () => {
+    try {
+      // Find all chart containers
+      const chartContainers = document.querySelectorAll('.recharts-responsive-container');
+      const capturedImages = [];
+
+      // Capture each chart as canvas
+      for (const container of chartContainers) {
+        const canvas = await html2canvas(container, {
+          backgroundColor: '#ffffff',
+          scale: 2, // Higher quality
+          logging: false,
+        });
+
+        // Convert to image
+        const imgData = canvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = imgData;
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.className = 'print-chart-image';
+
+        // Store for cleanup
+        capturedImages.push({ container, img });
+
+        // Hide original chart and insert image
+        container.style.display = 'none';
+        container.parentNode.insertBefore(img, container);
+      }
+
+      // Small delay to ensure images are rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Open print dialog
+      window.print();
+
+      // Cleanup after print dialog closes
+      setTimeout(() => {
+        capturedImages.forEach(({ container, img }) => {
+          img.remove();
+          container.style.display = '';
+        });
+      }, 100);
+
+    } catch (error) {
+      console.error('Chart capture failed:', error);
+      // Fallback to normal print
+      window.print();
+    }
+  };
 
   // Build opening values from Module 7 results
   const openingValues = useMemo(() => {
@@ -209,14 +262,14 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
         </div>
       </div>
 
-      {/* Print Button */}
-      <div className="mb-6 flex justify-end no-print">
+      {/* Print Button - Desktop only (chart capture doesn't work on mobile) */}
+      <div className="mb-6 hidden md:flex justify-end no-print">
         <button
-          onClick={() => window.print()}
+          onClick={handlePrint}
           className="px-6 py-3 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <span>🖨️</span>
-          <span>Print Report</span>
+          <span>Print Report (with charts)</span>
         </button>
       </div>
 

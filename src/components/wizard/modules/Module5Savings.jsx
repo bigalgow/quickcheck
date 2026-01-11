@@ -6,6 +6,13 @@ import HelpText from '../../ui/HelpText';
 export default function Module5Savings({ data, onDataChange, onNext, onPrevious }) {
   const [showHelp, setShowHelp] = React.useState(false);
 
+  // Calculate if already retired
+  const currentAge = data.inputs?.dateOfBirth
+    ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
+  const retirementAge = parseInt(data.inputs?.retirementAge);
+  const alreadyRetired = currentAge && retirementAge && retirementAge <= currentAge;
+
   const handleChange = (category, field, value) => {
     onDataChange({
       savings: {
@@ -39,7 +46,7 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
         {/* ISA */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">💰 ISA</h3>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className={`grid ${alreadyRetired ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
             <FormInput
               label="Current Balance (£)"
               name="isa-currentValue"
@@ -49,15 +56,17 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
               min="0"
               placeholder="0"
             />
-            <FormInput
-              label="Add per year (£)"
-              name="isa-addPerYear"
-              type="number"
-              value={data.savings.isa?.addPerYear || ''}
-              onChange={(e) => handleChange('isa', 'addPerYear', e.target.value)}
-              min="0"
-              placeholder="0"
-            />
+            {!alreadyRetired && (
+              <FormInput
+                label="Add per year (£)"
+                name="isa-addPerYear"
+                type="number"
+                value={data.savings.isa?.addPerYear || ''}
+                onChange={(e) => handleChange('isa', 'addPerYear', e.target.value)}
+                min="0"
+                placeholder="0"
+              />
+            )}
             <FormInput
               label="Growth Rate (% per year)"
               name="isa-growthRate"
@@ -69,15 +78,17 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
               placeholder="3"
             />
           </div>
-          <p className="text-sm text-slate-600 mt-2">
-            Annual contributions continue until retirement
-          </p>
+          {!alreadyRetired && (
+            <p className="text-sm text-slate-600 mt-2">
+              Annual contributions continue until retirement
+            </p>
+          )}
         </div>
 
         {/* Taxable Savings */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">🏦 Taxable Savings</h3>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className={`grid ${alreadyRetired ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
             <FormInput
               label="Current Balance (£)"
               name="taxableSavings-currentValue"
@@ -87,15 +98,17 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
               min="0"
               placeholder="0"
             />
-            <FormInput
-              label="Add per year (£)"
-              name="taxableSavings-addPerYear"
-              type="number"
-              value={data.savings.taxableSavings?.addPerYear || ''}
-              onChange={(e) => handleChange('taxableSavings', 'addPerYear', e.target.value)}
-              min="0"
-              placeholder="0"
-            />
+            {!alreadyRetired && (
+              <FormInput
+                label="Add per year (£)"
+                name="taxableSavings-addPerYear"
+                type="number"
+                value={data.savings.taxableSavings?.addPerYear || ''}
+                onChange={(e) => handleChange('taxableSavings', 'addPerYear', e.target.value)}
+                min="0"
+                placeholder="0"
+              />
+            )}
             <FormInput
               label="Growth Rate (% per year)"
               name="taxableSavings-growthRate"
@@ -109,7 +122,7 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
           </div>
           <p className="text-sm text-slate-600 mt-2">
             Interest on taxable savings is subject to income tax (after Personal Savings Allowance).
-            Annual contributions continue until retirement.
+            {!alreadyRetired && ' Annual contributions continue until retirement.'}
           </p>
         </div>
       </div>

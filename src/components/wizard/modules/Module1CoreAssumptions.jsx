@@ -58,7 +58,7 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
 
         {/* Retirement Age */}
         <FormInput
-          label="Planned Retirement Age *"
+          label="Planned Retirement Age (or current age if already retired) *"
           name="retirementAge"
           type="number"
           value={data.inputs.retirementAge}
@@ -67,6 +67,14 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
           max="100"
           placeholder="e.g., 65"
         />
+
+        {currentAge && data.inputs.retirementAge && parseInt(data.inputs.retirementAge) <= currentAge && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 -mt-2">
+            <p className="text-sm text-blue-800">
+              ℹ️ You've entered a retirement age equal to or below your current age ({currentAge}). The calculator will treat you as already retired and skip future contribution projections.
+            </p>
+          </div>
+        )}
 
         {/* State Pension Annual Amount */}
         <FormInput

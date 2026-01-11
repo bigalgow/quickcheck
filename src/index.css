@@ -72,7 +72,14 @@ body {
     max-width: 100% !important;
   }
 
-  /* Ensure charts stay in color */
+  /* Ensure charts stay in color and render properly */
+  svg, canvas {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Keep charts in color for print */
   svg, canvas {
     color-adjust: exact;
     -webkit-print-color-adjust: exact;

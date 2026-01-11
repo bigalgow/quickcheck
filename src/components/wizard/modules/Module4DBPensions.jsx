@@ -6,6 +6,13 @@ import HelpText from '../../ui/HelpText';
 export default function Module4DBPensions({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = React.useState(false);
 
+  // Calculate if already retired
+  const currentAge = data.inputs?.dateOfBirth
+    ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
+  const retirementAge = parseInt(data.inputs?.retirementAge);
+  const alreadyRetired = currentAge && retirementAge && retirementAge <= currentAge;
+
   const handleDBChange = (field, value) => {
     onDataChange({
       db: {
@@ -74,8 +81,8 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
       </div>
 
       <div className="space-y-8">
-        {/* Add Active Scheme Button - only show if none exist */}
-        {activeSchemes.length === 0 && (
+        {/* Add Active Scheme Button - only show if none exist AND not already retired */}
+        {!alreadyRetired && activeSchemes.length === 0 && (
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Active DB Pension</h3>
             <p className="text-sm text-slate-600 mb-4">
@@ -91,8 +98,8 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
           </div>
         )}
 
-        {/* Active Schemes */}
-        {activeSchemes.map((scheme, index) => (
+        {/* Active Schemes - Hidden if already retired */}
+        {!alreadyRetired && activeSchemes.map((scheme, index) => (
           <div key={scheme.id} className="bg-slate-50 border border-slate-200 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-800">
@@ -215,22 +222,24 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
           </button>
         </div>
 
-        {/* Tax-Free Cash Option */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
-          <label className="flex items-center gap-3 text-base font-medium text-slate-700">
-            <input
-              type="checkbox"
-              checked={data.db?.takeTaxFree25 || false}
-              onChange={(e) => handleDBChange('takeTaxFree25', e.target.checked)}
-              className="w-5 h-5"
-            />
-            Take 25% tax-free from total DB (20× model; overall cap enforced)
-          </label>
-          <p className="text-sm text-slate-600 mt-2">
-            For every £1 of annual pension you give up, you receive £20 as a tax-free lump sum.
-            Total PCLS across all pensions (DC + DB) is capped at £268,275.
-          </p>
-        </div>
+        {/* Tax-Free Cash Option - Hidden if already retired */}
+        {!alreadyRetired && (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+            <label className="flex items-center gap-3 text-base font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={data.db?.takeTaxFree25 || false}
+                onChange={(e) => handleDBChange('takeTaxFree25', e.target.checked)}
+                className="w-5 h-5"
+              />
+              Take 25% tax-free from total DB (20× model; overall cap enforced)
+            </label>
+            <p className="text-sm text-slate-600 mt-2">
+              For every £1 of annual pension you give up, you receive £20 as a tax-free lump sum.
+              Total PCLS across all pensions (DC + DB) is capped at £268,275.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Info box */}

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 
-export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
+export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWizardData = true }) {
   const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
   const [msg, setMsg] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -129,12 +129,20 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
 
       if (!res.ok) {
         if (res.status === 404) {
-          console.info('ℹ️ API endpoint not available');
-          setMsg('❌ No cloud data found');
+          console.info('ℹ️ API endpoint not available (OK in local dev)');
+          setMsg(null); // Don't show error - expected in local dev
         } else {
           console.warn('Load API error:', res.status);
-          setMsg(`❌ Load failed (${res.status})`);
+          setMsg(null); // Don't show error - might be API not configured
         }
+        return;
+      }
+
+      // Check if response is JSON before parsing
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.info('ℹ️ API returned non-JSON response (OK in local dev)');
+        setMsg(null); // Don't show error - expected in local dev
         return;
       }
 
@@ -149,11 +157,21 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
         setMsg('✅ Loaded from cloud');
       } else {
         console.warn('⚠️ Cloud data is empty or invalid');
-        setMsg('❌ No saved data found');
+        setMsg(null); // Don't show error - no cloud data is normal for new users
       }
     } catch (e) {
-      console.error('❌ Load failed:', e);
-      setMsg(`❌ Load failed: ${e.message}`);
+      // Check if it's an expected error (API not available in local dev)
+      const isExpectedError = e.message.includes('JSON') ||
+                              e.message.includes('Unexpected token') ||
+                              e.message.includes('Failed to fetch');
+
+      if (isExpectedError) {
+        console.info('ℹ️ Cloud API not available (expected in local dev) - using local storage only');
+        setMsg(null);
+      } else {
+        console.error('❌ Unexpected load error:', e);
+        setMsg(`❌ Load failed: ${e.message}`);
+      }
     }
   };
 
@@ -216,7 +234,9 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
     localStorage.removeItem('retireplan-wizard-last-cloud-save');
     localStorage.removeItem('retireplan-dc-pots');
     setMsg('✅ Local data cleared');
-    window.location.reload();
+
+    // Redirect to welcome page instead of reload (avoids 404 on mobile)
+    window.location.href = '/';
   };
 
   // Handle sign out
@@ -284,17 +304,20 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
           </button>
         ) : (
           <>
-            <button
-              onClick={saveToCloud}
-              disabled={loading}
-              className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
-                hasUnsavedChanges
-                  ? 'bg-amber-600 hover:bg-amber-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              } disabled:opacity-50`}
-            >
-              {hasUnsavedChanges ? '💾 Save to cloud' : '✓ Saved'}
-            </button>
+            {/* Save button - only show if there's wizard data to save */}
+            {hasWizardData && (
+              <button
+                onClick={saveToCloud}
+                disabled={loading}
+                className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
+                  hasUnsavedChanges
+                    ? 'bg-amber-600 hover:bg-amber-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                } disabled:opacity-50`}
+              >
+                {hasUnsavedChanges ? '💾 Save to cloud' : '✓ Saved'}
+              </button>
+            )}
 
             {/* Account Dropdown */}
             <div className="relative" ref={menuRef}>
@@ -329,13 +352,16 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess }) {
                       <span>Load from cloud</span>
                     </button>
 
-                    <button
-                      onClick={exportToJSON}
-                      className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    >
-                      <span>💾</span>
-                      <span>Backup (to device)</span>
-                    </button>
+                    {/* Only show Backup if there's wizard data to backup */}
+                    {hasWizardData && (
+                      <button
+                        onClick={exportToJSON}
+                        className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      >
+                        <span>💾</span>
+                        <span>Backup (to device)</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={importFromJSON}

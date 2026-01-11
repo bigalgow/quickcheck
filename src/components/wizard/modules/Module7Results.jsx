@@ -203,9 +203,13 @@ export default function Module7Results({ data, onDataChange, onNext }) {
           <div>
             Age at retirement: <strong>{Math.round(inputs.retirementAge)}</strong>
           </div>
-          {results.yearsToRetirement > 0 && (
+          {results.yearsToRetirement > 0 ? (
             <div>
               Years to retirement: <strong>{Math.round(results.yearsToRetirement)}</strong>
+            </div>
+          ) : (
+            <div className="text-blue-700 font-semibold">
+              Status: Already Retired
             </div>
           )}
         </div>
@@ -567,7 +571,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
           onClick={onNext}
           className="px-8 py-3 rounded-md font-medium bg-sky-500 text-white hover:bg-sky-600 transition-colors"
         >
-          Continue to Post-Retirement Savings →
+          Continue to Post-Retirement Events →
         </button>
       </div>
     </div>

@@ -60,7 +60,7 @@ export default function BottomNav() {
   ];
   
   return (
-    <nav style={styles.nav}>
+    <nav className="no-print" style={styles.nav}>
       {tabs.map(tab => (
         <button
           key={tab.id}
