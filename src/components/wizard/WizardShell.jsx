@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { defaultRetirePlanData, getModuleInfo, getModuleCompletionStatus, markModuleCompleted, getAllModuleIds } from '../../utils/dataSchema';
 import { MODULE_COMPONENTS } from './moduleRegistry.jsx';
 import WizardSaveBar from './WizardSaveBar.jsx';
-import BottomNav from '../BottomNav.jsx';
 import PWAInstallBanner from '../PWAInstallBanner.jsx';
 
 /**
@@ -280,9 +279,6 @@ export default function WizardShell() {
 
       {/* Quick Navigation Menu (future enhancement) */}
       {/* TODO: Add dropdown for quick navigation to any module */}
-
-      {/* Mobile Navigation */}
-      <BottomNav />
 
       {/* PWA Install Banner */}
       <PWAInstallBanner />
