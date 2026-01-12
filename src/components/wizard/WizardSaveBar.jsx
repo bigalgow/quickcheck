@@ -92,16 +92,45 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     }
   };
 
+  // Fetch cloud data without importing (for comparison)
+  const fetchCloudData = async () => {
+    const audience = import.meta.env.VITE_API_AUDIENCE;
+    if (!audience) {
+      return null;
+    }
+
+    try {
+      const token = await getAccessToken(audience);
+      const res = await fetch('/api/me/retireplan', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return null;
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        return null;
+      }
+
+      const cloudData = await res.json();
+      return cloudData && cloudData.inputs ? cloudData : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
   // Load from cloud
   const loadFromCloud = async (skipConfirm = false) => {
     try {
       setMsg('Loading...');
       setShowAccountMenu(false);
 
-      const audience = import.meta.env.VITE_API_AUDIENCE;
-      if (!audience) {
-        console.info('ℹ️ VITE_API_AUDIENCE not configured - cloud load disabled');
-        setMsg('⚠️ Cloud not configured');
+      const cloudData = await fetchCloudData();
+
+      if (!cloudData) {
+        console.info('ℹ️ No cloud data available');
+        setMsg('❌ No cloud data found');
         return;
       }
 
@@ -117,61 +146,14 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
         }
       }
 
-      console.log('🔄 Fetching cloud data...');
-      const token = await getAccessToken(audience);
-
-      const res = await fetch('/api/me/retireplan', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      console.log('📡 Response status:', res.status);
-
-      if (!res.ok) {
-        if (res.status === 404) {
-          console.info('ℹ️ API endpoint not available (OK in local dev)');
-          setMsg(null); // Don't show error - expected in local dev
-        } else {
-          console.warn('Load API error:', res.status);
-          setMsg(null); // Don't show error - might be API not configured
-        }
-        return;
-      }
-
-      // Check if response is JSON before parsing
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.info('ℹ️ API returned non-JSON response (OK in local dev)');
-        setMsg(null); // Don't show error - expected in local dev
-        return;
-      }
-
-      const cloudData = await res.json();
-      console.log('☁️ Received cloud data:', cloudData);
-
-      if (cloudData && cloudData.inputs) {
-        console.log('✅ Importing data with date of birth:', cloudData.inputs.dateOfBirth);
-        onImportData?.(cloudData);
-        localStorage.setItem('retireplan-wizard-last-cloud-save', new Date().toISOString());
-        setHasUnsavedChanges(false);
-        setMsg('✅ Loaded from cloud');
-      } else {
-        console.warn('⚠️ Cloud data is empty or invalid');
-        setMsg(null); // Don't show error - no cloud data is normal for new users
-      }
+      console.log('✅ Importing cloud data');
+      onImportData?.(cloudData);
+      localStorage.setItem('retireplan-wizard-last-cloud-save', cloudData.metadata?.lastModified || new Date().toISOString());
+      setHasUnsavedChanges(false);
+      setMsg('✅ Loaded from cloud');
     } catch (e) {
-      // Check if it's an expected error (API not available in local dev)
-      const isExpectedError = e.message.includes('JSON') ||
-                              e.message.includes('Unexpected token') ||
-                              e.message.includes('Failed to fetch');
-
-      if (isExpectedError) {
-        console.info('ℹ️ Cloud API not available (expected in local dev) - using local storage only');
-        setMsg(null);
-      } else {
-        console.error('❌ Unexpected load error:', e);
-        setMsg(`❌ Load failed: ${e.message}`);
-      }
+      console.error('❌ Load error:', e);
+      setMsg(`❌ Load failed: ${e.message}`);
     }
   };
 
@@ -245,37 +227,99 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     signOut();
   };
 
-  // Smart sync on login: load from cloud or offer choice if local data exists
+  // Smart sync on login: compare timestamps and sync intelligently
   useEffect(() => {
-    if (isAuthenticated && userInfo) {
+    const performSmartSync = async () => {
+      if (!isAuthenticated || !userInfo) return;
+
       console.log('✅ Signed in. Initiating smart sync...');
 
       const hasLocalData = data?.metadata?.completedModules?.length > 0;
+      const localTimestamp = data?.metadata?.lastModified;
 
-      if (!hasLocalData) {
-        // No local data - safe to auto-load from cloud
-        console.log('📥 No local data found. Auto-loading from cloud...');
-        loadFromCloud(true); // Skip confirmation
-      } else {
-        // Has local data - give user choice
-        console.log('⚠️ Local data detected. Asking user for preference...');
+      // Fetch cloud data for comparison
+      const cloudData = await fetchCloudData();
 
-        const userChoice = window.confirm(
-          '💾 You have local work in progress.\n\n' +
-          'Click OK to LOAD from cloud (your local work will be overwritten)\n' +
-          'Click Cancel to KEEP your local work (you can save it to cloud)'
-        );
-
-        if (userChoice) {
-          // User chose to load from cloud
-          loadFromCloud(true); // Skip second confirmation
-        } else {
-          // User chose to keep local work
-          console.log('✅ Keeping local data. Cloud save enabled.');
-          setMsg('💾 Keeping your local work. Ready to save to cloud.');
-        }
+      // Case 1: No cloud data, no local data → Nothing to sync
+      if (!cloudData && !hasLocalData) {
+        console.log('ℹ️ No data anywhere. Fresh start.');
+        setMsg(null);
+        return;
       }
-    }
+
+      // Case 2: No cloud data, has local data → Local wins, ready to save
+      if (!cloudData && hasLocalData) {
+        console.log('📱 No cloud data. Your local data is ready to save.');
+        setMsg('💾 Your data is ready to save to cloud');
+        return;
+      }
+
+      // Case 3: Has cloud data, no local data → Auto-load from cloud
+      if (cloudData && !hasLocalData) {
+        console.log('☁️ No local data. Auto-loading from cloud...');
+        onImportData?.(cloudData);
+        localStorage.setItem('retireplan-wizard-last-cloud-save', cloudData.metadata?.lastModified || new Date().toISOString());
+        setHasUnsavedChanges(false);
+        setMsg('✅ Loaded from cloud');
+        return;
+      }
+
+      // Case 4: Both exist → Compare timestamps
+      const cloudTimestamp = cloudData.metadata?.lastModified;
+
+      if (!localTimestamp || !cloudTimestamp) {
+        // Can't compare - ask user
+        console.log('⚠️ Missing timestamps. Asking user...');
+        const userChoice = window.confirm(
+          '☁️ Cloud data found.\n\n' +
+          'Click OK to LOAD from cloud\n' +
+          'Click Cancel to KEEP your local data'
+        );
+        if (userChoice) {
+          onImportData?.(cloudData);
+          localStorage.setItem('retireplan-wizard-last-cloud-save', cloudData.metadata?.lastModified || new Date().toISOString());
+          setHasUnsavedChanges(false);
+          setMsg('✅ Loaded from cloud');
+        } else {
+          setMsg('💾 Your local data is ready to save to cloud');
+          setHasUnsavedChanges(true);
+        }
+        return;
+      }
+
+      const localTime = new Date(localTimestamp).getTime();
+      const cloudTime = new Date(cloudTimestamp).getTime();
+      const timeDiff = Math.abs(localTime - cloudTime);
+
+      // Same timestamp (within 1 second) → Already synced
+      if (timeDiff < 1000) {
+        console.log('✅ Local and cloud are in sync');
+        localStorage.setItem('retireplan-wizard-last-cloud-save', cloudTimestamp);
+        setHasUnsavedChanges(false);
+        setMsg('✅ Synced with cloud');
+        return;
+      }
+
+      // Cloud is newer → Auto-load from cloud
+      if (cloudTime > localTime) {
+        console.log('☁️ Cloud data is newer. Auto-loading...');
+        onImportData?.(cloudData);
+        localStorage.setItem('retireplan-wizard-last-cloud-save', cloudTimestamp);
+        setHasUnsavedChanges(false);
+        setMsg('✅ Loaded newer data from cloud');
+        return;
+      }
+
+      // Local is newer → Keep local, show ready to save
+      if (localTime > cloudTime) {
+        console.log('📱 Local data is newer. Ready to save.');
+        setMsg('💾 Your local data is newer. Click "Save to cloud" to sync.');
+        setHasUnsavedChanges(true);
+        return;
+      }
+    };
+
+    performSmartSync();
   }, [isAuthenticated, userInfo]);
 
   return (
