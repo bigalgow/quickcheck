@@ -10,7 +10,7 @@ function exportToCSV(data) {
     'Opening Taxable',
     'DC Drawdown',
     'ISA Drawdown',
-    'Taxable Drawdown',
+    'Savings Utilised',
     'ISA Investments',
     'DB Income',
     'Annuity Income',
@@ -97,7 +97,7 @@ export default function ProjectionTable({ data }) {
               <th className="border px-2 py-2 text-right font-semibold">Opening Taxable</th>
               <th className="border px-2 py-2 text-right font-semibold">DC Draw</th>
               <th className="border px-2 py-2 text-right font-semibold">ISA Draw</th>
-              <th className="border px-2 py-2 text-right font-semibold">Taxable Draw</th>
+              <th className="border px-2 py-2 text-right font-semibold">Savings Utilised</th>
               <th className="border px-2 py-2 text-right font-semibold">ISA Invest</th>
               <th className="border px-2 py-2 text-right font-semibold">DB Income</th>
               <th className="border px-2 py-2 text-right font-semibold">Annuity</th>

@@ -109,7 +109,7 @@ export function calculateProjection(openingValues, projectionInputs) {
     }
 
     yearData.dcDrawdown = dcDrawdownCash;
-    yearData.taxableDrawdown = 0; // Taxable is a buffer, doesn't have explicit drawdown
+    // Note: taxableDrawdown calculated later after netFlow is known
 
     // ISA drawdown: Only if taxable savings exhausted (negative)
     yearData.isaDrawdown = 0; // Start with 0, will calculate deficit later if needed
@@ -238,6 +238,10 @@ export function calculateProjection(openingValues, projectionInputs) {
       yearData.annualSpend +
       yearData.lifeEvents -
       yearData.isaInvestments;
+
+    // === SAVINGS UTILISED ===
+    // Show how much taxable savings are being drawn (positive number when net flow is negative)
+    yearData.taxableDrawdown = yearData.netFlow < 0 ? Math.abs(yearData.netFlow) : 0;
 
     // === CLOSING ASSETS ===
     yearData.closingDC = yearData.openingDC - yearData.dcDrawdown + yearData.dcGrowth;
