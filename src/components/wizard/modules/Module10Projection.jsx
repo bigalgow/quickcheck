@@ -74,7 +74,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       retirementAge: parseFloat(data.inputs?.retirementAge || 65),
       dcPotAfterPCLS: atRetResults.assets.dcPotForDrawdown || 0,
       isaSavings: atRetResults.assets.isaAtRet || 0,
-      taxableSavings: atRetResults.assets.taxableAtRet || 0,
+      taxableSavings: (atRetResults.assets.taxableAtRet || 0) + (atRetResults.assets.dcPclsCash || 0) + (atRetResults.assets.dbPclsCash || 0),
       dbPension: atRetResults.income.dbIncomeAfter || 0,
       annuityIncome: atRetResults.income.dcAnnuityIncome || 0,
       statePension: atRetResults.income.statePensionAtRetNominal || 0,
