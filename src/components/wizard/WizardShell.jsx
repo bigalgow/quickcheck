@@ -5,6 +5,7 @@ import { defaultRetirePlanData, getModuleInfo, getModuleCompletionStatus, markMo
 import { MODULE_COMPONENTS } from './moduleRegistry.jsx';
 import WizardSaveBar from './WizardSaveBar.jsx';
 import PWAInstallBanner from '../PWAInstallBanner.jsx';
+import BottomNav from '../BottomNav.jsx';
 
 /**
  * WizardShell - Main wizard container with navigation and progress tracking
@@ -282,6 +283,9 @@ export default function WizardShell() {
 
       {/* PWA Install Banner */}
       <PWAInstallBanner />
+
+      {/* Bottom Navigation - Mobile/Tablet only */}
+      <BottomNav />
     </div>
   );
 }
