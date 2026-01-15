@@ -212,6 +212,63 @@ export default function Module3DCPensions({ data, onDataChange, onNext }) {
                     </p>
                   </div>
                 )}
+
+                {/* Career Break Section */}
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => handleChange('hasCareerBreak', !data.dc?.hasCareerBreak)}
+                    className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+                  >
+                    <span className={`transition-transform ${data.dc?.hasCareerBreak ? 'rotate-90' : ''}`}>▶</span>
+                    Planning a career break? (e.g., childcare, travel, sabbatical)
+                  </button>
+
+                  {data.dc?.hasCareerBreak && (
+                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm text-amber-800 mb-4">
+                        If you're planning a break from work, contributions will pause during this period.
+                        Your existing pot continues to grow, and contributions resume when you return.
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Break starts at age
+                          </label>
+                          <input
+                            type="number"
+                            value={data.dc?.breakStartAge || ''}
+                            onChange={(e) => handleChange('breakStartAge', e.target.value)}
+                            min={currentAge || 18}
+                            max={retirementAge || 70}
+                            placeholder={currentAge ? String(currentAge + 1) : '35'}
+                            className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Return to work at age
+                          </label>
+                          <input
+                            type="number"
+                            value={data.dc?.breakEndAge || ''}
+                            onChange={(e) => handleChange('breakEndAge', e.target.value)}
+                            min={data.dc?.breakStartAge || currentAge || 18}
+                            max={retirementAge || 70}
+                            placeholder={data.dc?.breakStartAge ? String(parseInt(data.dc.breakStartAge) + 2) : '37'}
+                            className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                          />
+                        </div>
+                      </div>
+                      {data.dc?.breakStartAge && data.dc?.breakEndAge && (
+                        <p className="text-sm text-amber-700 mt-3">
+                          {parseInt(data.dc.breakEndAge) - parseInt(data.dc.breakStartAge)} year break:
+                          no contributions from age {data.dc.breakStartAge} to {data.dc.breakEndAge}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>

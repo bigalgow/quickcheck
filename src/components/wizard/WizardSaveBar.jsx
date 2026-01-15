@@ -114,7 +114,9 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
       }
 
       const cloudData = await res.json();
-      return cloudData && cloudData.inputs ? cloudData : null;
+      // Accept any non-null object as valid cloud data
+      // (handles both new format with 'inputs' and any legacy formats)
+      return cloudData && typeof cloudData === 'object' && Object.keys(cloudData).length > 0 ? cloudData : null;
     } catch (e) {
       return null;
     }

@@ -39,6 +39,10 @@ export const defaultRetirePlanData = {
     employeePct: "0.05",
     employerPct: "0.05",
     personalAnnualContrib: "",
+    // Career break options
+    hasCareerBreak: false,
+    breakStartAge: "", // Age when break starts
+    breakEndAge: "",   // Age when contributions resume
   },
 
   // Module 4: DB Pensions (matches atRetirement.js structure)
@@ -46,7 +50,8 @@ export const defaultRetirePlanData = {
     takeTaxFree25: false,
     schemes: [
       // Active scheme example:
-      // { id, kind: "active", accrualDenominator, serviceYearsToDate, maxServiceYears, pensionableSalaryNow }
+      // { id, kind: "active", accrualDenominator, serviceYearsToDate, maxServiceYears, pensionableSalaryNow,
+      //   hasCareerBreak, breakStartAge, breakEndAge }
       // Deferred scheme example:
       // { id, kind: "deferred", preservedPensionNow, revaluationAssumption }
     ],

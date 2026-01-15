@@ -80,7 +80,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       statePension: atRetResults.income.statePensionAtRetNominal || 0,
       statePensionAge: parseFloat(data.inputs?.statePensionAge || 67),
       otherIncome: atRetResults.income.otherIncomeAtRet || 0,
-      annualSpend: parseFloat(data.lifestyle?.baselineAmount || 0),
+      annualSpend: atRetResults.desiredSpendAtRet || parseFloat(data.lifestyle?.baselineAmount || 0),
       inflation: parseFloat(data.inputs?.inflation || 2.5) / 100,
       dcGrowth: parseFloat(data.dc?.growthAssumption || 0.04),
       isaGrowth: parseFloat(data.savings?.isa?.growthRate || 3) / 100,

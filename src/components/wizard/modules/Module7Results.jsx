@@ -57,6 +57,10 @@ export default function Module7Results({ data, onDataChange, onNext }) {
       eePct: getValue('dc.employeePct', 0.05),
       erPct: getValue('dc.employerPct', 0.05),
       personalAnnualContrib: getValue('dc.personalAnnualContrib', 0),
+      // DC Career break
+      dcHasCareerBreak: wizardData.dc?.hasCareerBreak || false,
+      dcBreakStartAge: wizardData.dc?.breakStartAge ? parseFloat(wizardData.dc.breakStartAge) : null,
+      dcBreakEndAge: wizardData.dc?.breakEndAge ? parseFloat(wizardData.dc.breakEndAge) : null,
 
       // DB
       takeDBTaxFree25: wizardData.db?.takeTaxFree25 || false,
@@ -69,6 +73,10 @@ export default function Module7Results({ data, onDataChange, onNext }) {
         pensionableSalaryNow: parseFloat(scheme.pensionableSalaryNow) || 0,
         preservedPensionNow: parseFloat(scheme.preservedPensionNow) || 0,
         revaluationAssumption: parseFloat(scheme.revaluationAssumption) || 0.025,
+        // Career break fields
+        hasCareerBreak: scheme.hasCareerBreak || false,
+        breakStartAge: scheme.breakStartAge ? parseFloat(scheme.breakStartAge) : null,
+        breakEndAge: scheme.breakEndAge ? parseFloat(scheme.breakEndAge) : null,
       })),
 
       // Savings
