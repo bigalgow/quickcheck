@@ -95,6 +95,15 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
             >
               + Add Active DB Scheme
             </button>
+
+            {/* CARE scheme tip */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Have a Career Average (CARE) scheme?</strong> Check your Annual Benefit Statement
+                for the "projected pension at retirement" figure. Enter this as a <strong>Deferred scheme</strong> below
+                instead of Active — the projection already includes your future accrual.
+              </p>
+            </div>
           </div>
         )}
 
