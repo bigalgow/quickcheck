@@ -43,6 +43,13 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     try {
       setMsg(null);
 
+      // Check if offline first
+      if (!navigator.onLine) {
+        setMsg('⚠️ You\'re offline. Data saved locally - will sync when back online.');
+        console.info('ℹ️ Offline - save to cloud skipped');
+        return;
+      }
+
       const audience = import.meta.env.VITE_API_AUDIENCE;
       if (!audience) {
         setMsg('⚠️ Cloud save not configured');
@@ -71,7 +78,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
         } else {
           const text = await res.text();
           console.error('Save API error:', res.status, text);
-          setMsg(`Save failed (${res.status})`);
+          setMsg(`❌ Save failed (${res.status})`);
         }
         return;
       }
@@ -81,13 +88,19 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
       setHasUnsavedChanges(false);
       onSaveSuccess?.();
     } catch (e) {
+      // Check if it's a network error (likely offline or connection issue)
+      if (e.name === 'TypeError' && e.message?.includes('fetch')) {
+        console.info('ℹ️ Network error during save - likely offline');
+        setMsg('⚠️ Connection error. Data saved locally - will sync when reconnected.');
+        return;
+      }
       if (e.name === 'SyntaxError' || e.message?.includes('JSON')) {
         console.info('ℹ️ API endpoint not available (OK in local dev)');
         setMsg('💾 Local auto-save active. Deploy to Vercel for cloud save.');
         onSaveSuccess?.();
       } else {
         console.error('Save error:', e);
-        setMsg(e.message || 'Save failed.');
+        setMsg(`❌ Save failed: ${e.message || 'Unknown error'}`);
       }
     }
   };
@@ -128,6 +141,12 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
       setMsg('Loading...');
       setShowAccountMenu(false);
 
+      // Check if offline first
+      if (!navigator.onLine) {
+        setMsg('⚠️ You\'re offline. Can\'t load from cloud right now.');
+        return;
+      }
+
       const cloudData = await fetchCloudData();
 
       if (!cloudData) {
@@ -155,7 +174,12 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
       setMsg('✅ Loaded from cloud');
     } catch (e) {
       console.error('❌ Load error:', e);
-      setMsg(`❌ Load failed: ${e.message}`);
+      // Check if it's a network error
+      if (e.name === 'TypeError' && e.message?.includes('fetch')) {
+        setMsg('⚠️ Connection error. Can\'t load from cloud right now.');
+      } else {
+        setMsg(`❌ Load failed: ${e.message}`);
+      }
     }
   };
 
@@ -236,6 +260,13 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
 
       console.log('✅ Signed in. Initiating smart sync...');
 
+      // Skip cloud sync if offline
+      if (!navigator.onLine) {
+        console.log('📴 Offline - skipping cloud sync');
+        setMsg('📴 You\'re offline. Data saved locally.');
+        return;
+      }
+
       const hasLocalData = data?.metadata?.completedModules?.length > 0;
       const localTimestamp = data?.metadata?.lastModified;
 
@@ -256,13 +287,22 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
         return;
       }
 
-      // Case 3: Has cloud data, no local data → Auto-load from cloud
+      // Case 3: Has cloud data, no local data → Ask user before loading
       if (cloudData && !hasLocalData) {
-        console.log('☁️ No local data. Auto-loading from cloud...');
-        onImportData?.(cloudData);
-        localStorage.setItem('retireplan-wizard-last-cloud-save', cloudData.metadata?.lastModified || new Date().toISOString());
-        setHasUnsavedChanges(false);
-        setMsg('✅ Loaded from cloud');
+        console.log('☁️ Cloud data found, no local data.');
+        const userChoice = window.confirm(
+          '☁️ Cloud data found.\n\n' +
+          'Click OK to LOAD your saved data from cloud\n' +
+          'Click Cancel to START FRESH'
+        );
+        if (userChoice) {
+          onImportData?.(cloudData);
+          localStorage.setItem('retireplan-wizard-last-cloud-save', cloudData.metadata?.lastModified || new Date().toISOString());
+          setHasUnsavedChanges(false);
+          setMsg('✅ Loaded from cloud');
+        } else {
+          setMsg(null);
+        }
         return;
       }
 
@@ -302,13 +342,23 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
         return;
       }
 
-      // Cloud is newer → Auto-load from cloud
+      // Cloud is newer → Ask user before overwriting local changes
       if (cloudTime > localTime) {
-        console.log('☁️ Cloud data is newer. Auto-loading...');
-        onImportData?.(cloudData);
-        localStorage.setItem('retireplan-wizard-last-cloud-save', cloudTimestamp);
-        setHasUnsavedChanges(false);
-        setMsg('✅ Loaded newer data from cloud');
+        console.log('☁️ Cloud data is newer than local.');
+        const userChoice = window.confirm(
+          '☁️ Your cloud data is newer than your local data.\n\n' +
+          'Click OK to LOAD from cloud (overwrites local changes)\n' +
+          'Click Cancel to KEEP your local data'
+        );
+        if (userChoice) {
+          onImportData?.(cloudData);
+          localStorage.setItem('retireplan-wizard-last-cloud-save', cloudTimestamp);
+          setHasUnsavedChanges(false);
+          setMsg('✅ Loaded newer data from cloud');
+        } else {
+          setMsg('💾 Keeping local data. Save to cloud when ready.');
+          setHasUnsavedChanges(true);
+        }
         return;
       }
 
@@ -329,13 +379,14 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs text-slate-500">💾 Auto-saved locally</span>
 
-        {hasUnsavedChanges && (
+        {/* Show sync status - msg takes priority over hasUnsavedChanges to avoid contradictions */}
+        {msg ? (
+          <span className={`text-sm font-semibold ${msg.includes('❌') || msg.includes('⚠️') ? 'text-red-700' : msg.includes('●') ? 'text-amber-700' : 'text-green-700'}`}>
+            {msg}
+          </span>
+        ) : hasUnsavedChanges ? (
           <span className="text-sm font-semibold text-amber-700">● Not saved to cloud</span>
-        )}
-
-        {msg && (
-          <span className="text-sm font-semibold text-green-700">{msg}</span>
-        )}
+        ) : null}
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
