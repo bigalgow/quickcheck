@@ -235,47 +235,7 @@ export default function WizardShell() {
           />
         </div>
 
-        {/* Navigation buttons */}
-        <div className="flex items-center justify-between mt-6 no-print">
-          <button
-            onClick={goToPrevious}
-            disabled={currentModuleId === 1}
-            className={`px-6 py-3 rounded-md font-medium transition-colors ${
-              currentModuleId === 1
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                : 'bg-slate-500 text-white hover:bg-slate-600'
-            }`}
-          >
-            ← Previous
-          </button>
-
-          <div className="flex gap-3">
-            <button
-              onClick={markCompleted}
-              className="px-6 py-3 rounded-md font-medium bg-green-500 text-white hover:bg-green-600 transition-colors"
-            >
-              ✓ Mark Complete
-            </button>
-
-            {currentModuleId < 10 && (
-              <button
-                onClick={goToNext}
-                className="px-6 py-3 rounded-md font-medium bg-sky-500 text-white hover:bg-sky-600 transition-colors"
-              >
-                Next →
-              </button>
-            )}
-
-            {currentModuleId === 10 && (
-              <button
-                onClick={exitWizard}
-                className="px-6 py-3 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-              >
-                Finish →
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Navigation is handled within each module component */}
       </div>
 
       {/* Quick Navigation Menu (future enhancement) */}
