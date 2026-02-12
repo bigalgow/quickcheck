@@ -3,6 +3,31 @@ import React from 'react';
 import FormInput from '../../ui/FormInput';
 import HelpText from '../../ui/HelpText';
 
+/**
+ * Calculate minimum pension age based on UK rules:
+ * - Before 6 April 2028: minimum age 55
+ * - From 6 April 2028: minimum age 57
+ *
+ * @param {string} dateOfBirth - DOB in YYYY-MM-DD format
+ * @returns {number} Minimum pension age (55 or 57)
+ */
+function getMinimumPensionAge(dateOfBirth) {
+  if (!dateOfBirth) return 55;
+
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return 55;
+
+  // Calculate when they would turn 55
+  const age55Date = new Date(dob);
+  age55Date.setFullYear(age55Date.getFullYear() + 55);
+
+  // The rule change date: 6 April 2028
+  const ruleChangeDate = new Date('2028-04-06');
+
+  // If they turn 55 before 6 April 2028, minimum is 55; otherwise 57
+  return age55Date < ruleChangeDate ? 55 : 57;
+}
+
 export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = React.useState(false);
 
@@ -19,6 +44,10 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
   const currentAge = data.inputs.dateOfBirth
     ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
     : null;
+
+  // Calculate minimum retirement age: higher of current age or minimum pension age (55/57)
+  const minimumPensionAge = getMinimumPensionAge(data.inputs.dateOfBirth);
+  const minRetirementAge = currentAge ? Math.max(currentAge, minimumPensionAge) : minimumPensionAge;
 
   const isValid = data.inputs.dateOfBirth && data.inputs.retirementAge;
 
@@ -63,10 +92,17 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
           type="number"
           value={data.inputs.retirementAge}
           onChange={handleChange}
-          min={currentAge || 50}
+          min={minRetirementAge}
           max="100"
           placeholder="e.g., 65"
         />
+
+        {data.inputs.dateOfBirth && (
+          <p className="text-sm text-slate-500 -mt-2">
+            Minimum retirement age: {minRetirementAge}
+            {minimumPensionAge === 57 && ' (UK pension age rises to 57 from April 2028)'}
+          </p>
+        )}
 
         {currentAge && data.inputs.retirementAge && parseInt(data.inputs.retirementAge) <= currentAge && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 -mt-2">

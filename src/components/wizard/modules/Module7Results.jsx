@@ -157,6 +157,7 @@ export default function Module7Results({ data, onDataChange, onNext }) {
         estTax: results.estTax,
         netIncome: results.netIncome,
         surplusDeficit: results.surplusDeficit,
+        desiredSpendAtRet: results.desiredSpendAtRet, // Include inflated spend for Module 10
         real: results.real,
         spaWarning: results.spaWarning,
       },

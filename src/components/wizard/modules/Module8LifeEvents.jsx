@@ -74,6 +74,11 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
     return Math.floor(yearsBetween(dob, today));
   }, [data.inputs?.dateOfBirth]);
 
+  // Get retirement age for minimum event age
+  const retirementAge = useMemo(() => {
+    return parseInt(data.inputs?.retirementAge) || currentAge;
+  }, [data.inputs?.retirementAge, currentAge]);
+
   const events = data.lifeEvents || [];
 
   const handleInputChange = useCallback((e) => {
@@ -115,8 +120,8 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
     const age = parseInt(newEvent.age, 10);
     const amount = parseFloat(newEvent.amount);
 
-    if (isNaN(age) || age < 0) {
-      alert('Please enter a valid age.');
+    if (isNaN(age) || age < retirementAge) {
+      alert(`Life events must be at or after your retirement age (${retirementAge}).`);
       return;
     }
 
@@ -259,8 +264,8 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
               type="number"
               value={newEvent.age}
               onChange={handleInputChange}
-              min={currentAge}
-              placeholder={Math.ceil(currentAge)}
+              min={retirementAge}
+              placeholder={retirementAge}
             />
             <FormInput
               label="Event Name"
@@ -383,10 +388,10 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
       {/* Info box */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          💡 <strong>Note:</strong> Life events are applied to your 25-year projection. Income
-          events (like inheritance or property sales) increase available funds, while expense events
-          (purchases, gifts) draw down your savings. Recurring events repeat for the specified
-          number of years starting from the age you enter.
+          💡 <strong>Note:</strong> Life events are applied to your 25-year post-retirement projection,
+          starting from your retirement age ({retirementAge}). Income events (like inheritance or property sales)
+          increase available funds, while expense events (purchases, gifts) draw down your savings.
+          Recurring events repeat for the specified number of years starting from the age you enter.
         </p>
       </div>
 
