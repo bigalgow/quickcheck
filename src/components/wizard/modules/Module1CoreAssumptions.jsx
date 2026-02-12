@@ -49,7 +49,12 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
   const minimumPensionAge = getMinimumPensionAge(data.inputs.dateOfBirth);
   const minRetirementAge = currentAge ? Math.max(currentAge, minimumPensionAge) : minimumPensionAge;
 
-  const isValid = data.inputs.dateOfBirth && data.inputs.retirementAge;
+  // Check if retirement age is below minimum
+  const retirementAge = parseInt(data.inputs.retirementAge) || 0;
+  const isRetirementAgeBelowMinimum = data.inputs.retirementAge && retirementAge < minRetirementAge;
+
+  // Form is valid only if all required fields filled AND retirement age meets minimum
+  const isValid = data.inputs.dateOfBirth && data.inputs.retirementAge && !isRetirementAgeBelowMinimum;
 
   return (
     <div className="p-6">
@@ -97,14 +102,25 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
           placeholder="e.g., 65"
         />
 
-        {data.inputs.dateOfBirth && (
+        {data.inputs.dateOfBirth && !isRetirementAgeBelowMinimum && (
           <p className="text-sm text-slate-500 -mt-2">
             Minimum retirement age: {minRetirementAge}
             {minimumPensionAge === 57 && ' (UK pension age rises to 57 from April 2028)'}
           </p>
         )}
 
-        {currentAge && data.inputs.retirementAge && parseInt(data.inputs.retirementAge) <= currentAge && (
+        {isRetirementAgeBelowMinimum && (
+          <div className="bg-red-50 border border-red-300 rounded-lg p-3 -mt-2">
+            <p className="text-sm text-red-800">
+              ⚠️ <strong>Retirement age must be at least {minRetirementAge}.</strong>
+              {minimumPensionAge === 57
+                ? ' The UK minimum pension age rises to 57 from April 2028, which applies based on your date of birth.'
+                : ' This is the UK minimum pension age (55), or your current age if higher.'}
+            </p>
+          </div>
+        )}
+
+        {!isRetirementAgeBelowMinimum && currentAge && data.inputs.retirementAge && parseInt(data.inputs.retirementAge) <= currentAge && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 -mt-2">
             <p className="text-sm text-blue-800">
               ℹ️ You've entered a retirement age equal to or below your current age ({currentAge}). The calculator will treat you as already retired and skip future contribution projections.
@@ -173,10 +189,18 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
       </div>
 
       {/* Validation message */}
-      {!isValid && (
+      {!isValid && !isRetirementAgeBelowMinimum && (
         <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-800">
             ⚠️ Please complete all required fields (*) before continuing
+          </p>
+        </div>
+      )}
+
+      {isRetirementAgeBelowMinimum && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-300 rounded-lg">
+          <p className="text-sm text-red-800">
+            ⚠️ Please enter a retirement age of at least {minRetirementAge} to continue
           </p>
         </div>
       )}
