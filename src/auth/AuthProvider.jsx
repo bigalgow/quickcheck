@@ -36,7 +36,39 @@ export default function AuthProvider({ children }) {
     isAuthenticated: false,
     userInfo: null,
     loading: true,
+    isPremium: false,
+    premiumLoading: false,
   });
+
+  // Fetch premium status from backend
+  const fetchPremiumStatus = async () => {
+    try {
+      const audience = import.meta.env.VITE_API_AUDIENCE;
+      if (!audience) {
+        console.log('[logto] No API audience configured, skipping premium check');
+        setState(prev => ({ ...prev, isPremium: false, premiumLoading: false }));
+        return;
+      }
+
+      const token = await client.getAccessToken(audience);
+      const res = await fetch('/api/me/premium', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        console.warn('[logto] Premium check failed:', res.status);
+        setState(prev => ({ ...prev, isPremium: false, premiumLoading: false }));
+        return;
+      }
+
+      const { isPremium } = await res.json();
+      console.log('[logto] Premium status:', isPremium);
+      setState(prev => ({ ...prev, isPremium: isPremium === true, premiumLoading: false }));
+    } catch (e) {
+      console.warn('[logto] Premium check error:', e);
+      setState(prev => ({ ...prev, isPremium: false, premiumLoading: false }));
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -62,13 +94,18 @@ export default function AuthProvider({ children }) {
         // 3. Users clicking "Login to save" will get instant SSO if they're already logged in elsewhere
 
         const profile = authed ? await client.fetchUserInfo() : null;
-        setState({ isAuthenticated: authed, userInfo: profile, loading: false });
+        setState({ isAuthenticated: authed, userInfo: profile, loading: false, isPremium: false, premiumLoading: authed });
+
+        // Fetch premium status if authenticated
+        if (authed) {
+          fetchPremiumStatus();
+        }
       } catch (e) {
         // This is where your log came from: refresh grant failed.
         console.error('[logto] status sync failed:', e);
         // Auto-clear stale tokens and fall back to logged-out.
         clearLogtoStorage();
-        setState({ isAuthenticated: false, userInfo: null, loading: false });
+        setState({ isAuthenticated: false, userInfo: null, loading: false, isPremium: false, premiumLoading: false });
       }
     })();
   }, [client]);

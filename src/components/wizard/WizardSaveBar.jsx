@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 
 export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWizardData = true }) {
-  const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken } = useAuth();
+  const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken, isPremium, premiumLoading } = useAuth();
   const [msg, setMsg] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -38,10 +38,16 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     setHasUnsavedChanges(localTime > cloudTime);
   }, [data?.metadata?.lastModified]);
 
-  // Save to cloud
+  // Save to cloud (premium only)
   const saveToCloud = async () => {
     try {
       setMsg(null);
+
+      // Check premium status
+      if (!isPremium) {
+        setMsg('⭐ Cloud sync is a premium feature');
+        return;
+      }
 
       // Check if offline first
       if (!navigator.onLine) {
@@ -135,11 +141,17 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     }
   };
 
-  // Load from cloud
+  // Load from cloud (premium only)
   const loadFromCloud = async (skipConfirm = false) => {
     try {
       setMsg('Loading...');
       setShowAccountMenu(false);
+
+      // Check premium status
+      if (!isPremium) {
+        setMsg('⭐ Cloud sync is a premium feature');
+        return;
+      }
 
       // Check if offline first
       if (!navigator.onLine) {
@@ -253,12 +265,22 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     signOut();
   };
 
-  // Smart sync on login: compare timestamps and sync intelligently
+  // Smart sync on login: compare timestamps and sync intelligently (premium only)
   useEffect(() => {
     const performSmartSync = async () => {
       if (!isAuthenticated || !userInfo) return;
 
-      console.log('✅ Signed in. Initiating smart sync...');
+      // Wait for premium status to be determined
+      if (premiumLoading) return;
+
+      // Non-premium users don't get cloud sync
+      if (!isPremium) {
+        console.log('ℹ️ Cloud sync requires premium. Using local storage only.');
+        setMsg('💾 Data saved locally. Upgrade for cloud sync.');
+        return;
+      }
+
+      console.log('✅ Signed in (premium). Initiating smart sync...');
 
       // Skip cloud sync if offline
       if (!navigator.onLine) {
@@ -372,7 +394,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     };
 
     performSmartSync();
-  }, [isAuthenticated, userInfo]);
+  }, [isAuthenticated, userInfo, isPremium, premiumLoading]);
 
   return (
     <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-wrap gap-3 no-print">
@@ -403,17 +425,25 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
           <>
             {/* Save button - only show if there's wizard data to save */}
             {hasWizardData && (
-              <button
-                onClick={saveToCloud}
-                disabled={loading}
-                className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
-                  hasUnsavedChanges
-                    ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-green-600 hover:bg-green-700'
-                } disabled:opacity-50`}
-              >
-                {hasUnsavedChanges ? '💾 Save to cloud' : '✓ Saved'}
-              </button>
+              isPremium ? (
+                <button
+                  onClick={saveToCloud}
+                  disabled={loading || premiumLoading}
+                  className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
+                    hasUnsavedChanges
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'bg-green-600 hover:bg-green-700'
+                  } disabled:opacity-50`}
+                >
+                  {hasUnsavedChanges ? '💾 Save to cloud' : '✓ Saved'}
+                </button>
+              ) : premiumLoading ? (
+                <span className="px-4 py-2 text-sm text-slate-500">Loading...</span>
+              ) : (
+                <span className="px-4 py-2 text-sm text-slate-600 bg-slate-100 rounded-md">
+                  ⭐ Free tier (local only)
+                </span>
+              )
             )}
 
             {/* Account Dropdown */}
@@ -441,13 +471,23 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
 
                   {/* Menu Items */}
                   <div className="py-1">
-                    <button
-                      onClick={loadFromCloud}
-                      className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    >
-                      <span>☁️</span>
-                      <span>Load from cloud</span>
-                    </button>
+                    {/* Cloud sync options - premium only */}
+                    {isPremium ? (
+                      <button
+                        onClick={loadFromCloud}
+                        className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      >
+                        <span>☁️</span>
+                        <span>Load from cloud</span>
+                      </button>
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-slate-500">
+                        <span className="flex items-center gap-2">
+                          <span>⭐</span>
+                          <span>Cloud sync (premium)</span>
+                        </span>
+                      </div>
+                    )}
 
                     {/* Only show Backup if there's wizard data to backup */}
                     {hasWizardData && (
