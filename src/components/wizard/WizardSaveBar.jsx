@@ -440,9 +440,14 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
               ) : premiumLoading ? (
                 <span className="px-4 py-2 text-sm text-slate-500">Loading...</span>
               ) : (
-                <span className="px-4 py-2 text-sm text-slate-600 bg-slate-100 rounded-md">
-                  ⭐ Free tier (local only)
-                </span>
+  <a
+                  href={import.meta.env.VITE_UPGRADE_URL || 'https://retireplan.co.uk/upgrade'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-md hover:bg-amber-100 transition-colors"
+                >
+                  ⭐ Upgrade for cloud sync
+                </a>
               )
             )}
 
@@ -481,12 +486,15 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
                         <span>Load from cloud</span>
                       </button>
                     ) : (
-                      <div className="px-4 py-2 text-sm text-slate-500">
-                        <span className="flex items-center gap-2">
-                          <span>⭐</span>
-                          <span>Cloud sync (premium)</span>
-                        </span>
-                      </div>
+                      <a
+                        href={import.meta.env.VITE_UPGRADE_URL || 'https://retireplan.co.uk/upgrade'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 flex items-center gap-2"
+                      >
+                        <span>⭐</span>
+                        <span>Upgrade for cloud sync</span>
+                      </a>
                     )}
 
                     {/* Only show Backup if there's wizard data to backup */}
