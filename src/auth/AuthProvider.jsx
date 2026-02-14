@@ -127,6 +127,12 @@ export default function AuthProvider({ children }) {
     return client.getAccessToken();
   };
 
+  // Expose refreshPremium for use after claiming
+  const refreshPremium = () => {
+    setState(prev => ({ ...prev, premiumLoading: true }));
+    fetchPremiumStatus();
+  };
+
   return (
     <AuthCtx.Provider
       value={{
@@ -134,6 +140,7 @@ export default function AuthProvider({ children }) {
         signIn,
         signOut,
         getAccessToken,
+        refreshPremium,
       }}
     >
       {children}

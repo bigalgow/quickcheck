@@ -1,12 +1,14 @@
 // src/components/wizard/WizardSaveBar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
+import PremiumClaimModal from '../PremiumClaimModal';
 
 export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWizardData = true }) {
-  const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken, isPremium, premiumLoading } = useAuth();
+  const { isAuthenticated, loading, userInfo, signIn, signOut, getAccessToken, isPremium, premiumLoading, refreshPremium } = useAuth();
   const [msg, setMsg] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
   const menuRef = useRef(null);
 
   // Close menu when clicking outside
@@ -396,7 +398,19 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
     performSmartSync();
   }, [isAuthenticated, userInfo, isPremium, premiumLoading]);
 
+  // Handle successful premium claim
+  const handleClaimSuccess = () => {
+    refreshPremium();
+    setMsg('🎉 Premium activated! You can now save to cloud.');
+  };
+
   return (
+    <>
+    <PremiumClaimModal
+      isOpen={showClaimModal}
+      onClose={() => setShowClaimModal(false)}
+      onSuccess={handleClaimSuccess}
+    />
     <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-wrap gap-3 no-print">
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs text-slate-500">💾 Auto-saved locally</span>
@@ -440,14 +454,12 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
               ) : premiumLoading ? (
                 <span className="px-4 py-2 text-sm text-slate-500">Loading...</span>
               ) : (
-  <a
-                  href={import.meta.env.VITE_UPGRADE_URL || 'https://retireplan.co.uk/upgrade'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+  <button
+                  onClick={() => setShowClaimModal(true)}
                   className="px-4 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-md hover:bg-amber-100 transition-colors"
                 >
                   ⭐ Upgrade for cloud sync
-                </a>
+                </button>
               )
             )}
 
@@ -486,15 +498,16 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
                         <span>Load from cloud</span>
                       </button>
                     ) : (
-                      <a
-                        href={import.meta.env.VITE_UPGRADE_URL || 'https://retireplan.co.uk/upgrade'}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => {
+                          setShowAccountMenu(false);
+                          setShowClaimModal(true);
+                        }}
                         className="w-full px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 flex items-center gap-2"
                       >
                         <span>⭐</span>
                         <span>Upgrade for cloud sync</span>
-                      </a>
+                      </button>
                     )}
 
                     {/* Only show Backup if there's wizard data to backup */}
@@ -544,5 +557,6 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
         )}
       </div>
     </div>
+    </>
   );
 }
