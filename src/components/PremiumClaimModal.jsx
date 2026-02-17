@@ -97,7 +97,7 @@ export default function PremiumClaimModal({ isOpen, onClose, onSuccess }) {
                 <div>
                   <div className="font-semibold text-amber-800">Early Adopter Offer</div>
                   <div className="text-sm text-amber-700">
-                    As an early user, you get premium access <strong>free</strong>.
+                    As an early user, you get premium access <strong>free forever</strong>.
                     No payment required.
                   </div>
                 </div>
