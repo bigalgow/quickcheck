@@ -63,9 +63,23 @@ async function updateUserCustomData(userId, customData, mgmtToken) {
   return r.json();
 }
 
+// CORS helper for cross-origin requests from Lifestyle Designer
+function setCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+}
+
 export default async function handler(req, res) {
+  setCorsHeaders(res);
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).end();
   }
 
