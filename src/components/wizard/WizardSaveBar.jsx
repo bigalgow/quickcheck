@@ -475,7 +475,7 @@ export default function WizardSaveBar({ data, onImportData, onSaveSuccess, hasWi
               </button>
 
               {showAccountMenu && (
-                <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-white border border-slate-300 rounded-lg shadow-lg z-[100]">
+                <div className="absolute right-auto left-2 sm:left-auto sm:right-0 mt-2 w-56 sm:w-64 bg-white border border-slate-300 rounded-lg shadow-lg z-[100]">
                   {/* User Info */}
                   <div className="px-4 py-3 border-b border-slate-200">
                     <div className="text-sm font-semibold text-slate-800">
