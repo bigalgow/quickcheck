@@ -1,11 +1,47 @@
 // src/components/wizard/WizardShell.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import { defaultRetirePlanData, getModuleInfo, getModuleCompletionStatus, markModuleCompleted, getAllModuleIds } from '../../utils/dataSchema';
 import { MODULE_COMPONENTS } from './moduleRegistry.jsx';
 import WizardSaveBar from './WizardSaveBar.jsx';
 import BottomNav from '../BottomNav.jsx';
 import PWAInstallBanner from '../PWAInstallBanner.jsx';
+
+/**
+ * Convert lifestyle goals from Lifestyle Designer to life events format
+ * @param {Array} goals - Array of lifestyle goals from URL
+ * @param {number} retirementAge - User's retirement age (default 65)
+ * @returns {Array} Array of life events
+ */
+function convertGoalsToLifeEvents(goals, retirementAge = 65) {
+  return goals.map(goal => ({
+    id: uuidv4(),
+    name: goal.name,
+    amount: goal.cost,
+    type: 'expense',
+    isRecurring: goal.timing === 'recurring',
+    recurringYears: goal.timing === 'recurring' ? (goal.duration ?? 10) : 1,
+    age: retirementAge,
+    source: 'lifestyleProfile',
+  }));
+}
+
+/**
+ * Parse lifestyleGoals from URL parameter
+ * @returns {Array|null} Parsed goals array or null if not present/invalid
+ */
+function parseLifestyleGoalsFromURL() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('lifestyleGoals');
+    if (!encoded) return null;
+    return JSON.parse(atob(encoded));
+  } catch (e) {
+    console.error('Failed to parse lifestyleGoals from URL:', e);
+    return null;
+  }
+}
 
 /**
  * WizardShell - Main wizard container with navigation and progress tracking
@@ -17,24 +53,68 @@ export default function WizardShell() {
   // Get current module from URL (default to 1)
   const currentModuleId = parseInt(searchParams.get('module') || '1');
 
+  // Track lifestyle goals import count for UI feedback
+  const [lifestyleImportCount, setLifestyleImportCount] = useState(0);
+
   // Wizard data state
   const [data, setData] = useState(() => {
     // Try to load from localStorage
     const stored = localStorage.getItem('retireplan-wizard-data');
+    let baseData = defaultRetirePlanData;
     if (stored) {
       try {
-        return JSON.parse(stored);
+        baseData = JSON.parse(stored);
       } catch (e) {
         console.error('Failed to parse stored wizard data:', e);
       }
     }
-    return defaultRetirePlanData;
+
+    // Check for lifestyleGoals URL parameter
+    const importedGoals = parseLifestyleGoalsFromURL();
+    if (importedGoals && Array.isArray(importedGoals) && importedGoals.length > 0) {
+      const retirementAge = parseFloat(baseData.inputs?.retirementAge) || 65;
+      const newEvents = convertGoalsToLifeEvents(importedGoals, retirementAge);
+
+      // Remove existing lifestyleProfile events, then add new ones
+      const existingEvents = (baseData.lifeEvents || []).filter(
+        ev => ev.source !== 'lifestyleProfile'
+      );
+
+      return {
+        ...baseData,
+        lifeEvents: [...existingEvents, ...newEvents],
+      };
+    }
+
+    return baseData;
   });
 
   // Autosave to localStorage whenever data changes
   useEffect(() => {
     localStorage.setItem('retireplan-wizard-data', JSON.stringify(data));
   }, [data]);
+
+  // Clean up lifestyleGoals from URL and set import count
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('lifestyleGoals');
+    if (encoded) {
+      try {
+        const goals = JSON.parse(atob(encoded));
+        if (Array.isArray(goals)) {
+          setLifestyleImportCount(goals.length);
+        }
+      } catch (e) {
+        // Silently ignore parse errors
+      }
+
+      // Remove lifestyleGoals from URL (keep other params like module)
+      params.delete('lifestyleGoals');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   // Update data handler
   const handleDataChange = useCallback((newData) => {
@@ -232,6 +312,7 @@ export default function WizardShell() {
             onNext={goToNext}
             onPrevious={goToPrevious}
             onComplete={markCompleted}
+            lifestyleImportCount={currentModuleId === 8 ? lifestyleImportCount : 0}
           />
         </div>
 

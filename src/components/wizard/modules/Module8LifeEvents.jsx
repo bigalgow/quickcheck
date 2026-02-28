@@ -17,9 +17,10 @@ function toDate(val) {
   return new Date(NaN);
 }
 
-export default function Module8LifeEvents({ data, onDataChange, onNext }) {
+export default function Module8LifeEvents({ data, onDataChange, onNext, lifestyleImportCount = 0 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [newEvent, setNewEvent] = useState({
     id: uuidv4(),
     age: '',
@@ -119,6 +120,25 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
 
   return (
     <div className="p-6">
+      {/* Import success banner */}
+      {lifestyleImportCount > 0 && !bannerDismissed && (
+        <div className="mb-6 bg-teal-50 border border-teal-300 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-teal-800">
+            <span className="text-lg">✓</span>
+            <span className="font-medium">
+              {lifestyleImportCount} lifestyle goal{lifestyleImportCount !== 1 ? 's' : ''} imported from Lifestyle Designer
+            </span>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="text-teal-600 hover:text-teal-800 text-xl font-bold px-2"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Help text */}
       <div className="mb-6">
         <button
@@ -236,7 +256,14 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
                   className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-between gap-4 transition-all hover:shadow-md"
                 >
                   <div>
-                    <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                      {event.source === 'lifestyleProfile' && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-sky-100 text-sky-700 rounded-full">
+                          Lifestyle Plan
+                        </span>
+                      )}
+                    </div>
                     <span className="block text-base text-slate-500">
                       at age {event.age}
                       {event.isRecurring && ` for ${event.recurringYears} years`}:
