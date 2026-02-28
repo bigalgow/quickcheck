@@ -43,7 +43,10 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
 
   // Count imported lifestyle events (more reliable than URL param count)
   const importedCount = useMemo(() => {
-    return events.filter(ev => ev.source === 'lifestyleProfile').length;
+    const count = events.filter(ev => ev.source === 'lifestyleProfile').length;
+    console.log('Module8 events:', events.map(e => ({ name: e.name, source: e.source })));
+    console.log('Imported count:', count);
+    return count;
   }, [events]);
 
   const handleInputChange = useCallback((e) => {
