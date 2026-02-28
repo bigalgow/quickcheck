@@ -35,13 +35,10 @@ function parseLifestyleGoalsFromURL() {
   try {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get('lifestyleGoals');
-    console.log('🔍 DEBUG: lifestyleGoals param:', encoded ? `found (${encoded.length} chars)` : 'NOT FOUND');
     if (!encoded) return null;
-    const decoded = JSON.parse(atob(encoded));
-    console.log('✅ DEBUG: Parsed goals:', decoded);
-    return decoded;
+    return JSON.parse(atob(encoded));
   } catch (e) {
-    console.error('❌ Failed to parse lifestyleGoals from URL:', e);
+    console.error('Failed to parse lifestyleGoals from URL:', e);
     return null;
   }
 }
@@ -50,15 +47,11 @@ function parseLifestyleGoalsFromURL() {
  * WizardShell - Main wizard container with navigation and progress tracking
  */
 export default function WizardShell() {
-  console.log('🚀 WizardShell MOUNTED - URL:', window.location.href);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Get current module from URL (default to 1)
   const currentModuleId = parseInt(searchParams.get('module') || '1');
-
-  // Track lifestyle goals import count for UI feedback
-  const [lifestyleImportCount, setLifestyleImportCount] = useState(0);
 
   // Wizard data state
   const [data, setData] = useState(() => {
@@ -75,26 +68,21 @@ export default function WizardShell() {
 
     // Check for lifestyleGoals URL parameter
     const importedGoals = parseLifestyleGoalsFromURL();
-    console.log('🔍 DEBUG: importedGoals:', importedGoals);
     if (importedGoals && Array.isArray(importedGoals) && importedGoals.length > 0) {
       const retirementAge = parseFloat(baseData.inputs?.retirementAge) || 65;
       const newEvents = convertGoalsToLifeEvents(importedGoals, retirementAge);
-      console.log('✅ DEBUG: Converted to life events:', newEvents);
 
       // Remove existing lifestyleProfile events, then add new ones
       const existingEvents = (baseData.lifeEvents || []).filter(
         ev => ev.source !== 'lifestyleProfile'
       );
 
-      const finalData = {
+      return {
         ...baseData,
         lifeEvents: [...existingEvents, ...newEvents],
       };
-      console.log('✅ DEBUG: Final lifeEvents count:', finalData.lifeEvents.length);
-      return finalData;
     }
 
-    console.log('⚠️ DEBUG: No lifestyle goals imported, using baseData. lifeEvents:', baseData.lifeEvents?.length || 0);
     return baseData;
   });
 
@@ -103,21 +91,10 @@ export default function WizardShell() {
     localStorage.setItem('retireplan-wizard-data', JSON.stringify(data));
   }, [data]);
 
-  // Clean up lifestyleGoals from URL and set import count
+  // Clean up lifestyleGoals from URL after import
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const encoded = params.get('lifestyleGoals');
-    if (encoded) {
-      try {
-        const goals = JSON.parse(atob(encoded));
-        if (Array.isArray(goals)) {
-          setLifestyleImportCount(goals.length);
-        }
-      } catch (e) {
-        // Silently ignore parse errors
-      }
-
-      // Remove lifestyleGoals from URL (keep other params like module)
+    if (params.has('lifestyleGoals')) {
       params.delete('lifestyleGoals');
       const newSearch = params.toString();
       const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '');
@@ -321,7 +298,6 @@ export default function WizardShell() {
             onNext={goToNext}
             onPrevious={goToPrevious}
             onComplete={markCompleted}
-            lifestyleImportCount={currentModuleId === 8 ? lifestyleImportCount : 0}
           />
         </div>
 

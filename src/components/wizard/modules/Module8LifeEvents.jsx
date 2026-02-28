@@ -17,7 +17,7 @@ function toDate(val) {
   return new Date(NaN);
 }
 
-export default function Module8LifeEvents({ data, onDataChange, onNext, lifestyleImportCount = 0 }) {
+export default function Module8LifeEvents({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -40,7 +40,11 @@ export default function Module8LifeEvents({ data, onDataChange, onNext, lifestyl
   }, [data.inputs?.dateOfBirth]);
 
   const events = data.lifeEvents || [];
-  console.log('🎯 Module8: Received events:', events.length, events);
+
+  // Count imported lifestyle events (more reliable than URL param count)
+  const importedCount = useMemo(() => {
+    return events.filter(ev => ev.source === 'lifestyleProfile').length;
+  }, [events]);
 
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
@@ -122,21 +126,29 @@ export default function Module8LifeEvents({ data, onDataChange, onNext, lifestyl
   return (
     <div className="p-6">
       {/* Import success banner */}
-      {lifestyleImportCount > 0 && !bannerDismissed && (
-        <div className="mb-6 bg-teal-50 border border-teal-300 rounded-lg p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-teal-800">
-            <span className="text-lg">✓</span>
-            <span className="font-medium">
-              {lifestyleImportCount} lifestyle goal{lifestyleImportCount !== 1 ? 's' : ''} imported from Lifestyle Designer
-            </span>
+      {importedCount > 0 && !bannerDismissed && (
+        <div className="mb-6 bg-teal-50 border border-teal-300 rounded-lg p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 text-teal-800">
+              <span className="text-xl mt-0.5">✓</span>
+              <div>
+                <span className="font-semibold block">
+                  {importedCount} lifestyle goal{importedCount !== 1 ? 's' : ''} imported
+                </span>
+                <span className="text-sm text-teal-700 mt-1 block">
+                  Your goals from Lifestyle Designer are shown below. You can edit amounts, timing,
+                  or add more events to fine-tune your retirement plan.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-teal-600 hover:text-teal-800 text-xl font-bold px-2 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
           </div>
-          <button
-            onClick={() => setBannerDismissed(true)}
-            className="text-teal-600 hover:text-teal-800 text-xl font-bold px-2"
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
         </div>
       )}
 
