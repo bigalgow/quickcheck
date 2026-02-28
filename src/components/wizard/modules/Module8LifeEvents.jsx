@@ -40,6 +40,7 @@ export default function Module8LifeEvents({ data, onDataChange, onNext, lifestyl
   }, [data.inputs?.dateOfBirth]);
 
   const events = data.lifeEvents || [];
+  console.log('🎯 Module8: Received events:', events.length, events);
 
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;

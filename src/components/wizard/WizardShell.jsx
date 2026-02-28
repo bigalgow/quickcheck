@@ -35,10 +35,13 @@ function parseLifestyleGoalsFromURL() {
   try {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get('lifestyleGoals');
+    console.log('🔍 DEBUG: lifestyleGoals param:', encoded ? `found (${encoded.length} chars)` : 'NOT FOUND');
     if (!encoded) return null;
-    return JSON.parse(atob(encoded));
+    const decoded = JSON.parse(atob(encoded));
+    console.log('✅ DEBUG: Parsed goals:', decoded);
+    return decoded;
   } catch (e) {
-    console.error('Failed to parse lifestyleGoals from URL:', e);
+    console.error('❌ Failed to parse lifestyleGoals from URL:', e);
     return null;
   }
 }
@@ -71,21 +74,26 @@ export default function WizardShell() {
 
     // Check for lifestyleGoals URL parameter
     const importedGoals = parseLifestyleGoalsFromURL();
+    console.log('🔍 DEBUG: importedGoals:', importedGoals);
     if (importedGoals && Array.isArray(importedGoals) && importedGoals.length > 0) {
       const retirementAge = parseFloat(baseData.inputs?.retirementAge) || 65;
       const newEvents = convertGoalsToLifeEvents(importedGoals, retirementAge);
+      console.log('✅ DEBUG: Converted to life events:', newEvents);
 
       // Remove existing lifestyleProfile events, then add new ones
       const existingEvents = (baseData.lifeEvents || []).filter(
         ev => ev.source !== 'lifestyleProfile'
       );
 
-      return {
+      const finalData = {
         ...baseData,
         lifeEvents: [...existingEvents, ...newEvents],
       };
+      console.log('✅ DEBUG: Final lifeEvents count:', finalData.lifeEvents.length);
+      return finalData;
     }
 
+    console.log('⚠️ DEBUG: No lifestyle goals imported, using baseData. lifeEvents:', baseData.lifeEvents?.length || 0);
     return baseData;
   });
 
