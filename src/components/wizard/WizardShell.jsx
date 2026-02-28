@@ -55,6 +55,14 @@ export default function WizardShell() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // DEBUG: Capture URL info on mount
+  const [debugInfo] = useState(() => {
+    const fullUrl = window.location.href;
+    const search = window.location.search;
+    const hasLifestyleGoals = search.includes('lifestyleGoals');
+    return { fullUrl, search, hasLifestyleGoals };
+  });
+
   // Get current module from URL (default to 1)
   const currentModuleId = parseInt(searchParams.get('module') || '1');
 
@@ -211,6 +219,20 @@ export default function WizardShell() {
 
   return (
     <div className="min-h-screen bg-slate-100">
+      {/* DEBUG BANNER - shows URL info */}
+      <div className="bg-yellow-100 border-b border-yellow-300 p-3 text-sm">
+        <div className="max-w-6xl mx-auto">
+          <strong>DEBUG:</strong> lifestyleGoals in URL: {debugInfo.hasLifestyleGoals ? 'YES' : 'NO'}
+          <br />
+          <span className="text-xs text-slate-600 break-all">URL: {debugInfo.fullUrl}</span>
+          <br />
+          <strong>Life events count:</strong> {data.lifeEvents?.length || 0}
+          {data.lifeEvents?.length > 0 && (
+            <span> | From lifestyle: {data.lifeEvents.filter(e => e.source === 'lifestyleProfile').length}</span>
+          )}
+        </div>
+      </div>
+
       {/* Save Bar */}
       <WizardSaveBar
         data={data}
