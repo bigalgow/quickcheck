@@ -50,6 +50,7 @@ function parseLifestyleGoalsFromURL() {
  * WizardShell - Main wizard container with navigation and progress tracking
  */
 export default function WizardShell() {
+  console.log('🚀 WizardShell MOUNTED - URL:', window.location.href);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
