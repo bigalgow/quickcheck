@@ -1,13 +1,78 @@
 // api/me/retireplan.js
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import crypto from 'crypto';
 
 const ISSUER = process.env.LOGTO_ISSUER;                 // e.g. https://auth.your-logto-domain
 const MGMT_CLIENT_ID = process.env.MGMT_CLIENT_ID;
 const MGMT_CLIENT_SECRET = process.env.MGMT_CLIENT_SECRET;
 const API_AUDIENCE = process.env.API_AUDIENCE;           // optional
 const MGMT_RESOURCE = process.env.MGMT_RESOURCE || `${ISSUER}/api`;
+// Key versioning: supports ENCRYPTION_KEY (current) and ENCRYPTION_KEY_V{n} for rotation
+// To rotate: 1) Add new ENCRYPTION_KEY_V2, 2) Change ENCRYPTION_KEY to new value
+// Old keys kept for decrypting existing data until all users have re-saved
+const CURRENT_KEY_VERSION = parseInt(process.env.ENCRYPTION_KEY_VERSION || '1', 10);
+const ENCRYPTION_KEYS = {};
+
+// Load all available keys (current + versioned backups)
+if (process.env.ENCRYPTION_KEY) {
+  ENCRYPTION_KEYS[CURRENT_KEY_VERSION] = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+}
+// Load any legacy versioned keys for decryption (ENCRYPTION_KEY_V1, ENCRYPTION_KEY_V2, etc.)
+for (let v = 1; v <= 10; v++) {
+  const keyEnv = process.env[`ENCRYPTION_KEY_V${v}`];
+  if (keyEnv && !ENCRYPTION_KEYS[v]) {
+    ENCRYPTION_KEYS[v] = Buffer.from(keyEnv, 'hex');
+  }
+}
 
 const jwks = createRemoteJWKSet(new URL(`${ISSUER}/oidc/jwks`));
+
+// Encryption helpers for AES-256-GCM with key versioning
+function encrypt(data) {
+  const key = ENCRYPTION_KEYS[CURRENT_KEY_VERSION];
+  if (!key) {
+    console.warn('ENCRYPTION_KEY not set - data will be stored unencrypted');
+    return data;
+  }
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(data), 'utf8'),
+    cipher.final()
+  ]);
+  return {
+    _encrypted: true,
+    _keyVersion: CURRENT_KEY_VERSION,
+    iv: iv.toString('hex'),
+    tag: cipher.getAuthTag().toString('hex'),
+    data: encrypted.toString('hex')
+  };
+}
+
+function decrypt(payload) {
+  // Handle null/undefined or unencrypted legacy data
+  if (!payload || !payload._encrypted) return payload;
+
+  // Determine which key version to use (default to 1 for data encrypted before versioning)
+  const keyVersion = payload._keyVersion || 1;
+  const key = ENCRYPTION_KEYS[keyVersion];
+
+  if (!key) {
+    throw new Error(`Encrypted data requires key version ${keyVersion} but it's not configured`);
+  }
+
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    key,
+    Buffer.from(payload.iv, 'hex')
+  );
+  decipher.setAuthTag(Buffer.from(payload.tag, 'hex'));
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(payload.data, 'hex')),
+    decipher.final()
+  ]);
+  return JSON.parse(decrypted.toString('utf8'));
+}
 
 async function verifyAccessToken(token) {
   const { payload } = await jwtVerify(token, jwks, {
@@ -74,13 +139,15 @@ export default async function handler(req, res) {
     const currentRP = current.retirePlan ?? null;
 
     if (req.method === 'GET') {
-      // Return the latest snapshot if it exists
-      return res.status(200).json(currentRP?.latest ?? null);
+      // Return the latest snapshot if it exists (decrypted)
+      const decrypted = decrypt(currentRP?.latest ?? null);
+      return res.status(200).json(decrypted);
     }
 
     if (req.method === 'POST') {
       const body = req.body ?? {};
-      const next = { ...current, retirePlan: { latest: body } }; // store latest snapshot
+      const encrypted = encrypt(body);
+      const next = { ...current, retirePlan: { latest: encrypted } }; // store encrypted snapshot
       await updateUserCustomData(userId, next, mgmtToken);
       return res.status(204).end();
     }

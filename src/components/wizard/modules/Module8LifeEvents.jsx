@@ -17,8 +17,44 @@ function toDate(val) {
   return new Date(NaN);
 }
 
+// Suggested life events by category
+const SUGGESTED_EVENTS = {
+  travel: [
+    { name: 'Bucket list trip (world cruise, safari)', amount: 15000, type: 'expense', isRecurring: false },
+    { name: 'Extended travel (6+ weeks abroad)', amount: 8000, type: 'expense', isRecurring: false },
+    { name: 'Regular long-haul holidays', amount: 5000, type: 'expense', isRecurring: true, recurringYears: 10 },
+    { name: 'Annual European breaks', amount: 2500, type: 'expense', isRecurring: true, recurringYears: 10 },
+  ],
+  purchases: [
+    { name: 'New car', amount: 25000, type: 'expense', isRecurring: false },
+    { name: 'Home improvements', amount: 15000, type: 'expense', isRecurring: false },
+    { name: 'Caravan/motorhome', amount: 30000, type: 'expense', isRecurring: false },
+    { name: 'Major appliances upgrade', amount: 5000, type: 'expense', isRecurring: false },
+  ],
+  family: [
+    { name: 'House deposit for child', amount: 50000, type: 'expense', isRecurring: false },
+    { name: 'Grandchildren education fund', amount: 10000, type: 'expense', isRecurring: true, recurringYears: 10 },
+    { name: 'Regular family support', amount: 3000, type: 'expense', isRecurring: true, recurringYears: 10 },
+    { name: 'Wedding contribution', amount: 15000, type: 'expense', isRecurring: false },
+  ],
+  lifestyle: [
+    { name: 'Second property (holiday home)', amount: 150000, type: 'expense', isRecurring: false },
+    { name: 'Boat purchase', amount: 40000, type: 'expense', isRecurring: false },
+    { name: 'Hobby/sports equipment', amount: 5000, type: 'expense', isRecurring: false },
+    { name: 'Golf club membership', amount: 2000, type: 'expense', isRecurring: true, recurringYears: 10 },
+  ],
+};
+
+const CATEGORIES = [
+  { key: 'travel', title: 'Travel & Experiences', icon: '✈️' },
+  { key: 'purchases', title: 'Major Purchases', icon: '🏠' },
+  { key: 'family', title: 'Family Support', icon: '👨‍👩‍👧' },
+  { key: 'lifestyle', title: 'Lifestyle Upgrades', icon: '⛵' },
+];
+
 export default function Module8LifeEvents({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -39,6 +75,11 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
     return Math.floor(yearsBetween(dob, today));
   }, [data.inputs?.dateOfBirth]);
 
+  // Get retirement age for minimum event age
+  const retirementAge = useMemo(() => {
+    return parseInt(data.inputs?.retirementAge) || currentAge;
+  }, [data.inputs?.retirementAge, currentAge]);
+
   const events = data.lifeEvents || [];
 
   // Count imported lifestyle events (more reliable than URL param count)
@@ -57,6 +98,23 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
     }));
   }, []);
 
+  const handleSuggestionClick = useCallback((suggestion) => {
+    // Pre-fill form with suggestion
+    setNewEvent({
+      id: uuidv4(),
+      age: data.inputs?.retirementAge || '',
+      amount: suggestion.amount.toString(),
+      name: suggestion.name,
+      type: suggestion.type,
+      isRecurring: suggestion.isRecurring,
+      recurringYears: suggestion.recurringYears?.toString() || '',
+    });
+    setEditingId(null);
+    setShowSuggestions(false); // Collapse after selection
+    // Scroll to form
+    window.scrollTo({ top: document.getElementById('event-form')?.offsetTop - 100, behavior: 'smooth' });
+  }, [data.inputs?.retirementAge]);
+
   const handleEditClick = useCallback((event) => {
     setNewEvent(event);
     setEditingId(event.id);
@@ -71,8 +129,8 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
     const age = parseInt(newEvent.age, 10);
     const amount = parseFloat(newEvent.amount);
 
-    if (isNaN(age) || age < 0) {
-      alert('Please enter a valid age.');
+    if (isNaN(age) || age < retirementAge) {
+      alert(`Life events must be at or after your retirement age (${retirementAge}).`);
       return;
     }
 
@@ -172,9 +230,65 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
         </HelpText>
       </div>
 
+      {/* Suggested Events Panel */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowSuggestions(!showSuggestions)}
+          className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200 rounded-lg hover:from-sky-100 hover:to-blue-100 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">💡</span>
+            <div className="text-left">
+              <div className="font-semibold text-slate-800">Browse Common Life Events</div>
+              <div className="text-sm text-slate-600">Click to see suggested events you can add</div>
+            </div>
+          </div>
+          <span className="text-2xl text-sky-600">{showSuggestions ? '▲' : '▼'}</span>
+        </button>
+
+        {showSuggestions && (
+          <div className="mt-4 border-2 border-sky-200 rounded-lg overflow-hidden">
+            {CATEGORIES.map((category) => (
+              <div key={category.key} className="border-b border-slate-200 last:border-b-0">
+                <div className="bg-slate-50 px-6 py-3 font-semibold text-slate-800 flex items-center gap-2">
+                  <span className="text-xl">{category.icon}</span>
+                  <span>{category.title}</span>
+                </div>
+                <div className="bg-white">
+                  {SUGGESTED_EVENTS[category.key].map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full px-6 py-3 text-left hover:bg-sky-50 border-b border-slate-100 last:border-b-0 transition-colors flex items-center justify-between group"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-800 group-hover:text-sky-700">
+                          {suggestion.name}
+                        </div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {suggestion.isRecurring
+                            ? `£${suggestion.amount.toLocaleString()}/year for ${suggestion.recurringYears} years`
+                            : `£${suggestion.amount.toLocaleString()} one-off`}
+                        </div>
+                      </div>
+                      <span className="text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Add →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="bg-slate-50 px-6 py-3 text-sm text-slate-600">
+              💡 Click any suggestion to pre-fill the form below with editable values
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="space-y-8">
         {/* Add/Edit Event Form */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+        <div id="event-form" className="bg-slate-50 border border-slate-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">
             {editingId ? 'Edit Event' : 'Add Life Event'}
           </h3>
@@ -186,8 +300,8 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
               type="number"
               value={newEvent.age}
               onChange={handleInputChange}
-              min={currentAge}
-              placeholder={Math.ceil(currentAge)}
+              min={retirementAge}
+              placeholder={retirementAge}
             />
             <FormInput
               label="Event Name"
@@ -317,10 +431,10 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
       {/* Info box */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          💡 <strong>Note:</strong> Life events are applied to your 25-year projection. Income
-          events (like inheritance or property sales) increase available funds, while expense events
-          (purchases, gifts) draw down your savings. Recurring events repeat for the specified
-          number of years starting from the age you enter.
+          💡 <strong>Note:</strong> Life events are applied to your 25-year post-retirement projection,
+          starting from your retirement age ({retirementAge}). Income events (like inheritance or property sales)
+          increase available funds, while expense events (purchases, gifts) draw down your savings.
+          Recurring events repeat for the specified number of years starting from the age you enter.
         </p>
       </div>
 

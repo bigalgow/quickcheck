@@ -1,12 +1,67 @@
 // src/components/wizard/modules/Module10Projection.jsx
 import React, { useMemo } from 'react';
+import html2canvas from 'html2canvas';
 import { calculateProjection, extractWarnings } from '../../../logic/projection';
 import ProjectionTable from '../../ProjectionTable';
 import ProjectionCharts from '../../ProjectionCharts';
 import HelpText from '../../ui/HelpText';
+import { useAuth } from '../../../auth/AuthProvider';
 
 export default function Module10Projection({ data, onDataChange, onNext }) {
+  const { userInfo } = useAuth();
   const [showHelp, setShowHelp] = React.useState(false);
+
+  // Handle print with chart capture
+  const handlePrint = async () => {
+    try {
+      // Find all chart containers
+      const chartContainers = document.querySelectorAll('.recharts-responsive-container');
+      const capturedImages = [];
+
+      // Capture each chart as canvas
+      for (const container of chartContainers) {
+        const canvas = await html2canvas(container, {
+          backgroundColor: '#ffffff',
+          scale: 2, // Higher quality
+          logging: false,
+        });
+
+        // Convert to image
+        const imgData = canvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = imgData;
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.className = 'print-chart-image';
+
+        // Store for cleanup
+        capturedImages.push({ container, img });
+
+        // Hide original chart and insert image
+        container.style.display = 'none';
+        container.parentNode.insertBefore(img, container);
+      }
+
+      // Small delay to ensure images are rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Open print dialog
+      window.print();
+
+      // Cleanup after print dialog closes
+      setTimeout(() => {
+        capturedImages.forEach(({ container, img }) => {
+          img.remove();
+          container.style.display = '';
+        });
+      }, 100);
+
+    } catch (error) {
+      console.error('Chart capture failed:', error);
+      // Fallback to normal print
+      window.print();
+    }
+  };
 
   // Build opening values from Module 7 results
   const openingValues = useMemo(() => {
@@ -19,19 +74,22 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       retirementAge: parseFloat(data.inputs?.retirementAge || 65),
       dcPotAfterPCLS: atRetResults.assets.dcPotForDrawdown || 0,
       isaSavings: atRetResults.assets.isaAtRet || 0,
-      taxableSavings: atRetResults.assets.taxableAtRet || 0,
+      taxableSavings: (atRetResults.assets.taxableAtRet || 0) + (atRetResults.assets.dcPclsCash || 0) + (atRetResults.assets.dbPclsCash || 0),
       dbPension: atRetResults.income.dbIncomeAfter || 0,
       annuityIncome: atRetResults.income.dcAnnuityIncome || 0,
       statePension: atRetResults.income.statePensionAtRetNominal || 0,
       statePensionAge: parseFloat(data.inputs?.statePensionAge || 67),
       otherIncome: atRetResults.income.otherIncomeAtRet || 0,
-      annualSpend: parseFloat(data.lifestyle?.baselineAmount || 0),
+      annualSpend: atRetResults.desiredSpendAtRet || parseFloat(data.lifestyle?.baselineAmount || 0),
       inflation: parseFloat(data.inputs?.inflation || 2.5) / 100,
       dcGrowth: parseFloat(data.dc?.growthAssumption || 0.04),
       isaGrowth: parseFloat(data.savings?.isa?.growthRate || 3) / 100,
       savingsGrowth: parseFloat(data.savings?.taxableSavings?.growthRate || 3) / 100,
       taxRegion: data.inputs?.taxRegion === 'scotland' ? 'scotland' : 'england',
       yearsToRetirement: atRetResults.yearsToRetirement || 0,
+      housingType: data.lifestyle?.housingType || 'none',
+      housingCostAnnual: parseFloat(data.lifestyle?.housingCostAnnual || 0),
+      ageMortgagePaidOff: data.lifestyle?.ageMortgagePaidOff ? parseFloat(data.lifestyle.ageMortgagePaidOff) : null,
     };
   }, [data]);
 
@@ -93,8 +151,33 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
     );
   }
 
+  // Format date for print
+  const printDate = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
     <div className="p-6">
+      {/* Print Header (hidden on screen, visible in print) */}
+      <div className="print-only mb-6 border-b-2 border-slate-300 pb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <img src="/logo.png" alt="RetirePlan" className="h-16" />
+          <h1 className="text-2xl font-bold text-slate-800">Retirement Planner</h1>
+        </div>
+        <div className="text-sm text-slate-600 space-y-1">
+          <div><strong>Printed:</strong> {printDate}</div>
+          {userInfo && (
+            <div>
+              <strong>Account:</strong> {userInfo.name || userInfo.given_name || 'User'}
+              {userInfo.email && <span className="text-slate-500"> ({userInfo.email})</span>}
+            </div>
+          )}
+        </div>
+        <h2 className="text-xl font-bold text-slate-800 mt-4">25-Year Projection - Illustration</h2>
+      </div>
+
       {/* Help text */}
       <div className="mb-6 no-print">
         <button
@@ -109,12 +192,17 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
           balances. Red highlighting indicates potential issues (negative balances, depletion
           warnings). Use the charts below for visual analysis. You can export the full table to CSV
           for deeper analysis in Excel.
+          <br /><br />
+          <strong>Automatic adjustments:</strong> Your baseline spending automatically adjusts for typical
+          lifestyle changes: full spending until age 75, then -15% reduction (ages 75-84), and -25%
+          reduction (ages 85+). These evidence-based adjustments reflect reduced discretionary spending
+          as people age. If you have specific plans at later ages, add them as Life Events in Module 8.
         </HelpText>
       </div>
 
       {/* Warnings Section */}
       {warnings.length > 0 && (
-        <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-6">
+        <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-6 print-avoid-break">
           <h3 className="text-xl font-bold text-red-800 mb-3 flex items-center gap-2">
             <span>⚠️</span>
             Depletion Warnings
@@ -138,7 +226,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
 
       {/* Success Message */}
       {warnings.length === 0 && (
-        <div className="mb-6 bg-green-50 border-2 border-green-300 rounded-lg p-6">
+        <div className="mb-6 bg-green-50 border-2 border-green-300 rounded-lg p-6 print-avoid-break">
           <h3 className="text-xl font-bold text-green-800 mb-2 flex items-center gap-2">
             <span>✓</span>
             Projection Looks Good
@@ -151,7 +239,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       )}
 
       {/* Summary Stats */}
-      <div className="mb-6 grid md:grid-cols-4 gap-4">
+      <div className="mb-6 grid md:grid-cols-4 gap-4 no-print">
         <div className="bg-white border border-slate-200 rounded-lg p-4">
           <h4 className="text-sm font-medium text-slate-600 mb-1">Starting Age</h4>
           <p className="text-2xl font-bold text-slate-800">{projectionData[0]?.age}</p>
@@ -174,14 +262,14 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
         </div>
       </div>
 
-      {/* Print Button */}
-      <div className="mb-6 flex justify-end no-print">
+      {/* Print Button - Desktop only (chart capture doesn't work on mobile) */}
+      <div className="mb-6 hidden md:flex justify-end no-print">
         <button
-          onClick={() => window.print()}
+          onClick={handlePrint}
           className="px-6 py-3 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <span>🖨️</span>
-          <span>Print / Download PDF</span>
+          <span>Print Report (with charts)</span>
         </button>
       </div>
 
@@ -207,7 +295,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       </div>
 
       {/* Disclaimer */}
-      <div className="mt-6 bg-slate-50 border border-slate-300 rounded-lg p-4">
+      <div className="mt-6 bg-slate-50 border border-slate-300 rounded-lg p-4 print-avoid-break">
         <p className="text-xs text-slate-600">
           <strong>Important Disclaimer:</strong> These projections are estimates based on the assumptions
           you have provided, including inflation rates, investment growth, pension values, and life expectancy.

@@ -20,6 +20,9 @@ export const defaultRetirePlanData = {
     householdType: "solo", // or "couple"
     plsaTier: "comfortable", // "minimum", "moderate", "comfortable"
     baselineAmount: 0, // Annual spend target (from PLSA or custom)
+    housingType: "none", // "none", "rent", or "mortgage"
+    housingCostAnnual: "", // Annual housing cost (rent or mortgage payment)
+    ageMortgagePaidOff: "", // Age when mortgage is paid off (for mortgage only)
   },
 
   // Module 3: DC Pensions (matches atRetirement.js structure)
@@ -36,6 +39,10 @@ export const defaultRetirePlanData = {
     employeePct: "0.05",
     employerPct: "0.05",
     personalAnnualContrib: "",
+    // Career break options
+    hasCareerBreak: false,
+    breakStartAge: "", // Age when break starts
+    breakEndAge: "",   // Age when contributions resume
   },
 
   // Module 4: DB Pensions (matches atRetirement.js structure)
@@ -43,7 +50,8 @@ export const defaultRetirePlanData = {
     takeTaxFree25: false,
     schemes: [
       // Active scheme example:
-      // { id, kind: "active", accrualDenominator, serviceYearsToDate, maxServiceYears, pensionableSalaryNow }
+      // { id, kind: "active", accrualDenominator, serviceYearsToDate, maxServiceYears, pensionableSalaryNow,
+      //   hasCareerBreak, breakStartAge, breakEndAge }
       // Deferred scheme example:
       // { id, kind: "deferred", preservedPensionNow, revaluationAssumption }
     ],
@@ -153,7 +161,7 @@ export const MODULES = {
   },
   10: {
     id: 10,
-    title: "25-Year Projection",
+    title: "25-Year Projection - Illustration",
     description: "View your detailed retirement projection",
     requiredFields: [], // Calculated module
   },
@@ -222,7 +230,9 @@ export function getModuleCompletionStatus(moduleId, data) {
       hasData = isValidValue(data.inputs?.dateOfBirth) || isValidValue(data.inputs?.retirementAge);
       break;
     case 2: // Lifestyle
-      hasData = data.lifestyle?.baselineAmount > 0;
+      hasData = data.lifestyle?.baselineAmount > 0 ||
+                isValidValue(data.lifestyle?.housingType) ||
+                isValidValue(data.lifestyle?.housingCostAnnual);
       break;
     case 3: // DC Pensions
       hasData = data.dcPensions?.length > 0;

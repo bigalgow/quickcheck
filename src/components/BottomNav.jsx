@@ -27,7 +27,7 @@ export default function BottomNav() {
   if (!isMobileOrTablet) {
     return null;
   }
-  
+
   const tabs = [
     {
       id: 'magazine',
@@ -58,9 +58,9 @@ export default function BottomNav() {
       type: 'external'
     },
   ];
-  
+
   return (
-    <nav style={styles.nav}>
+    <nav className="no-print" style={styles.nav}>
       {tabs.map(tab => (
         <button
           key={tab.id}

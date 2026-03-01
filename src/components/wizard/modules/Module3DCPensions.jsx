@@ -6,6 +6,13 @@ import DCPotWizard from '../../DCPotWizard.jsx';
 export default function Module3DCPensions({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = React.useState(false);
 
+  // Calculate if already retired
+  const currentAge = data.inputs?.dateOfBirth
+    ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
+  const retirementAge = parseInt(data.inputs?.retirementAge);
+  const alreadyRetired = currentAge && retirementAge && retirementAge <= currentAge;
+
   // Simple update handler - updates parent state directly
   const handleChange = (field, value) => {
     onDataChange({
@@ -71,140 +78,201 @@ export default function Module3DCPensions({ data, onDataChange, onNext }) {
                 className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
               />
             </div>
-            <div className="flex items-center">
+            {!alreadyRetired && (
+              <div className="flex items-center">
+                <label className="flex items-center gap-2 text-base font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={data.dc?.takeTaxFree25 || false}
+                    onChange={(e) => handleChange('takeTaxFree25', e.target.checked)}
+                    className="w-5 h-5"
+                  />
+                  Take 25% tax-free from DC?
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Future Contributions - Hidden if already retired */}
+        {!alreadyRetired && (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Future Contributions</h3>
+
+            <div className="mb-4">
               <label className="flex items-center gap-2 text-base font-medium text-slate-700">
                 <input
                   type="checkbox"
-                  checked={data.dc?.takeTaxFree25 || false}
-                  onChange={(e) => handleChange('takeTaxFree25', e.target.checked)}
+                  checked={data.dc?.isContributing || false}
+                  onChange={(e) => handleChange('isContributing', e.target.checked)}
                   className="w-5 h-5"
                 />
-                Take 25% tax-free from DC?
+                Still contributing to a DC pension?
               </label>
             </div>
-          </div>
-        </div>
 
-        {/* Future Contributions */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Future Contributions</h3>
-
-          <div className="mb-4">
-            <label className="flex items-center gap-2 text-base font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={data.dc?.isContributing || false}
-                onChange={(e) => handleChange('isContributing', e.target.checked)}
-                className="w-5 h-5"
-              />
-              Still contributing to a DC pension?
-            </label>
-          </div>
-
-          {data.dc?.isContributing && (
-            <>
-              {/* Contribution Type */}
-              <div className="mb-4">
-                <label className="block text-base font-medium text-slate-700 mb-2">
-                  Contribution type
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="dcType"
-                      value="employer"
-                      checked={(data.dc?.contributionType || 'employer') === 'employer'}
-                      onChange={(e) => handleChange('contributionType', e.target.value)}
-                    />
-                    Employer scheme
+            {data.dc?.isContributing && (
+              <>
+                {/* Contribution Type */}
+                <div className="mb-4">
+                  <label className="block text-base font-medium text-slate-700 mb-2">
+                    Contribution type
                   </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="dcType"
-                      value="personal"
-                      checked={(data.dc?.contributionType || 'employer') === 'personal'}
-                      onChange={(e) => handleChange('contributionType', e.target.value)}
-                    />
-                    Personal / SIPP
-                  </label>
-                </div>
-              </div>
-
-              {/* Employer scheme path */}
-              {(data.dc?.contributionType || 'employer') === 'employer' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-base font-medium text-slate-700 mb-2">
-                      Salary now (£)
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="dcType"
+                        value="employer"
+                        checked={(data.dc?.contributionType || 'employer') === 'employer'}
+                        onChange={(e) => handleChange('contributionType', e.target.value)}
+                      />
+                      Employer scheme
                     </label>
-                    <input
-                      type="number"
-                      value={data.dc?.salaryNow || ''}
-                      onChange={(e) => handleChange('salaryNow', e.target.value)}
-                      min="0"
-                      placeholder="0"
-                      className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
-                    />
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="dcType"
+                        value="personal"
+                        checked={(data.dc?.contributionType || 'employer') === 'personal'}
+                        onChange={(e) => handleChange('contributionType', e.target.value)}
+                      />
+                      Personal / SIPP
+                    </label>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-4">
+                </div>
+
+                {/* Employer scheme path */}
+                {(data.dc?.contributionType || 'employer') === 'employer' && (
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-base font-medium text-slate-700 mb-2">
-                        Your contribution (%)
+                        Salary now (£)
                       </label>
                       <input
                         type="number"
-                        value={toPercent(data.dc?.employeePct || '0.05')}
-                        onChange={(e) => handleChange('employeePct', fromPercent(e.target.value))}
+                        value={data.dc?.salaryNow || ''}
+                        onChange={(e) => handleChange('salaryNow', e.target.value)}
                         min="0"
-                        max="100"
-                        placeholder="5"
+                        placeholder="0"
                         className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
                       />
                     </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-base font-medium text-slate-700 mb-2">
+                          Your contribution (%)
+                        </label>
+                        <input
+                          type="number"
+                          value={toPercent(data.dc?.employeePct || '0.05')}
+                          onChange={(e) => handleChange('employeePct', fromPercent(e.target.value))}
+                          min="0"
+                          max="100"
+                          placeholder="5"
+                          className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-base font-medium text-slate-700 mb-2">
+                          Employer contribution (%)
+                        </label>
+                        <input
+                          type="number"
+                          value={toPercent(data.dc?.employerPct || '0.05')}
+                          onChange={(e) => handleChange('employerPct', fromPercent(e.target.value))}
+                          min="0"
+                          max="100"
+                          placeholder="5"
+                          className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Personal scheme path */}
+                {(data.dc?.contributionType || 'employer') === 'personal' && (
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-base font-medium text-slate-700 mb-2">
-                        Employer contribution (%)
+                        Annual contribution (£)
                       </label>
                       <input
                         type="number"
-                        value={toPercent(data.dc?.employerPct || '0.05')}
-                        onChange={(e) => handleChange('employerPct', fromPercent(e.target.value))}
+                        value={data.dc?.personalAnnualContrib || ''}
+                        onChange={(e) => handleChange('personalAnnualContrib', e.target.value)}
                         min="0"
-                        max="100"
-                        placeholder="5"
+                        placeholder="0"
                         className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
                       />
                     </div>
+                    <p className="text-sm text-slate-600">
+                      Personal contributions escalate with inflation (uses your inflation assumption)
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Personal scheme path */}
-              {(data.dc?.contributionType || 'employer') === 'personal' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-base font-medium text-slate-700 mb-2">
-                      Annual contribution (£)
-                    </label>
-                    <input
-                      type="number"
-                      value={data.dc?.personalAnnualContrib || ''}
-                      onChange={(e) => handleChange('personalAnnualContrib', e.target.value)}
-                      min="0"
-                      placeholder="0"
-                      className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
-                    />
-                  </div>
-                  <p className="text-sm text-slate-600">
-                    Personal contributions escalate with inflation (uses your inflation assumption)
-                  </p>
+                {/* Career Break Section */}
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => handleChange('hasCareerBreak', !data.dc?.hasCareerBreak)}
+                    className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+                  >
+                    <span className={`transition-transform ${data.dc?.hasCareerBreak ? 'rotate-90' : ''}`}>▶</span>
+                    Planning a career break? (e.g., childcare, travel, sabbatical)
+                  </button>
+
+                  {data.dc?.hasCareerBreak && (
+                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm text-amber-800 mb-4">
+                        If you're planning a break from work, contributions will pause during this period.
+                        Your existing pot continues to grow, and contributions resume when you return.
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Break starts at age
+                          </label>
+                          <input
+                            type="number"
+                            value={data.dc?.breakStartAge || ''}
+                            onChange={(e) => handleChange('breakStartAge', e.target.value)}
+                            min={currentAge || 18}
+                            max={retirementAge || 70}
+                            placeholder={currentAge ? String(currentAge + 1) : '35'}
+                            className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Return to work at age
+                          </label>
+                          <input
+                            type="number"
+                            value={data.dc?.breakEndAge || ''}
+                            onChange={(e) => handleChange('breakEndAge', e.target.value)}
+                            min={data.dc?.breakStartAge || currentAge || 18}
+                            max={retirementAge || 70}
+                            placeholder={data.dc?.breakStartAge ? String(parseInt(data.dc.breakStartAge) + 2) : '37'}
+                            className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                          />
+                        </div>
+                      </div>
+                      {data.dc?.breakStartAge && data.dc?.breakEndAge && (
+                        <p className="text-sm text-amber-700 mt-3">
+                          {parseInt(data.dc.breakEndAge) - parseInt(data.dc.breakStartAge)} year break:
+                          no contributions from age {data.dc.breakStartAge} to {data.dc.breakEndAge}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Withdrawal Method */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
@@ -247,7 +315,7 @@ export default function Module3DCPensions({ data, onDataChange, onNext }) {
               </label>
               <input
                 type="number"
-                value={data.dc?.annuityPct || '0'}
+                value={data.dc?.annuityPct || ''}
                 onChange={(e) => handleChange('annuityPct', e.target.value)}
                 min="0"
                 max="100"

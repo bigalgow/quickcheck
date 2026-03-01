@@ -53,15 +53,29 @@ function applyDbPclsAmount(dbAnnualBefore, pclsAmount) {
  *  - Salary grows with INFLATION
  *  - Contribution for year y is based on salary at START of that year
  *  - Each contribution compounds to retirement for (years - y + 1) years
+ *  - Supports career breaks: skip contributions during break period
  */
-function fvEmployerContrib(inputs, years) {
+function fvEmployerContrib(inputs, years, currentAge) {
   if (!inputs.dcIsContributing || inputs.dcContributionType !== "employer" || years <= 0) return 0;
   const gSalary = inputs.inflationAssumption; // simplification: salary growth == inflation
   let salary = inputs.salaryNow; // start-of-year salary for year 1
   let totalFV = 0;
   const rate = inputs.growthAssumption;
 
+  // Career break handling
+  const hasBreak = inputs.dcHasCareerBreak && inputs.dcBreakStartAge && inputs.dcBreakEndAge;
+  const breakStart = hasBreak ? parseFloat(inputs.dcBreakStartAge) : Infinity;
+  const breakEnd = hasBreak ? parseFloat(inputs.dcBreakEndAge) : Infinity;
+
   for (let y = 1; y <= years; y++) {
+    const ageThisYear = currentAge + y;
+
+    // Skip contributions during career break (salary still grows)
+    if (hasBreak && ageThisYear >= breakStart && ageThisYear < breakEnd) {
+      salary *= 1 + gSalary;
+      continue;
+    }
+
     const contrib = salary * (inputs.eePct + inputs.erPct);
     const exponent = years - y + 1; // start-of-year cashflow
     totalFV += contrib * Math.pow(1 + rate, exponent);
@@ -75,15 +89,28 @@ function fvEmployerContrib(inputs, years) {
  * Personal / SIPP:
  *  - Base amount escalates with INFLATION (to match employer timing parity)
  *  - Payment is at START of each year
+ *  - Supports career breaks: skip contributions during break period
  */
-function fvPersonalContrib(inputs, years) {
+function fvPersonalContrib(inputs, years, currentAge) {
   if (!inputs.dcIsContributing || inputs.dcContributionType !== "personal" || years <= 0) return 0;
   const esc = inputs.inflationAssumption; // simplification: escalation == inflation
   const base = inputs.personalAnnualContrib;
   const rate = inputs.growthAssumption;
 
+  // Career break handling
+  const hasBreak = inputs.dcHasCareerBreak && inputs.dcBreakStartAge && inputs.dcBreakEndAge;
+  const breakStart = hasBreak ? parseFloat(inputs.dcBreakStartAge) : Infinity;
+  const breakEnd = hasBreak ? parseFloat(inputs.dcBreakEndAge) : Infinity;
+
   let totalFV = 0;
   for (let y = 1; y <= years; y++) {
+    const ageThisYear = currentAge + y;
+
+    // Skip contributions during career break
+    if (hasBreak && ageThisYear >= breakStart && ageThisYear < breakEnd) {
+      continue;
+    }
+
     const contrib = base * Math.pow(1 + esc, y - 1);
     const exponent = years - y + 1; // start-of-year cashflow
     totalFV += contrib * Math.pow(1 + rate, exponent);
@@ -92,11 +119,26 @@ function fvPersonalContrib(inputs, years) {
 }
 
 // ---------- DB schemes ----------
-function computeActiveDbAtRet(s, yearsToRet, inflationDefault) {
+function computeActiveDbAtRet(s, yearsToRet, inflationDefault, currentAge) {
   // Accrual on final salary; salary grows with inflation
+  // Supports career breaks: reduce future service years by break duration
   const acc = s.accrualDenominator; // e.g., 60
   const maxSrv = s.maxServiceYears ?? Infinity;
-  const totalService = Math.min((s.serviceYearsToDate ?? 0) + yearsToRet, maxSrv);
+
+  // Career break handling: subtract break years from future service
+  let futureServiceYears = yearsToRet;
+  if (s.hasCareerBreak && s.breakStartAge && s.breakEndAge) {
+    const breakStart = parseFloat(s.breakStartAge);
+    const breakEnd = parseFloat(s.breakEndAge);
+    const retirementAge = currentAge + yearsToRet;
+    // Only count break years that fall within the working period
+    const effectiveBreakStart = Math.max(breakStart, currentAge);
+    const effectiveBreakEnd = Math.min(breakEnd, retirementAge);
+    const breakYears = Math.max(0, effectiveBreakEnd - effectiveBreakStart);
+    futureServiceYears = Math.max(0, yearsToRet - breakYears);
+  }
+
+  const totalService = Math.min((s.serviceYearsToDate ?? 0) + futureServiceYears, maxSrv);
   const g = inflationDefault;
   const finalSalary = s.pensionableSalaryNow * Math.pow(1 + g, yearsToRet);
   return (totalService / acc) * finalSalary; // annual pension at retirement (before PCLS)
@@ -111,23 +153,23 @@ function computeDeferredDbAtRet(s, yearsToRet, inflationDefault) {
   return base * Math.pow(1 + s.revaluationAssumption, yearsToRet);
 }
 
-function computeDbTotalAtRet(schemes, yearsToRet, inflationDefault) {
+function computeDbTotalAtRet(schemes, yearsToRet, inflationDefault, currentAge) {
   if (!Array.isArray(schemes) || schemes.length === 0) return 0;
   let total = 0;
   for (const s of schemes) {
-    if (s.kind === "active") total += computeActiveDbAtRet(s, yearsToRet, inflationDefault);
+    if (s.kind === "active") total += computeActiveDbAtRet(s, yearsToRet, inflationDefault, currentAge);
     else total += computeDeferredDbAtRet(s, yearsToRet, inflationDefault);
   }
   return total;
 }
 
 // Compute active and deferred DB separately for breakdown
-function computeDbBreakdown(schemes, yearsToRet, inflationDefault) {
+function computeDbBreakdown(schemes, yearsToRet, inflationDefault, currentAge) {
   if (!Array.isArray(schemes) || schemes.length === 0) return { active: 0, deferred: 0 };
   let active = 0;
   let deferred = 0;
   for (const s of schemes) {
-    if (s.kind === "active") active += computeActiveDbAtRet(s, yearsToRet, inflationDefault);
+    if (s.kind === "active") active += computeActiveDbAtRet(s, yearsToRet, inflationDefault, currentAge);
     else deferred += computeDeferredDbAtRet(s, yearsToRet, inflationDefault);
   }
   return { active, deferred };
@@ -154,8 +196,8 @@ export function atRetirement(inputs, taxFns) {
   // DC contributions (employer / personal), both start-of-year timing
   // No contributions if already retired
   if (!alreadyRetired) {
-    dcProjected += fvEmployerContrib(inputs, Math.floor(years));
-    dcProjected += fvPersonalContrib(inputs, Math.floor(years));
+    dcProjected += fvEmployerContrib(inputs, Math.floor(years), currentAgeYears);
+    dcProjected += fvPersonalContrib(inputs, Math.floor(years), currentAgeYears);
   }
 
   // ---- DC PCLS request (capped later)
@@ -164,8 +206,8 @@ export function atRetirement(inputs, taxFns) {
 
   // ---- DB annual (before any commutation), then desired DB PCLS (25% of capital)
   // If already retired, only process deferred schemes (no active schemes, no PCLS)
-  const dbBeforePcls = computeDbTotalAtRet(inputs.dbSchemes || [], years, inputs.inflationAssumption);
-  const dbBreakdown = computeDbBreakdown(inputs.dbSchemes || [], years, inputs.inflationAssumption);
+  const dbBeforePcls = computeDbTotalAtRet(inputs.dbSchemes || [], years, inputs.inflationAssumption, currentAgeYears);
+  const dbBreakdown = computeDbBreakdown(inputs.dbSchemes || [], years, inputs.inflationAssumption, currentAgeYears);
   const desiredDbPcls = (alreadyRetired || !inputs.takeDBTaxFree25) ? 0 : 0.25 * dbCapitalFromIncome(dbBeforePcls);
 
   // ---- Enforce global PCLS cap across DC + DB
@@ -230,6 +272,13 @@ export function atRetirement(inputs, taxFns) {
   );
   const taxableInterest = Math.max(0, taxableAtRet * inputs.taxableSavingsRate);
 
+  // ---- Desired spend (inflated to retirement)
+  const desiredSpendAtRet = inflateToRetirement(
+    inputs.desiredSpendAnnual,
+    years,
+    inputs.inflationAssumption
+  );
+
   // ---- Tax (only include state pension if at or past SPA)
   const statePensionForIncome = spaWarning ? 0 : statePensionAtRetNominal;
   const pensionableIncome =
@@ -283,7 +332,7 @@ export function atRetirement(inputs, taxFns) {
 
   // Net income: pension income minus tax (tax includes tax on savings interest, paid from income)
   const netIncome = incomeGrossTotal - taxRes.tax;
-  const surplusDeficit = netIncome - inputs.desiredSpendAnnual;
+  const surplusDeficit = netIncome - desiredSpendAtRet;
 
   // ---- Real terms
   const deflate = (x) => deflateToToday(x, years, inputs.inflationAssumption);
@@ -316,6 +365,7 @@ export function atRetirement(inputs, taxFns) {
       taxableInterest: deflate(income.taxableInterest),
     },
     incomeGrossTotal: deflate(incomeGrossTotal),
+    desiredSpendAtRet: deflate(desiredSpendAtRet),
     estTax: deflate(taxRes.tax),
     netIncome: deflate(netIncome),
     surplusDeficit: deflate(surplusDeficit),
@@ -331,6 +381,7 @@ export function atRetirement(inputs, taxFns) {
     income,
     incomeGrossTotal,
 
+    desiredSpendAtRet,
     estTax: taxRes.tax,
     netIncome,
     surplusDeficit,

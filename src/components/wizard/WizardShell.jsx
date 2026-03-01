@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { defaultRetirePlanData, getModuleInfo, getModuleCompletionStatus, markModuleCompleted, getAllModuleIds } from '../../utils/dataSchema';
 import { MODULE_COMPONENTS } from './moduleRegistry.jsx';
 import WizardSaveBar from './WizardSaveBar.jsx';
-import BottomNav from '../BottomNav.jsx';
 import PWAInstallBanner from '../PWAInstallBanner.jsx';
+import BottomNav from '../BottomNav.jsx';
 
 /**
  * Convert lifestyle goals from Lifestyle Designer to life events format
@@ -249,7 +249,7 @@ export default function WizardShell() {
       />
 
       {/* Header with progress and navigation */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm no-print">
         <div className="max-w-6xl mx-auto px-4 py-4">
           {/* Top row: Logo, Progress, Exit */}
           <div className="flex items-center justify-between mb-4">
@@ -321,7 +321,7 @@ export default function WizardShell() {
       {/* Main content area */}
       <div className="max-w-5xl mx-auto px-4 py-8 pb-24">
         {/* Module title and description */}
-        <div className="mb-6">
+        <div className="mb-6 no-print">
           <h2 className="text-3xl font-bold text-slate-800 mb-2">
             {currentModule.title}
           </h2>
@@ -341,57 +341,17 @@ export default function WizardShell() {
           />
         </div>
 
-        {/* Navigation buttons */}
-        <div className="flex items-center justify-between mt-6">
-          <button
-            onClick={goToPrevious}
-            disabled={currentModuleId === 1}
-            className={`px-6 py-3 rounded-md font-medium transition-colors ${
-              currentModuleId === 1
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                : 'bg-slate-500 text-white hover:bg-slate-600'
-            }`}
-          >
-            ← Previous
-          </button>
-
-          <div className="flex gap-3">
-            <button
-              onClick={markCompleted}
-              className="px-6 py-3 rounded-md font-medium bg-green-500 text-white hover:bg-green-600 transition-colors"
-            >
-              ✓ Mark Complete
-            </button>
-
-            {currentModuleId < 10 && (
-              <button
-                onClick={goToNext}
-                className="px-6 py-3 rounded-md font-medium bg-sky-500 text-white hover:bg-sky-600 transition-colors"
-              >
-                Next →
-              </button>
-            )}
-
-            {currentModuleId === 10 && (
-              <button
-                onClick={exitWizard}
-                className="px-6 py-3 rounded-md font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-              >
-                Finish →
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Navigation is handled within each module component */}
       </div>
 
       {/* Quick Navigation Menu (future enhancement) */}
       {/* TODO: Add dropdown for quick navigation to any module */}
 
-      {/* Mobile Navigation */}
-      <BottomNav />
-
       {/* PWA Install Banner */}
       <PWAInstallBanner />
+
+      {/* Bottom Navigation - Mobile/Tablet only */}
+      <BottomNav />
     </div>
   );
 }

@@ -6,6 +6,13 @@ import HelpText from '../../ui/HelpText';
 export default function Module4DBPensions({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = React.useState(false);
 
+  // Calculate if already retired
+  const currentAge = data.inputs?.dateOfBirth
+    ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
+  const retirementAge = parseInt(data.inputs?.retirementAge);
+  const alreadyRetired = currentAge && retirementAge && retirementAge <= currentAge;
+
   const handleDBChange = (field, value) => {
     onDataChange({
       db: {
@@ -74,8 +81,8 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
       </div>
 
       <div className="space-y-8">
-        {/* Add Active Scheme Button - only show if none exist */}
-        {activeSchemes.length === 0 && (
+        {/* Add Active Scheme Button - only show if none exist AND not already retired */}
+        {!alreadyRetired && activeSchemes.length === 0 && (
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Active DB Pension</h3>
             <p className="text-sm text-slate-600 mb-4">
@@ -88,11 +95,20 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
             >
               + Add Active DB Scheme
             </button>
+
+            {/* CARE scheme tip */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Have a Career Average (CARE) scheme?</strong> Check your Annual Benefit Statement
+                for the "projected pension at retirement" figure. Enter this as a <strong>Deferred scheme</strong> below
+                instead of Active — the projection already includes your future accrual.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Active Schemes */}
-        {activeSchemes.map((scheme, index) => (
+        {/* Active Schemes - Hidden if already retired */}
+        {!alreadyRetired && activeSchemes.map((scheme, index) => (
           <div key={scheme.id} className="bg-slate-50 border border-slate-200 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-800">
@@ -156,6 +172,63 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
                 pensionable salary, your accrued annual pension would be: £50,000 × 10 / 60 = £8,333/year
               </p>
             </div>
+
+            {/* Career Break Section for Active DB */}
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <button
+                type="button"
+                onClick={() => updateScheme(scheme.id, { hasCareerBreak: !scheme.hasCareerBreak })}
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+              >
+                <span className={`transition-transform ${scheme.hasCareerBreak ? 'rotate-90' : ''}`}>▶</span>
+                Planning a career break?
+              </button>
+
+              {scheme.hasCareerBreak && (
+                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800 mb-4">
+                    A career break reduces the service years you'll accrue. Your final salary at retirement
+                    is unaffected (it's based on your salary when you retire, not during the break).
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Break starts at age
+                      </label>
+                      <input
+                        type="number"
+                        value={scheme.breakStartAge || ''}
+                        onChange={(e) => updateScheme(scheme.id, { breakStartAge: e.target.value })}
+                        min={currentAge || 18}
+                        max={retirementAge || 70}
+                        placeholder={currentAge ? String(currentAge + 1) : '35'}
+                        className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Return to work at age
+                      </label>
+                      <input
+                        type="number"
+                        value={scheme.breakEndAge || ''}
+                        onChange={(e) => updateScheme(scheme.id, { breakEndAge: e.target.value })}
+                        min={scheme.breakStartAge || currentAge || 18}
+                        max={retirementAge || 70}
+                        placeholder={scheme.breakStartAge ? String(parseInt(scheme.breakStartAge) + 2) : '37'}
+                        className="w-full max-w-sm rounded-md border-2 border-slate-300 px-3 py-2 text-base h-11 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                      />
+                    </div>
+                  </div>
+                  {scheme.breakStartAge && scheme.breakEndAge && (
+                    <p className="text-sm text-amber-700 mt-3">
+                      {parseInt(scheme.breakEndAge) - parseInt(scheme.breakStartAge)} year break:
+                      no service accrual from age {scheme.breakStartAge} to {scheme.breakEndAge}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ))}
 
@@ -215,22 +288,24 @@ export default function Module4DBPensions({ data, onDataChange, onNext }) {
           </button>
         </div>
 
-        {/* Tax-Free Cash Option */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
-          <label className="flex items-center gap-3 text-base font-medium text-slate-700">
-            <input
-              type="checkbox"
-              checked={data.db?.takeTaxFree25 || false}
-              onChange={(e) => handleDBChange('takeTaxFree25', e.target.checked)}
-              className="w-5 h-5"
-            />
-            Take 25% tax-free from total DB (20× model; overall cap enforced)
-          </label>
-          <p className="text-sm text-slate-600 mt-2">
-            For every £1 of annual pension you give up, you receive £20 as a tax-free lump sum.
-            Total PCLS across all pensions (DC + DB) is capped at £268,275.
-          </p>
-        </div>
+        {/* Tax-Free Cash Option - Hidden if already retired */}
+        {!alreadyRetired && (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+            <label className="flex items-center gap-3 text-base font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={data.db?.takeTaxFree25 || false}
+                onChange={(e) => handleDBChange('takeTaxFree25', e.target.checked)}
+                className="w-5 h-5"
+              />
+              Take 25% tax-free from total DB (20× model; overall cap enforced)
+            </label>
+            <p className="text-sm text-slate-600 mt-2">
+              For every £1 of annual pension you give up, you receive £20 as a tax-free lump sum.
+              Total PCLS across all pensions (DC + DB) is capped at £268,275.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Info box */}

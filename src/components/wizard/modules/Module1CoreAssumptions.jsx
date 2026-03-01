@@ -3,6 +3,31 @@ import React from 'react';
 import FormInput from '../../ui/FormInput';
 import HelpText from '../../ui/HelpText';
 
+/**
+ * Calculate minimum pension age based on UK rules:
+ * - Before 6 April 2028: minimum age 55
+ * - From 6 April 2028: minimum age 57
+ *
+ * @param {string} dateOfBirth - DOB in YYYY-MM-DD format
+ * @returns {number} Minimum pension age (55 or 57)
+ */
+function getMinimumPensionAge(dateOfBirth) {
+  if (!dateOfBirth) return 55;
+
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return 55;
+
+  // Calculate when they would turn 55
+  const age55Date = new Date(dob);
+  age55Date.setFullYear(age55Date.getFullYear() + 55);
+
+  // The rule change date: 6 April 2028
+  const ruleChangeDate = new Date('2028-04-06');
+
+  // If they turn 55 before 6 April 2028, minimum is 55; otherwise 57
+  return age55Date < ruleChangeDate ? 55 : 57;
+}
+
 export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = React.useState(false);
 
@@ -24,7 +49,16 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
     return isNaN(age) ? null : age;
   })();
 
-  const isValid = data.inputs.dateOfBirth && data.inputs.retirementAge;
+  // Calculate minimum retirement age: higher of current age or minimum pension age (55/57)
+  const minimumPensionAge = getMinimumPensionAge(data.inputs.dateOfBirth);
+  const minRetirementAge = currentAge ? Math.max(currentAge, minimumPensionAge) : minimumPensionAge;
+
+  // Check if retirement age is below minimum
+  const retirementAge = parseInt(data.inputs.retirementAge) || 0;
+  const isRetirementAgeBelowMinimum = data.inputs.retirementAge && retirementAge < minRetirementAge;
+
+  // Form is valid only if all required fields filled AND retirement age meets minimum
+  const isValid = data.inputs.dateOfBirth && data.inputs.retirementAge && !isRetirementAgeBelowMinimum;
 
   return (
     <div className="p-6">
@@ -62,15 +96,41 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
 
         {/* Retirement Age */}
         <FormInput
-          label="Planned Retirement Age *"
+          label="Planned Retirement Age (or current age if already retired) *"
           name="retirementAge"
           type="number"
           value={data.inputs.retirementAge}
           onChange={handleChange}
-          min={currentAge || 50}
+          min={minRetirementAge}
           max="100"
           placeholder="e.g., 65"
         />
+
+        {data.inputs.dateOfBirth && !isRetirementAgeBelowMinimum && (
+          <p className="text-sm text-slate-500 -mt-2">
+            Minimum retirement age: {minRetirementAge}
+            {minimumPensionAge === 57 && ' (UK pension age rises to 57 from April 2028)'}
+          </p>
+        )}
+
+        {isRetirementAgeBelowMinimum && (
+          <div className="bg-red-50 border border-red-300 rounded-lg p-3 -mt-2">
+            <p className="text-sm text-red-800">
+              ⚠️ <strong>Retirement age must be at least {minRetirementAge}.</strong>
+              {minimumPensionAge === 57
+                ? ' The UK minimum pension age rises to 57 from April 2028, which applies based on your date of birth.'
+                : ' This is the UK minimum pension age (55), or your current age if higher.'}
+            </p>
+          </div>
+        )}
+
+        {!isRetirementAgeBelowMinimum && currentAge && data.inputs.retirementAge && parseInt(data.inputs.retirementAge) <= currentAge && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 -mt-2">
+            <p className="text-sm text-blue-800">
+              ℹ️ You've entered a retirement age equal to or below your current age ({currentAge}). The calculator will treat you as already retired and skip future contribution projections.
+            </p>
+          </div>
+        )}
 
         {/* State Pension Annual Amount */}
         <FormInput
@@ -133,10 +193,18 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
       </div>
 
       {/* Validation message */}
-      {!isValid && (
+      {!isValid && !isRetirementAgeBelowMinimum && (
         <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-sm text-amber-800">
             ⚠️ Please complete all required fields (*) before continuing
+          </p>
+        </div>
+      )}
+
+      {isRetirementAgeBelowMinimum && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-300 rounded-lg">
+          <p className="text-sm text-red-800">
+            ⚠️ Please enter a retirement age of at least {minRetirementAge} to continue
           </p>
         </div>
       )}

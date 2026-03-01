@@ -12,6 +12,7 @@
   "dependencies": {
     "@logto/browser": "^3.0.9",
     "@logto/js": "^6.1.0",
+    "html2canvas": "^1.4.1",
     "jose": "^6.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

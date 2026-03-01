@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllModuleIds, getModuleInfo, getModuleCompletionStatus } from '../utils/dataSchema';
+import WizardSaveBar from './wizard/WizardSaveBar';
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -30,6 +31,12 @@ export default function Welcome() {
       }
     }
   }, []);
+
+  // Handle data import from SaveBar
+  const handleImportData = (importedData) => {
+    setSavedData(importedData);
+    localStorage.setItem('retireplan-wizard-data', JSON.stringify(importedData));
+  };
 
   // Start wizard from beginning
   const handleStartWizard = () => {
@@ -82,6 +89,13 @@ export default function Welcome() {
           </div>
         </div>
       </div>
+
+      {/* Save Bar */}
+      <WizardSaveBar
+        data={savedData || {}}
+        onImportData={handleImportData}
+        hasWizardData={hasProgress}
+      />
 
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-4 py-12">
