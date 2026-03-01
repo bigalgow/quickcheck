@@ -8,7 +8,7 @@ import { useAuth } from '../auth/AuthProvider';
 
 export default function Welcome() {
   const navigate = useNavigate();
-  const { isAuthenticated, isPremium, premiumLoading, refreshPremium } = useAuth();
+  const { isAuthenticated, isPremium, premiumLoading, refreshPremium, signIn } = useAuth();
   const [savedData, setSavedData] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
@@ -146,8 +146,8 @@ export default function Welcome() {
           </div>
         )}
 
-        {/* Premium CTA - shown to authenticated non-premium users (or devCTA=1 for local preview) */}
-        {(devCTA || (isAuthenticated && !isPremium && !premiumLoading)) && (
+        {/* Premium CTA - shown to all non-premium users (or devCTA=1 for local preview) */}
+        {(devCTA || !isPremium) && !premiumLoading && (
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-lg shadow-lg p-6 mb-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="text-4xl">🎁</div>
@@ -157,12 +157,21 @@ export default function Welcome() {
                   As one of our early users, you can claim <strong>free premium access forever</strong> — including cloud sync so your plan is always backed up and available on any device.
                 </p>
               </div>
-              <button
-                onClick={() => setShowClaimModal(true)}
-                className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors"
-              >
-                🎁 Claim Free Access
-              </button>
+              {isAuthenticated ? (
+                <button
+                  onClick={() => setShowClaimModal(true)}
+                  className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  🎁 Claim Free Access
+                </button>
+              ) : (
+                <button
+                  onClick={signIn}
+                  className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Sign in to claim
+                </button>
+              )}
             </div>
           </div>
         )}
