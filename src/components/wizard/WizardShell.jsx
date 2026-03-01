@@ -33,17 +33,11 @@ function convertGoalsToLifeEvents(goals, retirementAge = 65) {
  */
 function parseLifestyleGoalsFromURL() {
   try {
-    console.log('parseLifestyleGoalsFromURL - full URL:', window.location.href);
-    console.log('parseLifestyleGoalsFromURL - search:', window.location.search);
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get('lifestyleGoals');
-    console.log('parseLifestyleGoalsFromURL - encoded param:', encoded ? `found (${encoded.length} chars)` : 'NOT FOUND');
     if (!encoded) return null;
-    const decoded = JSON.parse(atob(encoded));
-    console.log('parseLifestyleGoalsFromURL - decoded:', decoded);
-    return decoded;
+    return JSON.parse(atob(encoded));
   } catch (e) {
-    console.error('Failed to parse lifestyleGoals from URL:', e);
     return null;
   }
 }
@@ -54,14 +48,6 @@ function parseLifestyleGoalsFromURL() {
 export default function WizardShell() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // DEBUG: Capture URL info on mount
-  const [debugInfo] = useState(() => {
-    const fullUrl = window.location.href;
-    const search = window.location.search;
-    const hasLifestyleGoals = search.includes('lifestyleGoals');
-    return { fullUrl, search, hasLifestyleGoals };
-  });
 
   // Get current module from URL (default to 1)
   const currentModuleId = parseInt(searchParams.get('module') || '1');
@@ -81,26 +67,21 @@ export default function WizardShell() {
 
     // Check for lifestyleGoals URL parameter
     const importedGoals = parseLifestyleGoalsFromURL();
-    console.log('useState init - importedGoals:', importedGoals);
     if (importedGoals && Array.isArray(importedGoals) && importedGoals.length > 0) {
       const retirementAge = parseFloat(baseData.inputs?.retirementAge) || 65;
       const newEvents = convertGoalsToLifeEvents(importedGoals, retirementAge);
-      console.log('useState init - converted events:', newEvents);
 
       // Remove existing lifestyleProfile events, then add new ones
       const existingEvents = (baseData.lifeEvents || []).filter(
         ev => ev.source !== 'lifestyleProfile'
       );
 
-      const finalData = {
+      return {
         ...baseData,
         lifeEvents: [...existingEvents, ...newEvents],
       };
-      console.log('useState init - final lifeEvents:', finalData.lifeEvents);
-      return finalData;
     }
 
-    console.log('useState init - no goals, baseData lifeEvents:', baseData.lifeEvents);
     return baseData;
   });
 
@@ -183,9 +164,7 @@ export default function WizardShell() {
   }, [currentModuleId, setSearchParams]);
 
   // Save success handler
-  const handleSaveSuccess = useCallback(() => {
-    console.log('✅ Save successful');
-  }, []);
+  const handleSaveSuccess = useCallback(() => {}, []);
 
   // Get current module info
   const currentModule = getModuleInfo(currentModuleId);
@@ -217,30 +196,8 @@ export default function WizardShell() {
   ).length;
   const progressPercent = Math.round((completedCount / allModuleIds.length) * 100);
 
-  // DEBUG: Log to console on every render
-  console.log('🔴 WIZARDSHELL RENDER - debugInfo:', debugInfo);
-  console.log('🔴 WIZARDSHELL RENDER - lifeEvents:', data.lifeEvents);
-
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* DEBUG BANNER - VERY OBVIOUS RED BOX */}
-      <div style={{
-        backgroundColor: 'red',
-        color: 'white',
-        padding: '20px',
-        fontSize: '24px',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 99999
-      }}>
-        🔴 DEBUG: lifestyleGoals = {debugInfo.hasLifestyleGoals ? 'YES' : 'NO'} | Events: {data.lifeEvents?.length || 0}
-      </div>
-      <div style={{ marginTop: '80px' }}></div>
-
       {/* Save Bar */}
       <WizardSaveBar
         data={data}
