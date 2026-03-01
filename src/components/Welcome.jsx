@@ -3,11 +3,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllModuleIds, getModuleInfo, getModuleCompletionStatus } from '../utils/dataSchema';
 import WizardSaveBar from './wizard/WizardSaveBar';
+import PremiumClaimModal from './PremiumClaimModal';
+import { useAuth } from '../auth/AuthProvider';
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const { isAuthenticated, isPremium, premiumLoading, refreshPremium } = useAuth();
   const [savedData, setSavedData] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+
+  const handleClaimSuccess = () => {
+    refreshPremium();
+  };
+
+  // Dev preview: ?devCTA=1 forces the premium CTA to show without needing auth
+  const devCTA = new URLSearchParams(window.location.search).get('devCTA') === '1';
 
   // Redirect to wizard if lifestyleGoals parameter is present
   // (lifestyleGoals is handled by WizardShell, not Welcome)
@@ -76,6 +87,12 @@ export default function Welcome() {
   const hasProgress = savedData && savedData.metadata?.completedModules?.length > 0;
 
   return (
+    <>
+    <PremiumClaimModal
+      isOpen={showClaimModal}
+      onClose={() => setShowClaimModal(false)}
+      onSuccess={handleClaimSuccess}
+    />
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-slate-100">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
@@ -126,6 +143,27 @@ export default function Welcome() {
             <p className="text-sm text-slate-600">
               {savedData.metadata?.completedModules?.length || 0} of {getAllModuleIds().length} modules completed
             </p>
+          </div>
+        )}
+
+        {/* Premium CTA - shown to authenticated non-premium users (or devCTA=1 for local preview) */}
+        {(devCTA || (isAuthenticated && !isPremium && !premiumLoading)) && (
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-lg shadow-lg p-6 mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="text-4xl">🎁</div>
+              <div className="flex-1">
+                <div className="font-bold text-amber-800 text-lg mb-1">Early Adopter Offer — Free Premium Access</div>
+                <p className="text-amber-700 text-sm">
+                  As one of our early users, you can claim <strong>free premium access forever</strong> — including cloud sync so your plan is always backed up and available on any device.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowClaimModal(true)}
+                className="shrink-0 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                🎁 Claim Free Access
+              </button>
+            </div>
           </div>
         )}
 
@@ -272,5 +310,6 @@ export default function Welcome() {
         </div>
       </div>
     </div>
+    </>
   );
 }
