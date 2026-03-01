@@ -217,21 +217,29 @@ export default function WizardShell() {
   ).length;
   const progressPercent = Math.round((completedCount / allModuleIds.length) * 100);
 
+  // DEBUG: Log to console on every render
+  console.log('🔴 WIZARDSHELL RENDER - debugInfo:', debugInfo);
+  console.log('🔴 WIZARDSHELL RENDER - lifeEvents:', data.lifeEvents);
+
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* DEBUG BANNER - shows URL info */}
-      <div className="bg-yellow-100 border-b border-yellow-300 p-3 text-sm">
-        <div className="max-w-6xl mx-auto">
-          <strong>DEBUG:</strong> lifestyleGoals in URL: {debugInfo.hasLifestyleGoals ? 'YES' : 'NO'}
-          <br />
-          <span className="text-xs text-slate-600 break-all">URL: {debugInfo.fullUrl}</span>
-          <br />
-          <strong>Life events count:</strong> {data.lifeEvents?.length || 0}
-          {data.lifeEvents?.length > 0 && (
-            <span> | From lifestyle: {data.lifeEvents.filter(e => e.source === 'lifestyleProfile').length}</span>
-          )}
-        </div>
+      {/* DEBUG BANNER - VERY OBVIOUS RED BOX */}
+      <div style={{
+        backgroundColor: 'red',
+        color: 'white',
+        padding: '20px',
+        fontSize: '24px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 99999
+      }}>
+        🔴 DEBUG: lifestyleGoals = {debugInfo.hasLifestyleGoals ? 'YES' : 'NO'} | Events: {data.lifeEvents?.length || 0}
       </div>
+      <div style={{ marginTop: '80px' }}></div>
 
       {/* Save Bar */}
       <WizardSaveBar
