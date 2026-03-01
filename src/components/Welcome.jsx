@@ -8,6 +8,16 @@ export default function Welcome() {
   const [savedData, setSavedData] = useState(null);
   const [showQuickNav, setShowQuickNav] = useState(false);
 
+  // Redirect to wizard if lifestyleGoals parameter is present
+  // (lifestyleGoals is handled by WizardShell, not Welcome)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('lifestyleGoals')) {
+      // Preserve all query parameters when redirecting
+      navigate('/wizard' + window.location.search, { replace: true });
+    }
+  }, [navigate]);
+
   // Load saved data to check if user has an in-progress plan
   useEffect(() => {
     const stored = localStorage.getItem('retireplan-wizard-data');
