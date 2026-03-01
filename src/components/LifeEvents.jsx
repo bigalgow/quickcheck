@@ -243,7 +243,14 @@ export default function LifeEvents({ currentAge, retirementAge, events, setEvent
               {sortedEvents.map((event) => (
                 <li key={event.id} className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-between gap-4 transition-all hover:shadow-md">
                   <div>
-                    <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                      {event.source === 'lifestyleProfile' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                          From Goals
+                        </span>
+                      )}
+                    </div>
                     <span className="block text-base text-slate-500">
                       at age {event.age}
                       {event.isRecurring && ` for ${event.recurringYears} years`}
