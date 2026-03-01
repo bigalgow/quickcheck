@@ -20,6 +20,11 @@ export function projectWithContrib(start, addPerYear, years, rate) {
   // Lump sum + end-of-year compounding for the starting pot
   // Contributions are handled elsewhere (start-of-year timing)
   let v = start * Math.pow(1 + rate, years);
+  // Handle rate = 0 case to avoid division by zero (NaN)
+  // When rate = 0, geometric series sum is simply years * addPerYear
+  if (rate === 0) {
+    return v + (addPerYear > 0 ? addPerYear * years : 0);
+  }
   return v + (addPerYear > 0 ? addPerYear * ((Math.pow(1 + rate, years) - 1) / rate) : 0);
 }
 

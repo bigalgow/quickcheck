@@ -1,11 +1,52 @@
 // src/components/wizard/WizardShell.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import { defaultRetirePlanData, getModuleInfo, getModuleCompletionStatus, markModuleCompleted, getAllModuleIds } from '../../utils/dataSchema';
 import { MODULE_COMPONENTS } from './moduleRegistry.jsx';
 import WizardSaveBar from './WizardSaveBar.jsx';
 import PWAInstallBanner from '../PWAInstallBanner.jsx';
 import BottomNav from '../BottomNav.jsx';
+
+/**
+ * Convert lifestyle goals from Lifestyle Designer to life events format
+ * @param {Array} goals - Array of lifestyle goals from URL
+ * @param {number} retirementAge - User's retirement age (default 65)
+ * @returns {Array} Array of life events
+ */
+function convertGoalsToLifeEvents(goals, retirementAge = 65) {
+  return goals.map(goal => ({
+    id: uuidv4(),
+    name: goal.name,
+    amount: goal.cost,
+    type: 'expense',
+    isRecurring: goal.timing === 'recurring',
+    recurringYears: goal.timing === 'recurring' ? (goal.duration ?? 10) : 1,
+    age: retirementAge,
+    source: 'lifestyleProfile',
+  }));
+}
+
+/**
+ * Parse lifestyleGoals from URL parameter
+ * @returns {Array|null} Parsed goals array or null if not present/invalid
+ */
+function parseLifestyleGoalsFromURL() {
+  try {
+    console.log('parseLifestyleGoalsFromURL - full URL:', window.location.href);
+    console.log('parseLifestyleGoalsFromURL - search:', window.location.search);
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('lifestyleGoals');
+    console.log('parseLifestyleGoalsFromURL - encoded param:', encoded ? `found (${encoded.length} chars)` : 'NOT FOUND');
+    if (!encoded) return null;
+    const decoded = JSON.parse(atob(encoded));
+    console.log('parseLifestyleGoalsFromURL - decoded:', decoded);
+    return decoded;
+  } catch (e) {
+    console.error('Failed to parse lifestyleGoals from URL:', e);
+    return null;
+  }
+}
 
 /**
  * WizardShell - Main wizard container with navigation and progress tracking
@@ -14,6 +55,14 @@ export default function WizardShell() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // DEBUG: Capture URL info on mount
+  const [debugInfo] = useState(() => {
+    const fullUrl = window.location.href;
+    const search = window.location.search;
+    const hasLifestyleGoals = search.includes('lifestyleGoals');
+    return { fullUrl, search, hasLifestyleGoals };
+  });
+
   // Get current module from URL (default to 1)
   const currentModuleId = parseInt(searchParams.get('module') || '1');
 
@@ -21,20 +70,55 @@ export default function WizardShell() {
   const [data, setData] = useState(() => {
     // Try to load from localStorage
     const stored = localStorage.getItem('retireplan-wizard-data');
+    let baseData = defaultRetirePlanData;
     if (stored) {
       try {
-        return JSON.parse(stored);
+        baseData = JSON.parse(stored);
       } catch (e) {
         console.error('Failed to parse stored wizard data:', e);
       }
     }
-    return defaultRetirePlanData;
+
+    // Check for lifestyleGoals URL parameter
+    const importedGoals = parseLifestyleGoalsFromURL();
+    console.log('useState init - importedGoals:', importedGoals);
+    if (importedGoals && Array.isArray(importedGoals) && importedGoals.length > 0) {
+      const retirementAge = parseFloat(baseData.inputs?.retirementAge) || 65;
+      const newEvents = convertGoalsToLifeEvents(importedGoals, retirementAge);
+      console.log('useState init - converted events:', newEvents);
+
+      // Remove existing lifestyleProfile events, then add new ones
+      const existingEvents = (baseData.lifeEvents || []).filter(
+        ev => ev.source !== 'lifestyleProfile'
+      );
+
+      const finalData = {
+        ...baseData,
+        lifeEvents: [...existingEvents, ...newEvents],
+      };
+      console.log('useState init - final lifeEvents:', finalData.lifeEvents);
+      return finalData;
+    }
+
+    console.log('useState init - no goals, baseData lifeEvents:', baseData.lifeEvents);
+    return baseData;
   });
 
   // Autosave to localStorage whenever data changes
   useEffect(() => {
     localStorage.setItem('retireplan-wizard-data', JSON.stringify(data));
   }, [data]);
+
+  // Clean up lifestyleGoals from URL after import
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('lifestyleGoals')) {
+      params.delete('lifestyleGoals');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   // Update data handler
   const handleDataChange = useCallback((newData) => {
@@ -133,8 +217,30 @@ export default function WizardShell() {
   ).length;
   const progressPercent = Math.round((completedCount / allModuleIds.length) * 100);
 
+  // DEBUG: Log to console on every render
+  console.log('🔴 WIZARDSHELL RENDER - debugInfo:', debugInfo);
+  console.log('🔴 WIZARDSHELL RENDER - lifeEvents:', data.lifeEvents);
+
   return (
     <div className="min-h-screen bg-slate-100">
+      {/* DEBUG BANNER - VERY OBVIOUS RED BOX */}
+      <div style={{
+        backgroundColor: 'red',
+        color: 'white',
+        padding: '20px',
+        fontSize: '24px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 99999
+      }}>
+        🔴 DEBUG: lifestyleGoals = {debugInfo.hasLifestyleGoals ? 'YES' : 'NO'} | Events: {data.lifeEvents?.length || 0}
+      </div>
+      <div style={{ marginTop: '80px' }}></div>
+
       {/* Save Bar */}
       <WizardSaveBar
         data={data}

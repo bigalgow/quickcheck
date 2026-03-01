@@ -143,7 +143,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
     );
   }
 
-  if (!projectionData) {
+  if (!projectionData || projectionData.length === 0) {
     return (
       <div className="p-6">
         <div className="text-center text-slate-600">Calculating projection...</div>

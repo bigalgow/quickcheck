@@ -41,9 +41,13 @@ export default function Module1CoreAssumptions({ data, onDataChange, onNext }) {
     });
   };
 
-  const currentAge = data.inputs.dateOfBirth
-    ? Math.floor((new Date() - new Date(data.inputs.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
-    : null;
+  const currentAge = (() => {
+    if (!data.inputs.dateOfBirth) return null;
+    const dob = new Date(data.inputs.dateOfBirth);
+    if (isNaN(dob.getTime())) return null; // Invalid date
+    const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
+    return isNaN(age) ? null : age;
+  })();
 
   // Calculate minimum retirement age: higher of current age or minimum pension age (55/57)
   const minimumPensionAge = getMinimumPensionAge(data.inputs.dateOfBirth);

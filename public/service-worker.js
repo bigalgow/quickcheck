@@ -1,7 +1,7 @@
 // service-worker.js
 // Service Worker for RetirePlan PWA
 
-const CACHE_NAME = 'retireplan-v9-life-events-suggestions';
+const CACHE_NAME = 'retireplan-v8-pwa-nav';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
@@ -53,10 +53,23 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (!url.protocol.startsWith('http')) return;
 
+  // Skip localhost/dev mode - let requests pass through normally
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
+
+  // For navigation requests (HTML pages), always try network first
+  // Only show offline page if truly offline - don't cache HTML
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+    );
+    return;
+  }
+
+  // For other resources (JS, CSS, images), use cache-then-network
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful responses
+        // Cache successful responses (but not HTML)
         if (response.status === 200) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -67,15 +80,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // If fetch fails, try to serve from cache
-        return caches.match(event.request).then((response) => {
-          if (response) {
-            return response;
-          }
-          // If no cache, show offline page for navigation requests
-          if (event.request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL);
-          }
-        });
+        return caches.match(event.request);
       })
   );
 });

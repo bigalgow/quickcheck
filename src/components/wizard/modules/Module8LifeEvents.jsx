@@ -56,6 +56,7 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
   const [showHelp, setShowHelp] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [newEvent, setNewEvent] = useState({
     id: uuidv4(),
     age: '',
@@ -80,6 +81,14 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
   }, [data.inputs?.retirementAge, currentAge]);
 
   const events = data.lifeEvents || [];
+
+  // Count imported lifestyle events (more reliable than URL param count)
+  const importedCount = useMemo(() => {
+    const count = events.filter(ev => ev.source === 'lifestyleProfile').length;
+    console.log('Module8 events:', events.map(e => ({ name: e.name, source: e.source })));
+    console.log('Imported count:', count);
+    return count;
+  }, [events]);
 
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
@@ -177,6 +186,33 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
 
   return (
     <div className="p-6">
+      {/* Import success banner */}
+      {importedCount > 0 && !bannerDismissed && (
+        <div className="mb-6 bg-teal-50 border border-teal-300 rounded-lg p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 text-teal-800">
+              <span className="text-xl mt-0.5">✓</span>
+              <div>
+                <span className="font-semibold block">
+                  {importedCount} lifestyle goal{importedCount !== 1 ? 's' : ''} imported
+                </span>
+                <span className="text-sm text-teal-700 mt-1 block">
+                  Your goals from Lifestyle Designer are shown below. You can edit amounts, timing,
+                  or add more events to fine-tune your retirement plan.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-teal-600 hover:text-teal-800 text-xl font-bold px-2 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Help text */}
       <div className="mb-6">
         <button
@@ -350,7 +386,14 @@ export default function Module8LifeEvents({ data, onDataChange, onNext }) {
                   className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-between gap-4 transition-all hover:shadow-md"
                 >
                   <div>
-                    <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-base text-slate-800">{event.name}</span>
+                      {event.source === 'lifestyleProfile' && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-sky-100 text-sky-700 rounded-full">
+                          Lifestyle Plan
+                        </span>
+                      )}
+                    </div>
                     <span className="block text-base text-slate-500">
                       at age {event.age}
                       {event.isRecurring && ` for ${event.recurringYears} years`}:
