@@ -9,7 +9,16 @@ import { useAuth } from '../auth/AuthProvider';
 export default function Welcome() {
   const navigate = useNavigate();
   const { isAuthenticated, isPremium, premiumLoading, refreshPremium, signIn } = useAuth();
-  const [savedData, setSavedData] = useState(null);
+  // Load synchronously so WizardSaveBar sees local data on first render,
+  // preventing a false "no local data" smart sync prompt for returning users
+  const [savedData, setSavedData] = useState(() => {
+    try {
+      const stored = localStorage.getItem('retireplan-wizard-data');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [showQuickNav, setShowQuickNav] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
 
@@ -29,19 +38,6 @@ export default function Welcome() {
       navigate('/wizard' + window.location.search, { replace: true });
     }
   }, [navigate]);
-
-  // Load saved data to check if user has an in-progress plan
-  useEffect(() => {
-    const stored = localStorage.getItem('retireplan-wizard-data');
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        setSavedData(data);
-      } catch (e) {
-        console.error('Failed to parse saved data:', e);
-      }
-    }
-  }, []);
 
   // Handle data import from SaveBar
   const handleImportData = (importedData) => {
