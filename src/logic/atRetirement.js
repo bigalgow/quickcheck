@@ -264,12 +264,19 @@ export function atRetirement(inputs, taxFns) {
     years,
     inputs.isaRate
   );
-  const taxableAtRet = projectWithContrib(
+  const taxableAtRetBase = projectWithContrib(
     inputs.taxableSavingsBalance,
     alreadyRetired ? 0 : inputs.taxableSavingsAddPerYear,
     years,
     inputs.taxableSavingsRate
   );
+  const higherYieldAtRet = projectWithContrib(
+    inputs.higherYieldBalance || 0,
+    alreadyRetired ? 0 : (inputs.higherYieldAddPerYear || 0),
+    years,
+    inputs.higherYieldRate || 0
+  );
+  const taxableAtRet = taxableAtRetBase + higherYieldAtRet;
   const taxableInterest = Math.max(0, taxableAtRet * inputs.taxableSavingsRate);
 
   // ---- Desired spend (inflated to retirement)

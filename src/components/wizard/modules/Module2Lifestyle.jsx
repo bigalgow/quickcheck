@@ -527,7 +527,7 @@ export default function Module2Lifestyle({ data, onDataChange, onNext }) {
               : 'bg-slate-300 text-slate-500 cursor-not-allowed'
           }`}
         >
-          Continue to DC Pensions →
+          Continue to Workplace & Personal Pensions →
         </button>
       </div>
     </div>

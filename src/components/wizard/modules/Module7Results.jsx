@@ -86,6 +86,9 @@ export default function Module7Results({ data, onDataChange, onNext }) {
       taxableSavingsBalance: getValue('savings.taxableSavings.currentValue', 0),
       taxableSavingsAddPerYear: getValue('savings.taxableSavings.addPerYear', 0),
       taxableSavingsRate: getValue('savings.taxableSavings.growthRate', 3) / 100,
+      higherYieldBalance: getValue('savings.higherYield.currentValue', 0),
+      higherYieldAddPerYear: getValue('savings.higherYield.addPerYear', 0),
+      higherYieldRate: getValue('savings.higherYield.growthRate', 6) / 100,
 
       // Other income
       propertyIncomeNow,

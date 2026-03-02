@@ -85,6 +85,48 @@ export default function Module5Savings({ data, onDataChange, onNext, onPrevious 
           )}
         </div>
 
+        {/* Higher Yield Investments */}
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">📈 Higher Yield Investments</h3>
+          <div className={`grid ${alreadyRetired ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
+            <FormInput
+              label="Current Balance (£)"
+              name="higherYield-currentValue"
+              type="number"
+              value={data.savings.higherYield?.currentValue || ''}
+              onChange={(e) => handleChange('higherYield', 'currentValue', e.target.value)}
+              min="0"
+              placeholder="0"
+            />
+            {!alreadyRetired && (
+              <FormInput
+                label="Add per year (£)"
+                name="higherYield-addPerYear"
+                type="number"
+                value={data.savings.higherYield?.addPerYear || ''}
+                onChange={(e) => handleChange('higherYield', 'addPerYear', e.target.value)}
+                min="0"
+                placeholder="0"
+              />
+            )}
+            <FormInput
+              label="Growth Rate (% per year)"
+              name="higherYield-growthRate"
+              type="number"
+              value={data.savings.higherYield?.growthRate || ''}
+              onChange={(e) => handleChange('higherYield', 'growthRate', e.target.value)}
+              min="0"
+              max="30"
+              placeholder="6"
+            />
+          </div>
+          <p className="text-sm text-slate-600 mt-2">
+            e.g. stocks & shares, bonds, or other higher-growth investments. Taxable on growth.
+            Totalled into savings at retirement.
+            {!alreadyRetired && ' Annual contributions continue until retirement.'}
+          </p>
+        </div>
+
         {/* Taxable Savings */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">🏦 Taxable Savings</h3>

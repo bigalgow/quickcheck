@@ -98,9 +98,11 @@ export default function Welcome() {
       <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="RetirePlan" className="h-16" />
+            <a href="https://retireplan.co.uk" aria-label="Return to RetirePlan">
+              <img src="/logo.png" alt="RetirePlan" className="h-16" />
+            </a>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">RetirePlan QuickCheck</h1>
+              <h1 className="text-2xl font-bold text-slate-800">Lifestyle Financial Planner</h1>
               <p className="text-sm text-slate-500">Your complete retirement planning wizard</p>
             </div>
           </div>
@@ -119,7 +121,7 @@ export default function Welcome() {
         {/* Hero section */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-slate-800 mb-4">
-            Welcome to Your Retirement Journey
+            Your Retirement Journey Planner
           </h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
             Plan your retirement in 10 simple steps. Get a complete picture of your finances and

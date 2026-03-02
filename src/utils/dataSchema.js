@@ -69,6 +69,11 @@ export const defaultRetirePlanData = {
       addPerYear: "",
       growthRate: "3",
     },
+    higherYield: {
+      currentValue: "",
+      addPerYear: "",
+      growthRate: "6",
+    },
   },
 
   // Module 6: Other Income
@@ -119,13 +124,13 @@ export const MODULES = {
   },
   3: {
     id: 3,
-    title: "DC Pensions",
+    title: "Workplace & Personal Pensions",
     description: "Add your Defined Contribution pension pots",
     requiredFields: [], // Optional - can have zero DC pensions
   },
   4: {
     id: 4,
-    title: "DB Pensions",
+    title: "Final Salary & DB Pensions",
     description: "Add your Defined Benefit pension schemes",
     requiredFields: [], // Optional - can have zero DB pensions
   },

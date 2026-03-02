@@ -345,7 +345,7 @@ export default function Module3DCPensions({ data, onDataChange, onNext }) {
           onClick={onNext}
           className="px-8 py-3 rounded-md font-medium bg-sky-500 text-white hover:bg-sky-600 transition-colors"
         >
-          Continue to DB Pensions →
+          Continue to Final Salary & DB Pensions →
         </button>
       </div>
     </div>
