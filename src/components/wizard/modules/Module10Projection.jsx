@@ -87,7 +87,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       inflation: parseFloat(data.inputs?.inflation || 2.5) / 100,
       dcGrowth: parseFloat(data.dc?.growthAssumption || 0.04),
       isaGrowth: parseFloat(data.savings?.isa?.growthRate || 3) / 100,
-      savingsGrowth: parseFloat(data.savings?.taxableSavings?.growthRate || 3) / 100,
+      savingsGrowth: atRetResults.blendedSavingsRate ?? parseFloat(data.savings?.taxableSavings?.growthRate || 3) / 100,
       taxRegion: data.inputs?.taxRegion === 'scotland' ? 'scotland' : 'england',
       yearsToRetirement: atRetResults.yearsToRetirement || 0,
       housingType: data.lifestyle?.housingType || 'none',

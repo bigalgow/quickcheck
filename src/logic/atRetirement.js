@@ -277,7 +277,11 @@ export function atRetirement(inputs, taxFns) {
     inputs.higherYieldRate || 0
   );
   const taxableAtRet = taxableAtRetBase + higherYieldAtRet;
-  const taxableInterest = Math.max(0, taxableAtRet * inputs.taxableSavingsRate);
+  // Blended growth rate weighted by projected balances at retirement
+  const blendedSavingsRate = taxableAtRet > 0
+    ? (taxableAtRetBase * inputs.taxableSavingsRate + higherYieldAtRet * (inputs.higherYieldRate || 0)) / taxableAtRet
+    : inputs.taxableSavingsRate;
+  const taxableInterest = Math.max(0, taxableAtRet * blendedSavingsRate);
 
   // ---- Desired spend (inflated to retirement)
   const desiredSpendAtRet = inflateToRetirement(
@@ -392,6 +396,7 @@ export function atRetirement(inputs, taxFns) {
     estTax: taxRes.tax,
     netIncome,
     surplusDeficit,
+    blendedSavingsRate,
 
     real,
   };
