@@ -1,6 +1,7 @@
 // src/components/wizard/modules/Module10Projection.jsx
 import React, { useMemo, useState } from 'react';
 import html2canvas from 'html2canvas';
+import { useNavigate } from 'react-router-dom';
 import { calculateProjection, extractWarnings } from '../../../logic/projection';
 import ProjectionTable from '../../ProjectionTable';
 import ProjectionCharts from '../../ProjectionCharts';
@@ -9,6 +10,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 
 export default function Module10Projection({ data, onDataChange, onNext }) {
   const { userInfo } = useAuth();
+  const navigate = useNavigate();
   const [showHelp, setShowHelp] = useState(false);
   const [showAdvice, setShowAdvice] = useState(true);
 
@@ -134,7 +136,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
             retirement position as a starting point.
           </p>
           <button
-            onClick={() => window.location.href = '/wizard?module=7'}
+            onClick={() => navigate('/wizard?module=7')}
             className="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
           >
             Go to Module 7
@@ -252,7 +254,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
                     instantly without re-entering data — the fastest way to experiment.
                   </p>
                   <button
-                    onClick={() => window.location.href = '/wizard?module=7'}
+                    onClick={() => navigate('/wizard?module=7')}
                     className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-md transition-colors"
                   >
                     Go to Module 7 →
@@ -273,7 +275,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
                         <li key={module} className="flex items-center justify-between gap-2 bg-white border border-amber-200 rounded px-3 py-2">
                           <span>{label}</span>
                           <button
-                            onClick={() => window.location.href = `/wizard?module=${module}`}
+                            onClick={() => navigate(`/wizard?module=${module}`)}
                             className="shrink-0 text-xs text-amber-700 font-semibold hover:text-amber-900 underline"
                           >
                             Module {module}
@@ -296,7 +298,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
                         <li key={module} className="flex items-center justify-between gap-2 bg-white border border-amber-200 rounded px-3 py-2">
                           <span>{label}</span>
                           <button
-                            onClick={() => window.location.href = `/wizard?module=${module}`}
+                            onClick={() => navigate(`/wizard?module=${module}`)}
                             className="shrink-0 text-xs text-amber-700 font-semibold hover:text-amber-900 underline"
                           >
                             Module {module}
@@ -397,7 +399,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
       {/* Navigation */}
       <div className="mt-8 flex justify-between items-center no-print">
         <button
-          onClick={() => window.location.href = '/wizard?module=1'}
+          onClick={() => navigate('/wizard?module=1')}
           className="px-6 py-3 rounded-md font-medium bg-slate-500 text-white hover:bg-slate-600 transition-colors"
         >
           ← Back to Module 1
@@ -411,7 +413,7 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
           </p>
         </div>
         <button
-          onClick={() => window.location.href = '/'}
+          onClick={() => navigate('/')}
           className="px-6 py-3 rounded-md font-medium bg-sky-500 text-white hover:bg-sky-600 transition-colors"
         >
           Exit to Welcome →
