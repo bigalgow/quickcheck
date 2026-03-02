@@ -1,5 +1,5 @@
 // src/components/wizard/modules/Module10Projection.jsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { calculateProjection, extractWarnings } from '../../../logic/projection';
 import ProjectionTable from '../../ProjectionTable';
@@ -9,7 +9,8 @@ import { useAuth } from '../../../auth/AuthProvider';
 
 export default function Module10Projection({ data, onDataChange, onNext }) {
   const { userInfo } = useAuth();
-  const [showHelp, setShowHelp] = React.useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showAdvice, setShowAdvice] = useState(true);
 
   // Handle print with chart capture
   const handlePrint = async () => {
@@ -202,25 +203,112 @@ export default function Module10Projection({ data, onDataChange, onNext }) {
 
       {/* Warnings Section */}
       {warnings.length > 0 && (
-        <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-6 print-avoid-break">
-          <h3 className="text-xl font-bold text-red-800 mb-3 flex items-center gap-2">
-            <span>⚠️</span>
-            Depletion Warnings
-          </h3>
-          <ul className="space-y-2">
-            {warnings.map((warning, idx) => (
-              <li key={idx} className="text-red-700 flex items-start gap-2">
-                <span className="text-red-600">•</span>
-                <span>
-                  <strong>Age {warning.age} (Year {warning.year}):</strong> {warning.messages.join(', ')}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-sm text-red-600">
-            💡 <strong>Recommendation:</strong> Consider adjusting your retirement age, spending,
-            DC drawdown rate, or increasing pre-retirement savings to avoid running out of funds.
-          </p>
+        <div className="mb-6 space-y-3 print-avoid-break">
+
+          {/* Panel A — compact red alert */}
+          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-5">
+            <h3 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
+              <span>⚠️</span>
+              Asset Depletion Detected
+            </h3>
+            <ul className="space-y-1">
+              {warnings.map((warning, idx) => (
+                <li key={idx} className="text-red-700 flex items-start gap-2 text-sm">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  <span><strong>{warning.message}</strong> — first occurs at age {warning.age} (Year {warning.year})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Panel B — amber advice panel */}
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setShowAdvice(!showAdvice)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left"
+            >
+              <span className="font-bold text-amber-800 flex items-center gap-2">
+                <span>💡</span>
+                How to Address This
+              </span>
+              <span className="text-amber-600 text-sm">{showAdvice ? '▲ Hide' : '▼ Show'}</span>
+            </button>
+
+            {showAdvice && (
+              <div className="px-5 pb-5 text-sm text-amber-900 space-y-4">
+                <p>
+                  If your planned spend exceeds your pension and other income, the model draws down
+                  from savings and investments to cover the shortfall. This is often the case when
+                  your planned retirement age is earlier than your state pension age — the model uses
+                  savings to bridge the gap. Don't worry — you have many options to address this, and
+                  small adjustments can make a significant difference to the outcome.
+                </p>
+
+                {/* Quick win */}
+                <div className="bg-amber-100 border border-amber-300 rounded-lg p-4">
+                  <div className="font-semibold text-amber-800 mb-1">Try first — use the sliders in Module 7</div>
+                  <p className="text-amber-800 mb-3 text-xs">
+                    Retirement age, spending level, and drawdown rate can all be adjusted there
+                    instantly without re-entering data — the fastest way to experiment.
+                  </p>
+                  <button
+                    onClick={() => window.location.href = '/wizard?module=7'}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-md transition-colors"
+                  >
+                    Go to Module 7 →
+                  </button>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Pre-retirement */}
+                  <div>
+                    <div className="font-semibold text-amber-800 mb-2">Pre-retirement options</div>
+                    <ul className="space-y-2">
+                      {[
+                        { label: 'Increase pension contributions', module: 3 },
+                        { label: 'Increase savings', module: 5 },
+                        { label: 'Delay retirement age', module: 1 },
+                        { label: 'Develop other income', module: 6 },
+                      ].map(({ label, module }) => (
+                        <li key={module} className="flex items-center justify-between gap-2 bg-white border border-amber-200 rounded px-3 py-2">
+                          <span>{label}</span>
+                          <button
+                            onClick={() => window.location.href = `/wizard?module=${module}`}
+                            className="shrink-0 text-xs text-amber-700 font-semibold hover:text-amber-900 underline"
+                          >
+                            Module {module}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Post-retirement */}
+                  <div>
+                    <div className="font-semibold text-amber-800 mb-2">Post-retirement options</div>
+                    <ul className="space-y-2">
+                      {[
+                        { label: 'Reduce spending', module: 2 },
+                        { label: 'Review life events', module: 8 },
+                        { label: 'Take 25% tax-free cash as a buffer', module: 3 },
+                        { label: 'Increase pension drawdown rate', module: 9 },
+                      ].map(({ label, module }) => (
+                        <li key={module} className="flex items-center justify-between gap-2 bg-white border border-amber-200 rounded px-3 py-2">
+                          <span>{label}</span>
+                          <button
+                            onClick={() => window.location.href = `/wizard?module=${module}`}
+                            className="shrink-0 text-xs text-amber-700 font-semibold hover:text-amber-900 underline"
+                          >
+                            Module {module}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -279,18 +279,23 @@ export function calculateProjection(openingValues, projectionInputs) {
 }
 
 /**
- * Helper to extract warnings from projection results
+ * Helper to extract warnings from projection results.
+ * Returns only the first year each pot type depletes to avoid alarming repetition.
  */
 export function extractWarnings(projectionResults) {
+  const seen = new Set();
   const warnings = [];
 
   for (const yearData of projectionResults) {
-    if (yearData.warnings.length > 0) {
-      warnings.push({
-        age: yearData.age,
-        year: yearData.year,
-        messages: yearData.warnings,
-      });
+    for (const message of yearData.warnings) {
+      if (!seen.has(message)) {
+        seen.add(message);
+        warnings.push({
+          age: yearData.age,
+          year: yearData.year,
+          message,
+        });
+      }
     }
   }
 
