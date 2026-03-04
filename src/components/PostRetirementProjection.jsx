@@ -12,7 +12,7 @@ import { formatCurrency } from '../utils/money';
 import { loadProjectionInputs, saveProjectionInputs, loadUnifiedData, getLastCloudSave, setLastCloudSave } from '../utils/persist';
 import { useAuth } from '../auth/AuthProvider';
 import { transformToProjectionEvents } from '../utils/lifestyleProfile';
-import { estimateIncomeTax, TAX_2025_EWNI, TAX_2025_SCOTLAND } from '../utils/tax';
+import { estimateIncomeTax, TAX_2026_EWNI, TAX_2026_SCOTLAND } from '../utils/tax';
 
 export default function PostRetirementProjection() {
   const location = useLocation();
@@ -247,7 +247,7 @@ export default function PostRetirementProjection() {
       dcDrawdownAmount;
 
     // Get the correct tax configuration based on region
-    const cfg = openingValues.taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
+    const cfg = openingValues.taxRegion === 'scotland' ? TAX_2026_SCOTLAND : TAX_2026_EWNI;
 
     // Calculate tax using the same function as At Retirement
     // Note: savingsInterest is 0 for opening position (interest accrues during projection)

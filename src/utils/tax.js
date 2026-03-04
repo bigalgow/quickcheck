@@ -1,5 +1,7 @@
 // src/utils/tax.js
-// 2025/26 style example configs. Adjust when rules change.
+// 2026/27 UK tax configuration.
+// NOTE: Scottish bands for 2026/27 should be verified against the Scottish Budget
+// (typically announced December each year). Values below are 2025/26 placeholders.
 
 // Personal allowance (standard) & taper
 const STD_PA = 12570;
@@ -22,47 +24,75 @@ function savingsAllowance(basicOrHigherOrAdditional) {
 
 // Determine taxpayer status for PSA using rUK thresholds (simple rule)
 function taxpayerStatusForPSA(taxableNonSavings, cfg) {
-  const r = cfg.psaBands; // [{upTo, rateName}]
+  const r = cfg.psaBands;
   const taxable = Math.max(0, taxableNonSavings);
   if (taxable <= r.basic) return "basic";
   if (taxable <= r.higher) return "higher";
   return "additional";
 }
 
-// England/Wales/NI income tax bands (non-savings)
-export const TAX_2025_EWNI = {
+// Dividend allowance (nil-rate band) - £500 from 2024/25 onwards
+const DIVIDEND_ALLOWANCE = 500;
+
+// England/Wales/NI income tax bands (non-savings) — frozen until April 2028
+export const TAX_2026_EWNI = {
   bands: [
-    { upTo: 37700, rate: 0.20 }, // basic
-    { upTo: 125140, rate: 0.40 }, // higher (upper threshold not really used here)
-    { upTo: Infinity, rate: 0.45 }, // additional
+    { upTo: 37700, rate: 0.20 },      // basic
+    { upTo: 125140, rate: 0.40 },     // higher
+    { upTo: Infinity, rate: 0.45 },   // additional
   ],
   psaBands: { basic: 37700, higher: 125140 },
+  dividendBands: [
+    { upTo: 37700, rate: 0.0875 },    // basic
+    { upTo: 125140, rate: 0.3375 },   // higher
+    { upTo: Infinity, rate: 0.3935 }, // additional
+  ],
 };
 
-// Scotland income tax bands (earnings)
-export const TAX_2025_SCOTLAND = {
+// Scotland income tax bands — VERIFY 2026/27 rates against Scottish Budget announcement
+export const TAX_2026_SCOTLAND = {
   bands: [
-    { upTo: 14732, rate: 0.19 },   // starter
-    { upTo: 25989, rate: 0.20 },   // basic
-    { upTo: 43662, rate: 0.21 },   // intermediate
-    { upTo: 75437, rate: 0.42 },   // higher
-    { upTo: 125140, rate: 0.45 },  // top (align upper limit for PA taper)
-    { upTo: Infinity, rate: 0.48 },// advanced/additional (illustrative)
+    { upTo: 14732, rate: 0.19 },   // starter   ← verify for 2026/27
+    { upTo: 25989, rate: 0.20 },   // basic     ← verify for 2026/27
+    { upTo: 43662, rate: 0.21 },   // intermediate ← verify for 2026/27
+    { upTo: 75437, rate: 0.42 },   // higher    ← verify for 2026/27
+    { upTo: 125140, rate: 0.45 },  // top
+    { upTo: Infinity, rate: 0.48 },// advanced/additional
   ],
-  // PSA status still uses rUK concept (HMRC rule) — we’ll proxy with rUK thresholds:
+  // PSA status still uses rUK concept (HMRC rule)
   psaBands: { basic: 37700, higher: 125140 },
+  // Dividend rates are reserved — same as rUK (PSA/dividend rules are UK-wide)
+  dividendBands: [
+    { upTo: 37700, rate: 0.0875 },
+    { upTo: 125140, rate: 0.3375 },
+    { upTo: Infinity, rate: 0.3935 },
+  ],
 };
+
+// Backward-compat aliases (remove after all callers updated)
+export const TAX_2025_EWNI = TAX_2026_EWNI;
+export const TAX_2025_SCOTLAND = TAX_2026_SCOTLAND;
 
 /**
- * Estimate UK income tax on (non-savings pensionable income) + savings interest.
- * Applies Personal Allowance **once** (fix), determines PSA from non-savings band.
+ * Estimate UK income tax on pension/property/other income, savings interest, and dividend income.
+ *
+ * Income is stacked in order: non-savings → savings → dividends.
+ * Property income is currently taxed at income tax rates (same as pension).
+ * Prepared for separate property treatment when 2027/28 rules are known.
+ *
+ * @param {number} pensionableIncome  - Pension + property + other non-dividend income
+ * @param {number} savingsInterest    - Taxable savings interest (after PSA)
+ * @param {number} dividendIncome     - Gross dividend income (allowance applied here)
+ * @param {number} propertyIncome     - Property/rental income (reserved for 2027/28 — currently 0, included in pensionableIncome by caller)
+ * @param {Object} cfg                - Tax configuration (TAX_2026_EWNI or TAX_2026_SCOTLAND)
  */
-export function estimateIncomeTax({ pensionableIncome, savingsInterest, cfg }) {
+export function estimateIncomeTax({ pensionableIncome, savingsInterest, dividendIncome = 0, propertyIncome = 0, cfg }) {
   const nonSav = Math.max(0, pensionableIncome);
   const interest = Math.max(0, savingsInterest);
-  const gross = nonSav + interest;
+  const dividends = Math.max(0, dividendIncome);
 
-  // Adjusted Net Income (simplified here == gross)
+  // Adjusted Net Income (simplified: gross of all income types)
+  const gross = nonSav + interest + dividends;
   const pa = taperedPersonalAllowance(gross);
 
   // Determine PSA from NON-SAVINGS taxable band (after PA)
@@ -70,20 +100,17 @@ export function estimateIncomeTax({ pensionableIncome, savingsInterest, cfg }) {
   const status = taxpayerStatusForPSA(taxableNonSavings, cfg);
   const psa = savingsAllowance(status);
 
-  // Allocate allowances:
-  // Use PA first against non-savings; any remaining PA can go to savings (rare)
+  // Allocate PA: first against non-savings, any remainder against savings
   let remainingPA = pa;
   const nonSavingsAfterPA = Math.max(0, nonSav - remainingPA);
   remainingPA = Math.max(0, remainingPA - nonSav);
 
-  // Savings starting-rate band complexities omitted (kept simple as before).
-  // Apply PSA to savings interest AFTER PA.
   let savingsAfterPA = Math.max(0, interest - remainingPA);
   const savingsAfterPSA = Math.max(0, savingsAfterPA - psa);
 
-  // Tax non-savings using cfg bands
+  // === TAX: NON-SAVINGS ===
   let tax = 0;
-  let totalIncomeProcessed = 0; // Track cumulative income position
+  let cumulativeIncome = 0;
   let remaining = nonSavingsAfterPA;
   let lowerEdge = 0;
 
@@ -93,16 +120,15 @@ export function estimateIncomeTax({ pensionableIncome, savingsInterest, cfg }) {
     if (width > 0) {
       tax += width * band.rate;
       remaining -= width;
-      totalIncomeProcessed += width;
+      cumulativeIncome += width;
     }
     lowerEdge = cap;
     if (remaining <= 0) break;
   }
 
-  // Tax savings stacked ON TOP of pensionable income (at marginal rates)
-  // Savings starts from where pensionable income ended
+  // === TAX: SAVINGS (stacked on top of non-savings) ===
   remaining = savingsAfterPSA;
-  lowerEdge = totalIncomeProcessed; // Start from cumulative income position
+  lowerEdge = cumulativeIncome;
 
   for (const band of cfg.bands) {
     const cap = band.upTo ?? Infinity;
@@ -110,9 +136,28 @@ export function estimateIncomeTax({ pensionableIncome, savingsInterest, cfg }) {
     if (width > 0) {
       tax += width * band.rate;
       remaining -= width;
+      cumulativeIncome += width;
     }
     lowerEdge = cap;
     if (remaining <= 0) break;
+  }
+
+  // === TAX: DIVIDENDS (stacked on top of everything, after allowance) ===
+  const dividendsAfterAllowance = Math.max(0, dividends - DIVIDEND_ALLOWANCE);
+  if (dividendsAfterAllowance > 0 && cfg.dividendBands) {
+    remaining = dividendsAfterAllowance;
+    lowerEdge = cumulativeIncome;
+
+    for (const band of cfg.dividendBands) {
+      const cap = band.upTo ?? Infinity;
+      const width = Math.max(0, Math.min(remaining, cap - lowerEdge));
+      if (width > 0) {
+        tax += width * band.rate;
+        remaining -= width;
+      }
+      lowerEdge = cap;
+      if (remaining <= 0) break;
+    }
   }
 
   return { tax, personalAllowanceUsed: pa, psaUsed: Math.min(psa, savingsAfterPA) };

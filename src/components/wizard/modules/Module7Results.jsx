@@ -1,7 +1,7 @@
 // src/components/wizard/modules/Module7Results.jsx
 import React from 'react';
 import { atRetirement } from '../../../logic/atRetirement';
-import { estimateIncomeTax, TAX_2025_EWNI, TAX_2025_SCOTLAND } from '../../../utils/tax';
+import { estimateIncomeTax, TAX_2026_EWNI, TAX_2026_SCOTLAND } from '../../../utils/tax';
 import { calculateStatePensionAge } from '../../../utils/statePensionAge';
 import { useAuth } from '../../../auth/AuthProvider';
 import HelpText from '../../ui/HelpText';
@@ -102,8 +102,8 @@ export default function Module7Results({ data, onDataChange, onNext }) {
 
   // Tax functions
   const taxFns = {
-    taxEWNI: (args) => estimateIncomeTax({ ...args, cfg: TAX_2025_EWNI }),
-    taxScot: (args) => estimateIncomeTax({ ...args, cfg: TAX_2025_SCOTLAND }),
+    taxEWNI: (args) => estimateIncomeTax({ ...args, cfg: TAX_2026_EWNI }),
+    taxScot: (args) => estimateIncomeTax({ ...args, cfg: TAX_2026_SCOTLAND }),
   };
 
   // Calculate results (with model overrides if present)

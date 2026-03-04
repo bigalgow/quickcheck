@@ -291,13 +291,15 @@ export function atRetirement(inputs, taxFns) {
   );
 
   // ---- Tax (only include state pension if at or past SPA)
+  // Dividends are taxed at dividend rates — excluded from pensionableIncome
   const statePensionForIncome = spaWarning ? 0 : statePensionAtRetNominal;
+  const nonDividendOtherIncome = propertyIncomeAtRet + anyOtherIncomeAtRet;
   const pensionableIncome =
-    dcIncome + dbAfter + otherIncomeAtRet + statePensionForIncome;
+    dcIncome + dbAfter + nonDividendOtherIncome + statePensionForIncome;
   const taxRes =
     inputs.region === "Scotland"
-      ? taxFns.taxScot({ pensionableIncome, savingsInterest: taxableInterest })
-      : taxFns.taxEWNI({ pensionableIncome, savingsInterest: taxableInterest });
+      ? taxFns.taxScot({ pensionableIncome, savingsInterest: taxableInterest, dividendIncome: dividendIncomeAtRet })
+      : taxFns.taxEWNI({ pensionableIncome, savingsInterest: taxableInterest, dividendIncome: dividendIncomeAtRet });
 
   // ---- Group outputs
   const assets = {

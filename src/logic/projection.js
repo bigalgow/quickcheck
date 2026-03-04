@@ -1,7 +1,7 @@
 // src/logic/projection.js
 // 25-year post-retirement projection calculator
 
-import { estimateIncomeTax, TAX_2025_EWNI, TAX_2025_SCOTLAND } from '../utils/tax';
+import { estimateIncomeTax, TAX_2026_EWNI, TAX_2026_SCOTLAND } from '../utils/tax';
 
 /**
  * Calculate life events total for a specific age
@@ -50,7 +50,8 @@ export function calculateProjection(openingValues, projectionInputs) {
     annuityIncome,        // Annual annuity income (if any)
     statePension,         // Annual state pension (nominal at SPA)
     statePensionAge,      // Age when state pension starts
-    otherIncome,          // Other annual income
+    otherIncome,          // Other annual income (property + other — excludes dividends)
+    dividendIncome = 0,   // Dividend income (taxed separately at dividend rates)
     annualSpend,          // Target annual spending (includes housing costs if applicable)
     inflation,            // % inflation assumption
     dcGrowth,             // % DC growth assumption
@@ -71,7 +72,7 @@ export function calculateProjection(openingValues, projectionInputs) {
   } = projectionInputs;
 
   // Select tax configuration
-  const taxCfg = taxRegion === 'scotland' ? TAX_2025_SCOTLAND : TAX_2025_EWNI;
+  const taxCfg = taxRegion === 'scotland' ? TAX_2026_SCOTLAND : TAX_2026_EWNI;
 
   const years = [];
 
@@ -129,6 +130,7 @@ export function calculateProjection(openingValues, projectionInputs) {
       ? statePension * inflationFactor
       : 0;
     yearData.otherIncome = otherIncome * inflationFactor;
+    yearData.dividendIncome = dividendIncome * inflationFactor;
 
     // === GROWTH ===
     // Apply growth to balance AFTER drawdown (simplified: assume drawdown at start of year)
@@ -212,6 +214,7 @@ export function calculateProjection(openingValues, projectionInputs) {
     const taxResult = estimateIncomeTax({
       pensionableIncome,
       savingsInterest,
+      dividendIncome: yearData.dividendIncome,
       cfg: taxCfg,
     });
 
