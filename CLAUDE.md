@@ -1,191 +1,209 @@
-# CLAUDE.md
+# CLAUDE.md — Lifestyle Financial Planner (retireplan-quickcheck)
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code and Claude Skills when working with this repository.
 
+---
 
-## RetirePlan Platform Architecture
+## App Identity
 
-**Two Distinct Components:**
+**App Name**: Lifestyle Financial Planner
+**Repo**: retireplan-quickcheck
+**URL**: quickcheck.retireplan.co.uk
+**PWA**: Can be installed to device home screen
+**Part of**: RetirePlan platform (retireplan.co.uk)
 
-1. **RetirePlan Website** (retireplan.co.uk)
-   - Main content site with articles, resources, guides
-   - Authentication system (details TBD)
-   - [Additional features to be documented]
+This app is a **10-module retirement financial planning wizard**. Users work through modules covering lifestyle spending targets, pensions, savings, income, life events, and drawdown strategy — ending with a 25-year projection.
 
-2. **RetirePlan QuickCheck** (Web App)
-   - React-based calculator application
-   - Launched from the RetirePlan website
-   - Can be saved to device home screen as PWA (Progressive Web App)
-   - Runs standalone once installed as PWA
-   - This is what CLAUDE.md primarily documents
+It is distinct from the **Lifestyle Designer** app (lifestyle-designer repo), which handles personality-based goal and lifestyle planning.
 
-**Authentication:**
-- Seamlessly shared between website and web app
-- User signs in once, authentication persists across both
-- SaveBar in web app: "Login to save" button
-- Website authentication: [to be documented]
+---
 
-**User Access Patterns:**
-- Via website: User visits retireplan.co.uk → launches QuickCheck app
-- As PWA: User taps app icon on device → opens directly to QuickCheck
-- Both routes: Same functionality, same authentication state
+## Platform Context
 
-## Project Overview
+**Two linked apps share the same Logto authentication instance:**
 
-RetirePlan QuickCheck is a React-based retirement planning application with routing, multiple calculators, and cloud data persistence.
+| App | Repo | URL | Purpose |
+|-----|------|-----|---------|
+| Lifestyle Financial Planner | retireplan-quickcheck | quickcheck.retireplan.co.uk | Financial planning wizard |
+| Lifestyle Designer | lifestyle-designer | lifestyle.retireplan.co.uk | Personality-driven goal planning |
 
-**Current Status:**
-- **Phase 1 (Complete)**: "At Retirement" calculator - gathers user input for current savings and pensions (including multiple DC pots), projects to retirement age, produces comprehensive summary of income, expenditure, and assets
-- **Phase 2 (Complete)**: Post-retirement projection - 25-year projection forward with life events, ISA investments, tax calculations, and depletion warnings
-- **Lifestyle Calculator (Complete)**: Multi-step wizard using PLSA benchmarks to help users discover retirement lifestyle needs, pre-fills calculator data. Users can continue without signing in.
-- **Dashboard (Complete)**: Landing page with authentication (SaveBar) offering two user journeys - "Discover Lifestyle First" (recommended) or "Jump to Calculator"
-- **Data Persistence**: All data saved to Logto custom_data via Management API. SessionStorage autosave provides offline backup (clears on tab close for security)
-- **Authentication**: Logto integration with token-based API access for secure data operations. Available on Dashboard, Calculator, Lifestyle Planner, and Projection pages.
+Both apps use the same Logto instance (`auth.retireplan.co.uk`) and share premium status via `customData.isPremium` in Logto user records.
+
+---
 
 ## Development Commands
 
 ```bash
-# Start development server (runs on http://localhost:5173)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build locally
-npm run preview
-
-# Lint code
-npm run lint
+npm run dev       # Dev server at http://localhost:5173
+npm run build     # Production build
+npm run preview   # Preview production build
+npm run lint      # ESLint
 ```
+
+---
 
 ## Architecture
 
+### Routes (`src/App.jsx`)
+
+| Route | Component | Purpose |
+|-------|-----------|---------|
+| `/` | Welcome | Landing page |
+| `/welcome` | Welcome | Alias for landing page |
+| `/wizard` | WizardShell | 10-module wizard container |
+
+**Note**: Legacy routes (`/calculator`, `/lifestyle`, `/projection`) have been removed. Legacy component files still exist in `src/components/` but are not routed.
+
 ### Frontend Structure
 
-- **Entry Point**: `src/main.jsx` - wraps app with `AuthProvider` and `BrowserRouter`
-- **Main App**: `src/App.jsx` - React Router setup with 4 routes:
-  - `/` - Dashboard (landing page)
-  - `/calculator` - At-Retirement Calculator
-  - `/lifestyle` - Lifestyle Discovery Wizard
-  - `/projection` - Post-Retirement Projection (25 years)
+```
+src/
+├── auth/
+│   ├── AuthProvider.jsx         # Logto auth context (useAuth hook)
+│   └── logtoClient.js           # Legacy singleton (deprecated)
+├── components/
+│   ├── Welcome.jsx              # Landing page with premium CTA
+│   ├── PremiumClaimModal.jsx    # Premium upgrade/claim modal
+│   ├── wizard/
+│   │   ├── WizardShell.jsx      # Wizard container, navigation, progress
+│   │   ├── WizardSaveBar.jsx    # Auth UI, save/load, premium gating
+│   │   ├── moduleRegistry.jsx   # Module list and routing
+│   │   └── modules/
+│   │       ├── Module1CoreAssumptions.jsx   # DOB, retirement age, inflation, tax region
+│   │       ├── Module2Lifestyle.jsx         # PLSA tier, housing costs
+│   │       ├── Module3DCPensions.jsx        # DC pots, contributions, career breaks
+│   │       ├── Module4DBPensions.jsx        # Active and deferred DB schemes
+│   │       ├── Module5Savings.jsx           # ISA, Taxable, Higher Yield savings
+│   │       ├── Module6OtherIncome.jsx       # Property, dividend, other income
+│   │       ├── Module7Results.jsx           # At Retirement Results (calculated)
+│   │       ├── Module8LifeEvents.jsx        # One-off and recurring life events
+│   │       ├── Module9DrawdownSequencing.jsx # ISA investments, DC drawdown rate
+│   │       └── Module10Projection.jsx       # 25-Year Projection (calculated)
+│   └── ui/
+│       ├── FormInput.jsx
+│       ├── HelpText.jsx
+│       ├── SectionHeader.jsx
+│       └── VideoButton.jsx
+├── logic/
+│   ├── atRetirement.js          # At-retirement calculation engine
+│   └── projection.js            # 25-year projection engine
+└── utils/
+    ├── dataSchema.js            # Unified data schema + module definitions
+    ├── tax.js                   # UK income tax (2026/27)
+    ├── persist.js               # localStorage helpers, cloud save orchestration
+    ├── lifestyleProfile.js      # PLSA benchmark values
+    ├── retirementStatus.js      # Retirement status helpers
+    ├── statePensionAge.js       # UK state pension age calculation
+    └── money.js                 # Currency formatting (fmt, N helpers)
+```
 
-- **Authentication**: `src/auth/`
-  - `AuthProvider.jsx`: React context providing auth state and methods (`useAuth` hook)
-  - `logtoClient.js`: Legacy singleton (deprecated, use AuthProvider)
+### Backend (Vercel Serverless Functions)
 
-- **Main Components**: `src/components/`
-  - `Dashboard.jsx` (5KB): Landing page with two user journey options
-  - `AtRetirement.jsx` (68KB): Phase 1 calculator - inputs, calculations, results display
-  - `LifestyleCalculator.jsx` (35KB): Multi-step wizard for lifestyle discovery using PLSA benchmarks
-  - `PostRetirementProjection.jsx` (23KB): Phase 2 - 25-year projection with life events
-  - `SaveBar.jsx` (11KB): Authentication UI, save/load, export/import
-  - `LifeEvents.jsx` (10KB): Life events editor (income/expenses, one-off/recurring)
-  - `ProjectionTable.jsx` (9KB): Year-by-year projection data table
-  - `ProjectionInputs.jsx` (3KB): Projection-specific inputs (ISA investments, DC drawdown %)
-  - `ProjectionCharts.jsx` (4KB): Visualization of projection data
+```
+api/me/
+├── retireplan.js      # GET/POST retirement plan data (customData.retirePlan.latest)
+├── premium.js         # GET premium status (customData.isPremium)
+└── claim-premium.js   # POST claim premium (sets isPremium: true)
+```
 
-- **UI Components**: `src/components/ui/`
-  - `FormInput.jsx`: Standardized form input component
-  - `HelpText.jsx`: Collapsible help text component
-  - `SectionHeader.jsx`: Section header with optional help text
-  - `VideoButton.jsx`: Button to launch video tutorials
+All API endpoints:
+- Verify JWT bearer token (audience: `https://api.retireplan`)
+- Use Logto Management API for user data read/write
+- Require env vars: `LOGTO_ISSUER`, `MGMT_CLIENT_ID`, `MGMT_CLIENT_SECRET`, `API_AUDIENCE`, `MGMT_RESOURCE`
 
-- **Business Logic**: `src/logic/`
-  - `atRetirement.js` (10KB): Core calculation engine for "At Retirement" position
-  - `projection.js` (9KB): 25-year post-retirement projection calculator with life events
+---
 
-- **Utilities**: `src/utils/`
-  - `tax.js` (4KB): UK income tax calculations (England/Wales/NI and Scotland 2025 bands)
-  - `persist.js` (4KB): LocalStorage autosave, cloud save orchestration
-  - `lifestyleProfile.js` (5KB): PLSA benchmark values, profile generation, event transformation
-  - `statePensionAge.js` (2KB): UK state pension age calculations
-  - `money.js` (0.3KB): Currency formatting utilities
+## The 10-Module Wizard
 
-### Backend Structure
+Data is stored in a single unified object (`defaultRetirePlanData` from `dataSchema.js`).
 
-- **API Endpoints** (Vercel serverless functions):
+| Module | Title | Description |
+|--------|-------|-------------|
+| 1 | Core Assumptions | Date of birth, retirement age, inflation %, tax region |
+| 2 | Lifestyle Baseline | PLSA tier or custom spend, housing type/costs |
+| 3 | Workplace & Personal Pensions | DC pots, contributions, employer match, career breaks |
+| 4 | Final Salary & DB Pensions | Active accrual schemes, deferred scheme (ABS income) |
+| 5 | Savings & Investments | ISA, Taxable Savings, Higher Yield Investments |
+| 6 | Other Income | Property rental, dividend income, other sources |
+| 7 | At Retirement Results | Calculated summary (atRetirement.js output) |
+| 8 | Life Events | One-off and recurring income/expense events |
+| 9 | Drawdown Sequencing | Annual ISA investment amount, DC drawdown rate override |
+| 10 | 25-Year Projection | Calculated 25-year post-retirement table (projection.js output) |
 
-  - `api/me/retireplan.js` - Retirement calculator data
-    - GET: Retrieve user's saved retirement plan data from `customData.retirePlan.latest`
-    - POST: Save retirement plan data (At-Retirement + Projection inputs) to Logto Management API
-    - JWT verification with `jose` library
+### Data Schema (`src/utils/dataSchema.js`)
 
-  - `api/me/lifestyle.js` - Lifestyle profile data
-    - GET: Retrieve user's lifestyle profile from `customData.lifestyleProfile`
-    - POST: Save/update lifestyle profile (PLSA tier, exceptional items)
-    - DELETE: Clear lifestyle profile
-    - JWT verification with `jose` library
+```javascript
+defaultRetirePlanData = {
+  inputs: { dateOfBirth, retirementAge, statePensionAnnual, inflation, taxRegion },
+  lifestyle: { method, householdType, plsaTier, baselineAmount, housingType, housingCostAnnual, ageMortgagePaidOff },
+  dc: { potNow, takeTaxFree25, growthAssumption, drawdownRate, annuityRate, annuityPct,
+        isContributing, contributionType, salaryNow, employeePct, employerPct,
+        personalAnnualContrib, hasCareerBreak, breakStartAge, breakEndAge },
+  db: { takeTaxFree25, schemes: [...] },
+  savings: {
+    isa: { currentValue, addPerYear, growthRate },
+    taxableSavings: { currentValue, addPerYear, growthRate },
+    higherYield: { currentValue, addPerYear, growthRate }  // default rate: 6%
+  },
+  otherIncome: [],  // [{ id, type: 'property'|'dividend'|'other', description, annualAmount }]
+  atRetirementResults: null,
+  lifeEvents: [],   // [{ id, name, age, amount, type, isRecurring, recurringYears, category, source }]
+  postRetirement: { isaInvestmentAnnual, dcDrawdownRate },
+  projectionResults: null,
+  metadata: { completedModules: [], lastModified, version: "2.0" }
+}
+```
 
-Both endpoints:
-- Authenticate user via JWT bearer token (audience: `https://api.retireplan`)
-- Obtain Management API token via client credentials flow
-- Read/write user's Logto `customData` field via Management API
-- Require environment variables: `LOGTO_ISSUER`, `MGMT_CLIENT_ID`, `MGMT_CLIENT_SECRET`, `API_AUDIENCE`, `MGMT_RESOURCE`
+---
 
-### Data Flow
+## Data Persistence
 
-#### User Journey 1: Lifestyle First (Recommended)
-1. User lands on Dashboard (`/`) → can sign in via SaveBar or continue as guest
-2. User clicks "Start Discovery" → navigates to `/lifestyle` (LifestyleCalculator wizard)
-3. Step 1: Select age range and household type (solo/couple)
-4. Step 2: Choose baseline tier (PLSA: minimum/moderate/comfortable) or estimate from current income
-5. Step 3: Add exceptional items (travel, purchases, family support) - one-off or recurring
-6. Profile generated with name (e.g., "The Comfortable Explorer"), total annual spend, one-off costs
-7. User can either:
-   - Sign in and save profile to cloud (`/api/me/lifestyle` endpoint)
-   - Click "Continue to Calculator" without signing in
-8. Navigates to `/calculator` - form pre-filled with lifestyle profile data (`desiredSpendAnnual`)
-9. Continues through calculator workflow (Journey 2 below)
+### localStorage (primary, automatic)
+- **Key**: `retireplan-wizard-data`
+- Auto-saves on every data change (debounced)
+- Persists across page reloads within same browser (unlike sessionStorage)
+- WizardSaveBar reads this synchronously on mount (via `useState` initializer — critical to avoid race conditions with auth)
 
-#### User Journey 2: Direct to Calculator
-1. User lands on Dashboard (`/`) → clicks "Start Calculating"
-2. Navigates to `/calculator` (AtRetirement component)
-3. User enters financial data:
-   - Multiple DC pension pots (can add multiple pots, each tracked separately)
-   - DB pensions: Active schemes and Deferred schemes (simplified - uses ABS "projected income" directly)
-   - Savings, income, expenditure
-4. `atRetirement()` calculates retirement position (nominal + real terms)
-5. Results displayed with summary, detailed breakdown, and adjustable sliders
-6. User clicks "View 25-Year Projection" → navigates to `/projection` with `openingValues` in route state
-7. `calculateProjection()` generates 25 years of projections with life events, ISA investments, tax
-8. Results shown in table and charts
+### Cloud Save (authenticated users)
+- **Endpoint**: `GET/POST /api/me/retireplan`
+- **Logto field**: `customData.retirePlan.latest`
+- Manual save via WizardSaveBar "Save to Cloud" button
+- Auto-loads on sign-in (smart sync with localStorage timestamp comparison)
+- **Smart Sync Pattern**: WizardSaveBar reads localStorage synchronously in `useState(() => {...})` so it has data before auth resolves
 
-#### Data Persistence
-- **SessionStorage** (via `persist.js`):
-  - Auto-saves on every input change (debounced)
-  - Unified key: `retireplan.unified.v1` containing both At-Retirement and Projection data
-  - Provides instant restore on page reload within same browser tab
-  - **Security feature**: Data clears when browser tab closes (prevents sensitive financial data from persisting)
-  - **Form State Merging**: Saved data is merged with default form values (not replaced) to prevent missing fields
+---
 
-- **Cloud Save** (via Logto Management API):
-  - Manual save via "Save All Data" button in SaveBar (when authenticated)
-  - Two separate fields in Logto `customData`:
-    - `customData.retirePlan.latest` - At-Retirement + Projection data
-    - `customData.lifestyleProfile` - Lifestyle wizard data
-  - Persists across devices and browsers
-  - Auto-loads when user signs in
+## Authentication & Premium
 
-### Authentication Flow
+### AuthProvider (`src/auth/AuthProvider.jsx`)
 
-1. User clicks "Login to save" → `AuthProvider` calls `LogtoClient.signIn()`
-2. Logto redirects to auth page, then back with `?code=...&state=...`
-3. `AuthProvider` detects callback params, calls `handleSignInCallback()`
-4. Auth state is synced (`isAuthenticated`, `userInfo`)
-5. SaveBar displays user info and "Save data" button
-6. When saving, `getAccessToken(audience)` requests an API-scoped JWT
-7. Backend verifies JWT and saves to Logto Management API
+```javascript
+const { isAuthenticated, userInfo, isPremium, premiumLoading,
+        signIn, signOut, getAccessToken, refreshPremium } = useAuth();
+```
+
+- `isPremium`: fetched from `GET /api/me/premium` after sign-in
+- `refreshPremium()`: call after claiming premium to update state
+- `getAccessToken('https://api.retireplan')`: gets JWT for API calls
+
+### Premium Tier
+
+- **Claim endpoint**: `POST /api/me/claim-premium` (sets `isPremium: true` in Logto)
+- **Auto-approve**: `PREMIUM_AUTO_APPROVE=true` by default (beta — free for early users)
+- **PremiumClaimModal**: shown from Welcome page CTA, calls claim-premium endpoint
+- **Welcome page**: Shows premium CTA card to all non-premium users (authenticated → claim modal; unauthenticated → sign in)
+- **WizardSaveBar**: Gates cloud save behind authentication; shows premium features to premium users
 
 ### Environment Variables
 
-**Frontend** (Vite - should be in project root `.env.local`):
+**Frontend** (`.env.local`):
 ```
 VITE_LOGTO_ENDPOINT=https://auth.retireplan.co.uk
 VITE_LOGTO_APP_ID=pu4bsk6f3m9mox3vtxh8z
 VITE_API_AUDIENCE=https://api.retireplan
 ```
 
-**Backend** (Vercel - set in Vercel dashboard):
+**Backend** (Vercel dashboard):
 ```
 LOGTO_ISSUER=https://auth.retireplan.co.uk
 MGMT_CLIENT_ID=<management-api-client-id>
@@ -194,190 +212,151 @@ API_AUDIENCE=https://api.retireplan
 MGMT_RESOURCE=https://auth.retireplan.co.uk/api
 ```
 
+---
+
 ## Key Calculations
 
-### At Retirement Calculator (`atRetirement.js`)
+### At Retirement (`src/logic/atRetirement.js`)
 
-The `atRetirement()` function handles:
+The `atRetirement()` function takes the wizard's full data and produces a snapshot at retirement age:
 
-- **Years to retirement**: Calculated from date of birth (using precise decimal years via `yearsBetween()`)
-- **DC projections**:
-  - Multiple DC pots supported (user can add multiple pots, each tracked separately)
-  - Pot growth + employer/personal contributions (start-of-year timing)
-  - All pots combined for total DC value at retirement
-- **DB projections**:
-  - Active schemes: Accrual on final salary with service years calculation
-  - Deferred schemes: **Simplified** - user enters "projected income" from Annual Benefit Statement (ABS) directly
-  - No complex revaluation calculations needed - uses the figure providers quote on ABS
-- **PCLS (Pension Commencement Lump Sum)**: 25% tax-free cash from DC/DB (capped at £268,275 total)
-- **Income streams**: DC drawdown/annuity, DB pension, state pension, other income, savings interest
-- **Tax**: UK income tax calculation (Personal Allowance taper, PSA) using `tax.js`
-- **Real vs Nominal**: All outputs shown in both nominal (at retirement) and real (today's money) terms
+- **DC pots**: Growth + contributions (start-of-year timing), career break support
+- **DB pensions**:
+  - Active: Accrual on final salary with service years
+  - Deferred: User enters "projected income" from ABS directly (no revaluation)
+- **PCLS**: 25% tax-free cash, capped at £268,275 across DC + DB
+- **Savings at retirement**:
+  - ISA, taxable savings, and Higher Yield Investments projected separately
+  - Higher Yield merged into taxable savings total at retirement
+  - **Blended rate**: Weighted average of taxable and higher-yield growth rates (used in projection)
+- **Income streams**: DC drawdown, DB pension, state pension, property, dividends, other
+- **Dividends**: Separated from other income, taxed at dividend rates
+- **Tax**: `estimateIncomeTax()` with non-savings, savings interest, and dividend income
+- **Outputs**: Both nominal (at retirement date) and real (today's money) terms
+- **Returns**: `blendedSavingsRate` for use in post-retirement projection
 
-**Calculation Specifics:**
-- **Contribution Timing**: DC contributions use start-of-year timing (year 1 = first year of contributions)
-- **Inflation Simplification**: Salary growth and personal contribution escalation both use the inflation assumption
-- **Tax Bands**: Configured in `TAX_2025_EWNI` and `TAX_2025_SCOTLAND` constants
-- **DB Commutation Factor**: Fixed at 20 (£20 lump sum per £1 annual pension surrendered)
-- **State Pension Age Warning**: App warns if retirement age < state pension age
+### Post-Retirement Projection (`src/logic/projection.js`)
 
-### Post-Retirement Projection (`projection.js`)
+`calculateProjection()` generates a 25-year year-by-year table:
 
-The `calculateProjection()` function generates a 25-year projection:
+- **DC drawdown**: Year 1 calculated from % of pot; inflated each subsequent year (4% rule style)
+- **ISA**: Optional annual investments from taxable savings; drawdown if taxable depleted
+- **Taxable savings**: Buffer absorbing net cash flow (can go negative before ISA drawn)
+- **Income inflation**: DB pension, state pension, other income all inflated each year
+- **Annuity**: Fixed (no inflation)
+- **Life events**: Per-age income/expense adjustments (one-off or recurring)
+- **Annual spend**: Inflation-adjusted; age-based reductions at 75 (-15%) and 85 (-25%)
+- **Mortgage payoff**: Spend automatically reduced when mortgage age is reached
+- **Tax**: Full `estimateIncomeTax()` per year (non-savings + savings interest + dividends)
+- **Depletion warnings**: `extractWarnings()` returns first occurrence per pot type only (deduped)
+- **Real terms**: Deflated to today's money for comparison
 
-- **Opening Position**: Takes outputs from At-Retirement calculator as starting values
-- **Drawdown Strategy**: 4% rule style - cash amount calculated in year 1, inflated each subsequent year
-- **Asset Management**:
-  - DC pot: Drawn down each year with remaining balance growing
-  - ISA: Optional recurring investments (from taxable savings), tax-free growth
-  - Taxable savings: Buffer absorbing net cash flow (can go negative)
-- **Life Events**: User-defined income/expense events (one-off or recurring over years)
-- **Income Tax**: Full calculation each year on pension income + taxable savings interest
-- **Depletion Detection**: Warns when DC/ISA/Taxable pots go negative
-- **Real Terms**: All values deflated to today's money for comparison
+### Tax (`src/utils/tax.js`) — 2026/27 UK Tax Year
 
-**Calculation Specifics:**
-- **ISA Investments**: Only occur if taxable savings sufficient (prevents negative balance)
-- **ISA Drawdown**: Only triggered if taxable savings depleted (pulls from ISA to cover deficit)
-- **Tax Calculation**: Uses same `estimateIncomeTax()` function as At-Retirement
-- **Growth Timing**: Growth applied to balance AFTER drawdown (simplified start-of-year assumption)
+**Constants**: `TAX_2026_EWNI` (England/Wales/NI), `TAX_2026_SCOTLAND`
+- Backward-compat aliases: `TAX_2025_EWNI = TAX_2026_EWNI` (retain for any legacy callers)
+- EWNI bands frozen until April 2028 — no change needed until then
 
-### Lifestyle Calculator (`lifestyleProfile.js`)
+**`estimateIncomeTax({ pensionableIncome, savingsInterest, dividendIncome, propertyIncome, cfg })`**
 
-Uses PLSA (Pension and Lifetime Savings Association) 2024 benchmarks:
+Income stacked in order:
+1. **Non-savings** (pension, DB, state pension, property, other): Personal Allowance applied first, then income tax bands
+2. **Savings interest**: Personal Savings Allowance (£1,000 basic / £500 higher / £0 additional), remainder taxed at income bands
+3. **Dividends**: £500 dividend allowance, remainder at 8.75% / 33.75% / 39.35% (basic/higher/additional)
 
-- **Minimum**: £14,400 (solo) / £22,400 (couple)
-- **Moderate**: £31,300 (solo) / £43,100 (couple)
-- **Comfortable**: £43,100 (solo) / £59,000 (couple)
+**Personal Allowance taper**: Starts at £100,000, zero at £125,140
 
-User can:
-- Select a PLSA tier as baseline
-- OR estimate from current pre-retirement income (rule of thumb: 70-80% of current)
-- Add exceptional items in 4 categories: Travel, Purchases, Family Support, Lifestyle Upgrades
-- Each item: one-off (specific year) or recurring (over multiple years)
+**Property income**: Currently included in `pensionableIncome` by caller. `propertyIncome` parameter reserved for 2027/28 when separate property rules apply.
 
-Profile generates:
-- Named profile (e.g., "The Comfortable Explorer" based on tier + dominant category)
-- Total annual spending (baseline + recurring items)
-- Total one-off costs
-- Life events exported to Projection calculator
+**Scottish bands**: 2026/27 rates — verify against Scottish Budget (comment in source flagging this)
+
+---
+
+## Module 5: Savings Categories
+
+Three savings types, each with current value, annual addition, and growth rate:
+
+| Category | Default Rate | Notes |
+|----------|-------------|-------|
+| ISA | 3% | Tax-free growth; not merged with taxable |
+| Taxable Savings | 3% | Cash/bonds; interest taxed via PSA |
+| Higher Yield Investments | 6% | Stocks, bonds, other; merged into taxable at retirement |
+
+At retirement, Higher Yield balance is merged with Taxable Savings. The blended growth rate (weighted average) is passed to the projection for post-retirement DC drawdown and savings growth calculations.
+
+---
+
+## Module 6: Other Income Categories
+
+| Type | Tax Treatment |
+|------|--------------|
+| Property rental | Included in `pensionableIncome` (income tax rates) |
+| Dividend income | Separated, taxed at dividend rates (8.75%/33.75%/39.35%) |
+| Other | Included in `pensionableIncome` |
+
+---
 
 ## Common Patterns
 
-### Accessing Authentication State
-
+### Accessing Auth State
 ```javascript
 import { useAuth } from '../auth/AuthProvider';
-
-function MyComponent() {
-  const { isAuthenticated, userInfo, signIn, signOut, getAccessToken } = useAuth();
-
-  // Use getAccessToken() for Account API (opaque token)
-  const accountToken = await getAccessToken();
-
-  // Use getAccessToken(audience) for custom API (JWT with audience)
-  const apiToken = await getAccessToken('https://api.retireplan');
-}
+const { isAuthenticated, isPremium, signIn, getAccessToken, refreshPremium } = useAuth();
+const token = await getAccessToken('https://api.retireplan');
 ```
 
-### Modifying At-Retirement Calculations
+### Synchronous localStorage Read (Critical Pattern)
+```javascript
+// MUST use useState initializer to avoid race condition with auth resolution
+const [savedData, setSavedData] = useState(() => {
+  try {
+    const stored = localStorage.getItem('retireplan-wizard-data');
+    return stored ? JSON.parse(stored) : null;
+  } catch { return null; }
+});
+```
 
-When updating calculation logic in `src/logic/atRetirement.js`:
-- Ensure both nominal and real-terms outputs are updated
-- Test with edge cases (already retired, zero contributions, PCLS cap exceeded)
-- Update corresponding tax calculations if income structure changes
-- Update `AtRetirement.jsx` to display new outputs
+### Module Navigation
+```javascript
+import { useNavigate } from 'react-router-dom';
+const navigate = useNavigate();
+navigate('/wizard?module=3');  // Use navigate(), not window.location.href
+```
 
-### Modifying Projection Calculations
+### Number Helpers (`src/utils/money.js`)
+- `fmt(n)`: formats with thousand separators, no decimals (e.g. `£42,500`)
+- `N(str)`: safely converts form string to number (empty/null → 0)
 
-When updating calculation logic in `src/logic/projection.js`:
-- Test year-by-year progression (check year 1, year 10, year 25)
-- Ensure asset balances never go invalid (e.g., negative growth on zero balance)
-- Test edge cases (DC depletion, ISA drawdown triggers, taxable going negative)
-- Update `ProjectionTable.jsx` and `ProjectionCharts.jsx` if adding new data fields
-
-### Adding New Input Fields
-
-1. Add field to component state (e.g., `AtRetirement.jsx` or `PostRetirementProjection.jsx`)
-2. Update autosave payload in persist function
-3. Add corresponding calculation logic in `atRetirement.js` or `projection.js`
-4. Update UI to display new input/output
-5. Update cloud save structure if needed (backend expects specific fields)
-
-## File References
-
-### Key Component Locations
-
-- **Dashboard**: `src/components/Dashboard.jsx:1`
-- **At-Retirement Calculator**: `src/components/AtRetirement.jsx:1`
-- **Lifestyle Wizard**: `src/components/LifestyleCalculator.jsx:1`
-- **Post-Retirement Projection**: `src/components/PostRetirementProjection.jsx:1`
-- **SaveBar**: `src/components/SaveBar.jsx:1`
-- **Life Events Editor**: `src/components/LifeEvents.jsx:1`
-
-### Key Logic Locations
-
-- **At-Retirement Calculations**: `src/logic/atRetirement.js:1`
-- **Projection Calculations**: `src/logic/projection.js:1`
-- **Tax Calculations**: `src/utils/tax.js:1`
-- **PLSA Values & Profile Logic**: `src/utils/lifestyleProfile.js:1`
-
-### API Endpoints
-
-- **Retirement Data API**: `api/me/retireplan.js:1`
-- **Lifestyle Profile API**: `api/me/lifestyle.js:1`
+---
 
 ## Important Implementation Notes
 
-- **Logto Storage Cleanup**: `AuthProvider` clears stale `logto:*` localStorage keys on auth errors
-- **Buffered Input Pattern**: `Txt` component in `AtRetirement.jsx` buffers input changes, only commits on blur/Enter
-- **Number Formatting**: `fmt()` helper formats numbers with thousand separators, no decimals
-- **String to Number Conversion**: `N()` helper safely converts form strings to numbers (treats empty/null as 0)
-- **Route State**: At-Retirement passes `openingValues` to Projection via React Router `location.state`
-- **Smart Event Merging**: Projection smart-merges lifestyle profile events with user-edited projection events (preserves user edits)
-- **Unsaved Changes Tracking**: Both calculators track unsaved changes and warn before cloud load would overwrite local edits
-- **Form State Merging** (Critical): When loading saved data, `setForm(prevForm => ({ ...prevForm, ...savedForm }))` merges saved values with defaults rather than replacing entire state. This prevents undefined values (like missing `dateOfBirth`) from causing crashes.
-- **Date Validation**: All date calculations use defensive checks (`isNaN(date.getTime())`) before calling `.getTime()` to prevent crashes with invalid dates
-- **Multiple DC Pots**: DC pension section supports multiple pots via array state, each pot tracked independently and summed for total value
-- **Simplified DB Deferred**: Deferred DB pensions use "projected income" field from ABS directly - no revaluation rate calculations needed
-- **Dashboard Authentication**: Dashboard includes SaveBar for users who bookmark the web app directly (bypass main website login)
-- **Guest User Flow**: Lifestyle calculator allows users to continue without signing in - saves `desiredSpendAnnual` to sessionStorage only
+- **DB Deferred**: Uses "projected income" from Annual Benefit Statement directly — no revaluation needed
+- **PCLS Cap**: £268,275 total across DC + DB (post-LTA abolition figure, unchanged)
+- **DB Commutation Factor**: Fixed at 20 (£20 lump sum per £1 annual pension)
+- **State Pension Age**: Calculated in `statePensionAge.js`; wizard warns if retirement age < SPA
+- **Date Validation**: All date calculations use defensive `isNaN(date.getTime())` checks
+- **Form Merging**: When loading saved data always merge: `setData(prev => ({ ...prev, ...saved }))` to preserve defaults for any new fields not in saved data
+- **Depletion Warnings**: `extractWarnings()` in `projection.js` deduplicates — only first year a pot depletes is returned
+
+---
 
 ## Troubleshooting
 
-### Token Exchange Issues
+### Premium Status Wrong
+1. Check `GET /api/me/premium` returns correct `isPremium` value
+2. Call `refreshPremium()` after claiming
+3. `PREMIUM_AUTO_APPROVE` in env should be `true` for beta users
 
-If authentication succeeds but API calls fail:
+### Cloud Data Spuriously Offered on Welcome Page
+- Root cause: loading savedData in `useEffect` means WizardSaveBar gets empty data on first render; auth resolves first and triggers sync
+- Fix: load localStorage synchronously in `useState(() => {...})` initializer
 
-1. **Check Environment Variables**:
-   - Frontend: `.env.local` should be in project root with `VITE_API_AUDIENCE=https://api.retireplan`
-   - Backend: Vercel env vars must include `API_AUDIENCE`, `MGMT_RESOURCE`
+### Module Links Not Working in Preview
+- Do not use `window.location.href` for in-app navigation — use React Router `navigate()`
+- `window.location.href` breaks auth state in Vercel preview deployments
 
-2. **Verify Logto Configuration**:
-   - In Logto dashboard, ensure API resource `https://api.retireplan` exists
-   - Application must have permission to request tokens for this resource
-   - Check that `resources` array in `AuthProvider.jsx` includes the API resource
-
-3. **Check Backend JWT Verification**:
-   - `LOGTO_ISSUER` must match exactly (no trailing slash)
-   - JWKS URL correct: `${ISSUER}/oidc/jwks`
-   - Backend logs (Vercel) show JWT verification errors
-
-4. **Browser Console**:
-   - Check for token exchange errors from Logto SDK
-   - Inspect Network tab for `/api/me/*` request/response details
-
-### Data Not Loading from Cloud
-
-1. Check `sessionStorage` key exists: `retireplan.unified.v1` (contains both At-Retirement and Projection data)
-2. Verify authenticated: `isAuthenticated` should be `true` in SaveBar
-3. Check browser console for API errors - cloud data auto-loads on sign-in
-4. Verify backend logs in Vercel for Management API errors
-5. Note: If you close the browser tab, sessionStorage is cleared (by design for security)
-
-### Projection Not Working
-
-1. Ensure At-Retirement calculator ran successfully first
-2. Check browser console for `location.state.openingValues` - should contain retirement position
-3. If missing, user must complete At-Retirement calculator before viewing projection
-4. Check for calculation errors in `projection.js` (e.g., division by zero, NaN values)
+### Projection Not Calculating
+1. Module 7 must run first (at-retirement calculation produces `openingValues`)
+2. Check console for NaN or undefined in `openingValues`
+3. Verify `blendedSavingsRate` is returned from `atRetirement.js`
